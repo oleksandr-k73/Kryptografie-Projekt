@@ -11,7 +11,7 @@
       <section class="card">
         <h1>Krypto Werkbank</h1>
         <p class="subtitle">
-          Datei laden, Verschluesselung auswaehlen, Text verarbeiten.
+          Datei laden, Verschlüsselung auswählen, Text verarbeiten.
         </p>
 
         <label id="dropzone" class="dropzone" for="fileInput">
@@ -20,8 +20,8 @@
             type="file"
             accept=".txt,.json,.csv,.log,.md,text/plain,application/json,text/csv"
           />
-          <span>Datei auswaehlen oder hierher ziehen</span>
-          <small>Unterstuetzt: TXT, JSON, CSV, LOG, MD</small>
+          <span>Datei auswählen oder hierher ziehen</span>
+          <small>Unterstützt: TXT, JSON, CSV, LOG, MD</small>
         </label>
         <p id="fileStatus" class="status">Noch keine Datei geladen.</p>
 
@@ -35,24 +35,24 @@
           <div>
             <label for="modeSelect">Modus</label>
             <select id="modeSelect">
-              <option value="encrypt">Verschluesseln</option>
-              <option value="decrypt">Entschluesseln</option>
+              <option value="encrypt">Verschlüsseln</option>
+              <option value="decrypt">Entschlüsseln</option>
             </select>
           </div>
           <div>
-            <label for="cipherSelect">Verschluesselung</label>
+            <label for="cipherSelect">Verschlüsselung</label>
             <select id="cipherSelect"></select>
           </div>
           <div>
-            <label for="keyInput">Schluessel (optional)</label>
+            <label for="keyInput">Schlüssel (optional)</label>
             <input id="keyInput" type="number" placeholder="z. B. 3" />
             <small id="keyHint" class="hint"
-              >Beim Entschluesseln ohne Schluessel wird geknackt.</small
+              >Beim Entschlüsseln ohne Schlüssel wird geknackt.</small
             >
           </div>
         </div>
 
-        <button id="runButton" type="button">Ausfuehren</button>
+        <button id="runButton" type="button">Ausführen</button>
       </section>
 
       <section class="card">
@@ -67,6 +67,9 @@
       </section>
     </main>
 
-    <script type="module" src="js/app.js"></script>
+    <script src="js/core/cipherRegistry.js"></script>
+    <script src="js/core/fileParsers.js"></script>
+    <script src="js/ciphers/caesarCipher.js"></script>
+    <script src="js/app.js"></script>
   </body>
 </html>
