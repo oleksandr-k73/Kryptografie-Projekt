@@ -77,6 +77,27 @@
   root.caesarCipher = {
     id: "caesar",
     name: "Cäsar",
+    supportsKey: true,
+    keyLabel: "Schlüssel",
+    keyPlaceholder: "z. B. 3",
+    info: {
+      purpose:
+        "Klassische Buchstabenverschiebung: Jeder Buchstabe wird um eine feste Anzahl Stellen verschoben.",
+      process:
+        "Mit Schlüssel 3 wird aus A -> D, aus B -> E usw. Groß- und Kleinbuchstaben bleiben erhalten.",
+      crack:
+        "Ohne Schlüssel testet das Programm alle 26 Möglichkeiten und nimmt den sprachlich plausibelsten Text.",
+      useCase:
+        "Gut für einfache Aufgaben und zum Lernen von Grundideen der Kryptografie.",
+    },
+
+    parseKey(rawKey) {
+      const key = Number.parseInt(rawKey, 10);
+      if (Number.isNaN(key)) {
+        throw new Error("Schlüssel muss eine ganze Zahl sein.");
+      }
+      return key;
+    },
 
     encrypt(text, key) {
       const normalized = normalizeKey(key);

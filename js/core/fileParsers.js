@@ -32,42 +32,156 @@
     return cells;
   }
 
-  function extractStringFromJson(value, depth) {
-    if (depth > 8 || value == null) {
-      return null;
+  function looksLikeHash(text) {
+    const compact = text.replace(/\s+/g, "");
+    return /^[a-f0-9]{24,}$/i.test(compact);
+  }
+
+  function collectStringCandidates(value, path, depth, out) {
+    if (depth > 12 || value == null) {
+      return;
     }
 
-    if (typeof value === "string" && value.trim() !== "") {
-      return value;
+    if (typeof value === "string") {
+      const text = value.trim();
+      if (text) {
+        out.push({ text, path });
+      }
+      return;
     }
 
     if (Array.isArray(value)) {
-      const parts = value
-        .map((entry) => extractStringFromJson(entry, depth + 1))
-        .filter(Boolean);
-      return parts.length > 0 ? parts.join("\n") : null;
+      for (let i = 0; i < value.length; i += 1) {
+        collectStringCandidates(value[i], path.concat(String(i)), depth + 1, out);
+      }
+      return;
     }
 
     if (typeof value === "object") {
-      const preferredKeys = ["text", "message", "ciphertext", "content", "data"];
-      for (const key of preferredKeys) {
-        if (key in value) {
-          const found = extractStringFromJson(value[key], depth + 1);
-          if (found) {
-            return found;
-          }
-        }
-      }
-
       for (const key of Object.keys(value)) {
-        const found = extractStringFromJson(value[key], depth + 1);
-        if (found) {
-          return found;
-        }
+        collectStringCandidates(value[key], path.concat(key), depth + 1, out);
+      }
+    }
+  }
+
+  function scoreJsonCandidate(candidate) {
+    const text = candidate.text;
+    const lowerText = text.toLowerCase();
+    const keyPath = candidate.path.join(".").toLowerCase();
+    const lastKey = (candidate.path.at(-1) || "").toLowerCase();
+
+    const strongTextKeys = [
+      "coded",
+      "code",
+      "cipher",
+      "ciphertext",
+      "encrypted",
+      "decoded",
+      "plaintext",
+      "cleartext",
+      "plain",
+      "text",
+      "message",
+      "msg",
+      "payload",
+      "body",
+      "content",
+      "input",
+      "output",
+      "data",
+      "value",
+    ];
+
+    const weakMetaKeys = [
+      "title",
+      "name",
+      "label",
+      "level",
+      "task",
+      "task_type",
+      "method",
+      "status",
+      "format",
+      "hash",
+      "signature",
+      "checksum",
+      "id",
+      "version",
+      "explain",
+      "description",
+      "hint",
+    ];
+
+    let score = 0;
+
+    for (const key of strongTextKeys) {
+      if (lastKey === key) {
+        score += 22;
+      } else if (keyPath.includes(key)) {
+        score += 8;
       }
     }
 
-    return null;
+    for (const key of weakMetaKeys) {
+      if (lastKey === key) {
+        score -= 24;
+      } else if (keyPath.includes(key)) {
+        score -= 8;
+      }
+    }
+
+    if (looksLikeHash(text)) {
+      score -= 60;
+    }
+
+    const len = text.length;
+    if (len >= 8 && len <= 1200) {
+      score += 7;
+    } else if (len <= 3) {
+      score -= 6;
+    } else if (len > 2400) {
+      score -= 5;
+    }
+
+    if (/\s/.test(text)) {
+      score += 2;
+    }
+
+    if (/[A-Za-zÄÖÜäöü]/.test(text)) {
+      score += 3;
+    }
+
+    if (/[0-9@$|+#]/.test(text)) {
+      score += 1;
+    }
+
+    if (/level\s*\d+/i.test(lowerText) || /substitution/i.test(lowerText)) {
+      score -= 7;
+    }
+
+    return score;
+  }
+
+  function extractBestStringFromJson(value) {
+    const candidates = [];
+    collectStringCandidates(value, [], 0, candidates);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (const candidate of candidates) {
+      const score = scoreJsonCandidate(candidate);
+      if (score > bestScore) {
+        best = candidate;
+        bestScore = score;
+      }
+    }
+
+    return best ? best.text : null;
   }
 
   const parserRules = [
@@ -79,7 +193,7 @@
       extensions: ["json"],
       parse: (text) => {
         const parsed = JSON.parse(text);
-        const extracted = extractStringFromJson(parsed, 0);
+        const extracted = extractBestStringFromJson(parsed);
         if (!extracted) {
           throw new Error("In der JSON-Datei wurde kein Textfeld gefunden.");
         }

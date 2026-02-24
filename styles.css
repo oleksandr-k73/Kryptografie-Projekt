@@ -127,6 +127,24 @@ small {
   color: var(--muted);
 }
 
+.cipher-info {
+  margin-top: 0.9rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.cipher-info h3 {
+  margin: 0 0 0.4rem 0;
+  font-size: 1rem;
+}
+
+.cipher-info p {
+  margin: 0.25rem 0;
+  color: var(--muted);
+}
+
 @media (max-width: 640px) {
   .app-shell {
     width: min(96vw, 980px);

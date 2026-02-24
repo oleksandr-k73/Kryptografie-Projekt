@@ -45,12 +45,20 @@
           </div>
           <div>
             <label for="keyInput">Schlüssel (optional)</label>
-            <input id="keyInput" type="number" placeholder="z. B. 3" />
+            <input id="keyInput" type="text" placeholder="z. B. 3" />
             <small id="keyHint" class="hint"
               >Beim Entschlüsseln ohne Schlüssel wird geknackt.</small
             >
           </div>
         </div>
+
+        <section id="cipherInfoBox" class="cipher-info" aria-live="polite">
+          <h3 id="cipherInfoTitle">Verfahrensinfo</h3>
+          <p id="cipherInfoPurpose"></p>
+          <p id="cipherInfoHow"></p>
+          <p id="cipherInfoCrack"></p>
+          <p id="cipherInfoUse"></p>
+        </section>
 
         <button id="runButton" type="button">Ausführen</button>
       </section>
@@ -70,6 +78,7 @@
     <script src="js/core/cipherRegistry.js"></script>
     <script src="js/core/fileParsers.js"></script>
     <script src="js/ciphers/caesarCipher.js"></script>
+    <script src="js/ciphers/leetCipher.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

@@ -2,12 +2,11 @@
   const core = global.KryptoCore || {};
   const ciphers = global.KryptoCiphers || {};
 
-  if (!core.CipherRegistry || !core.parseInputFile || !ciphers.caesarCipher) {
+  if (!core.CipherRegistry || !core.parseInputFile) {
     throw new Error("App-Komponenten wurden nicht korrekt geladen.");
   }
 
   const registry = new core.CipherRegistry();
-  registry.register(ciphers.caesarCipher);
 
   const elements = {
     dropzone: document.getElementById("dropzone"),
@@ -16,13 +15,47 @@
     inputText: document.getElementById("inputText"),
     modeSelect: document.getElementById("modeSelect"),
     cipherSelect: document.getElementById("cipherSelect"),
+    keyLabel: document.querySelector('label[for="keyInput"]'),
     keyInput: document.getElementById("keyInput"),
     keyHint: document.getElementById("keyHint"),
+    cipherInfoTitle: document.getElementById("cipherInfoTitle"),
+    cipherInfoPurpose: document.getElementById("cipherInfoPurpose"),
+    cipherInfoHow: document.getElementById("cipherInfoHow"),
+    cipherInfoCrack: document.getElementById("cipherInfoCrack"),
+    cipherInfoUse: document.getElementById("cipherInfoUse"),
     runButton: document.getElementById("runButton"),
     outputText: document.getElementById("outputText"),
     resultInfo: document.getElementById("resultInfo"),
     copyButton: document.getElementById("copyButton"),
   };
+
+  function hasCipherShape(value) {
+    return (
+      value &&
+      typeof value === "object" &&
+      typeof value.id === "string" &&
+      typeof value.name === "string" &&
+      typeof value.encrypt === "function" &&
+      typeof value.decrypt === "function" &&
+      typeof value.crack === "function"
+    );
+  }
+
+  function registerCiphers() {
+    const all = Object.values(ciphers).filter(hasCipherShape);
+
+    if (all.length === 0) {
+      throw new Error("Kein Cipher-Modul gefunden.");
+    }
+
+    for (const cipher of all) {
+      registry.register(cipher);
+    }
+  }
+
+  function getSelectedCipher() {
+    return registry.get(elements.cipherSelect.value);
+  }
 
   function populateCipherSelect() {
     for (const cipher of registry.list()) {
@@ -33,15 +66,50 @@
     }
   }
 
-  function updateModeHint() {
+  function refreshKeyUI() {
     const mode = elements.modeSelect.value;
+    const cipher = getSelectedCipher();
+
+    if (!cipher) {
+      return;
+    }
+
+    const supportsKey = Boolean(cipher.supportsKey);
+    const label = cipher.keyLabel || "Schlüssel";
+    const placeholder = cipher.keyPlaceholder || "z. B. 3";
+
+    const suffix = mode === "encrypt" ? " (erforderlich)" : " (optional)";
+    elements.keyLabel.textContent = supportsKey ? `${label}${suffix}` : "Schlüssel";
+    elements.keyInput.placeholder = placeholder;
+    elements.keyInput.disabled = !supportsKey;
+
+    if (!supportsKey) {
+      elements.keyInput.value = "";
+      elements.keyHint.textContent =
+        "Dieses Verfahren nutzt keinen Schlüssel. Beim Entschlüsseln wird automatisch geknackt.";
+      return;
+    }
+
     if (mode === "decrypt") {
       elements.keyHint.textContent =
         "Leer lassen, um den Schlüssel automatisch zu knacken.";
     } else {
-      elements.keyHint.textContent =
-        "Beim Verschlüsseln ist ein Schlüssel empfehlenswert.";
+      elements.keyHint.textContent = "Beim Verschlüsseln ist ein Schlüssel erforderlich.";
     }
+  }
+
+  function refreshCipherInfo() {
+    const cipher = getSelectedCipher();
+    if (!cipher) {
+      return;
+    }
+
+    const info = cipher.info || {};
+    elements.cipherInfoTitle.textContent = `${cipher.name} - Verfahrensinfo`;
+    elements.cipherInfoPurpose.textContent = `Was ist das? ${info.purpose || "Keine Beschreibung vorhanden."}`;
+    elements.cipherInfoHow.textContent = `Wie funktioniert es? ${info.process || "Keine Beschreibung vorhanden."}`;
+    elements.cipherInfoCrack.textContent = `Wie wird geknackt? ${info.crack || "Keine Beschreibung vorhanden."}`;
+    elements.cipherInfoUse.textContent = `Wann passt es? ${info.useCase || "Keine Beschreibung vorhanden."}`;
   }
 
   function setStatus(message) {
@@ -69,17 +137,21 @@
     }
   }
 
-  function parseOptionalKey() {
+  function parseOptionalKey(cipher) {
+    if (!cipher.supportsKey) {
+      return null;
+    }
+
     const raw = elements.keyInput.value.trim();
     if (raw === "") {
       return null;
     }
 
-    const key = Number.parseInt(raw, 10);
-    if (Number.isNaN(key)) {
-      throw new Error("Schlüssel muss eine ganze Zahl sein.");
+    if (typeof cipher.parseKey === "function") {
+      return cipher.parseKey(raw);
     }
-    return key;
+
+    return raw;
   }
 
   function runCipher() {
@@ -89,24 +161,29 @@
     }
 
     const mode = elements.modeSelect.value;
-    const cipher = registry.get(elements.cipherSelect.value);
+    const cipher = getSelectedCipher();
     if (!cipher) {
       throw new Error("Keine gültige Verschlüsselung ausgewählt.");
     }
 
-    const key = parseOptionalKey();
+    const key = parseOptionalKey(cipher);
 
     if (mode === "encrypt") {
-      if (key == null) {
+      if (cipher.supportsKey && key == null) {
         throw new Error("Beim Verschlüsseln wird ein Schlüssel benötigt.");
       }
+
       const encrypted = cipher.encrypt(text, key);
       elements.outputText.value = encrypted;
-      setStatus(`${cipher.name}: Text verschlüsselt (Schlüssel: ${key}).`);
+      setStatus(
+        cipher.supportsKey
+          ? `${cipher.name}: Text verschlüsselt (Schlüssel: ${key}).`
+          : `${cipher.name}: Text verschlüsselt.`
+      );
       return;
     }
 
-    if (key != null) {
+    if (cipher.supportsKey && key != null) {
       const decrypted = cipher.decrypt(text, key);
       elements.outputText.value = decrypted;
       setStatus(`${cipher.name}: Text entschlüsselt (Schlüssel: ${key}).`);
@@ -115,9 +192,14 @@
 
     const cracked = cipher.crack(text);
     elements.outputText.value = cracked.text;
-    setStatus(
-      `${cipher.name}: Schlüssel geknackt (${cracked.key}), Text entschlüsselt.`
-    );
+
+    if (cracked.key != null) {
+      setStatus(
+        `${cipher.name}: Schlüssel geknackt (${cracked.key}), Text entschlüsselt.`
+      );
+    } else {
+      setStatus(`${cipher.name}: Text automatisch geknackt und entschlüsselt.`);
+    }
   }
 
   async function copyOutput() {
@@ -174,7 +256,11 @@
       }
     });
 
-    elements.modeSelect.addEventListener("change", updateModeHint);
+    elements.modeSelect.addEventListener("change", refreshKeyUI);
+    elements.cipherSelect.addEventListener("change", () => {
+      refreshKeyUI();
+      refreshCipherInfo();
+    });
     elements.runButton.addEventListener("click", () => {
       try {
         runCipher();
@@ -186,10 +272,12 @@
   }
 
   function init() {
+    registerCiphers();
     populateCipherSelect();
-    updateModeHint();
     wireEvents();
     setupDragAndDrop();
+    refreshKeyUI();
+    refreshCipherInfo();
   }
 
   init();
