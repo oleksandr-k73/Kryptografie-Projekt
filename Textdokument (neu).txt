@@ -1,0 +1,8 @@
+Ich bin ein Schüler in der 10. Klasse und habe jetzt in Informatik eine Klassenarbeit mit dem Thema Vibe-Coding und separat Kryptografie, wo man ein folgend beschriebenen Projekt mit KI erstellen soll. Erstelle mir eine HTML-App, die verschiedene Verschlüsselungen und damit verschlüsselte Texte knacken kann. Die Eingabe stammt aus einer anderen App als eine Datei in verschiedenen Formaten.  
+Das Programm muss derzeit mindestens folgende Funktionen haben:
+1. Das Programm muss in der Lage sein, erweitert zu werden. Schreibe sie daher so, dass die Architektur erweiterbar, robust und vielleicht auch noch modular ist.
+2. Da die Eingabe in verschiedenen Formaten sein kann, füge schon eine Unterstützung von gängigen Formaten wie JSON, TXT etc.
+    2.1 Erstmal lass dem Nutzer erlauben, die Datei vom Computer auszuwählen und (hoch)zuladen (wie man es auf Konvertierungswebseiten o. Ä. macht).
+3. Es soll eine Drop-Down-Liste von verfügbaren Verschlüsselungen geben. Füge jetzt keine andere Verschlüsselungsmethoden als Cäsar: Ich werde dir im Laufe der Zeit sagen, was du noch hinzufügen muss.
+4. Man muss zwischen den Modi "Verschlüsseln" und "Entschlüsseln" wählen können. Beim Entschlüsseln, falls man kein Schlüssel eingibt, soll das Programm die jeweilige Verschlüsselungen knacken und den verschlüsselten Text selbstverständlich entschlüsseln. Das Letztere ist dann die Ausgabe.
+5. Es soll auch ein Feld geben, wo dann die Ausgabe angezeigt und zum Kopieren bereit steht.

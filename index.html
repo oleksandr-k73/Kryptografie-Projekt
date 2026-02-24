@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Krypto Werkbank</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="card">
+        <h1>Krypto Werkbank</h1>
+        <p class="subtitle">
+          Datei laden, Verschluesselung auswaehlen, Text verarbeiten.
+        </p>
+
+        <label id="dropzone" class="dropzone" for="fileInput">
+          <input
+            id="fileInput"
+            type="file"
+            accept=".txt,.json,.csv,.log,.md,text/plain,application/json,text/csv"
+          />
+          <span>Datei auswaehlen oder hierher ziehen</span>
+          <small>Unterstuetzt: TXT, JSON, CSV, LOG, MD</small>
+        </label>
+        <p id="fileStatus" class="status">Noch keine Datei geladen.</p>
+
+        <label for="inputText">Eingabetext</label>
+        <textarea
+          id="inputText"
+          placeholder="Hier erscheint dein Dateitext oder du schreibst direkt..."
+        ></textarea>
+
+        <div class="grid">
+          <div>
+            <label for="modeSelect">Modus</label>
+            <select id="modeSelect">
+              <option value="encrypt">Verschluesseln</option>
+              <option value="decrypt">Entschluesseln</option>
+            </select>
+          </div>
+          <div>
+            <label for="cipherSelect">Verschluesselung</label>
+            <select id="cipherSelect"></select>
+          </div>
+          <div>
+            <label for="keyInput">Schluessel (optional)</label>
+            <input id="keyInput" type="number" placeholder="z. B. 3" />
+            <small id="keyHint" class="hint"
+              >Beim Entschluesseln ohne Schluessel wird geknackt.</small
+            >
+          </div>
+        </div>
+
+        <button id="runButton" type="button">Ausfuehren</button>
+      </section>
+
+      <section class="card">
+        <h2>Ausgabe</h2>
+        <p id="resultInfo" class="status">Noch keine Ausgabe vorhanden.</p>
+        <textarea
+          id="outputText"
+          readonly
+          placeholder="Ergebnis erscheint hier..."
+        ></textarea>
+        <button id="copyButton" type="button">Ausgabe kopieren</button>
+      </section>
+    </main>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
