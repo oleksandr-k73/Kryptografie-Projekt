@@ -18,6 +18,9 @@
     keyLabel: document.querySelector('label[for="keyInput"]'),
     keyInput: document.getElementById("keyInput"),
     keyHint: document.getElementById("keyHint"),
+    crackLengthWrap: document.getElementById("crackLengthWrap"),
+    crackLengthInput: document.getElementById("crackLengthInput"),
+    crackLengthHint: document.getElementById("crackLengthHint"),
     cipherInfoTitle: document.getElementById("cipherInfoTitle"),
     cipherInfoPurpose: document.getElementById("cipherInfoPurpose"),
     cipherInfoHow: document.getElementById("cipherInfoHow"),
@@ -98,6 +101,33 @@
     }
   }
 
+  function refreshCrackLengthUI() {
+    const mode = elements.modeSelect.value;
+    const cipher = getSelectedCipher();
+    const hasManualKey = elements.keyInput.value.trim() !== "";
+
+    const show =
+      Boolean(cipher && cipher.supportsCrackLengthHint) &&
+      mode === "decrypt" &&
+      !hasManualKey;
+
+    elements.crackLengthWrap.hidden = !show;
+    elements.crackLengthInput.disabled = !show;
+
+    if (!show) {
+      return;
+    }
+
+    const label = cipher.crackLengthLabel || "Schlüssellänge";
+    const placeholder = cipher.crackLengthPlaceholder || "z. B. 6";
+    elements.crackLengthWrap
+      .querySelector('label[for="crackLengthInput"]')
+      .textContent = `${label} fürs Knacken (optional)`;
+    elements.crackLengthInput.placeholder = placeholder;
+    elements.crackLengthHint.textContent =
+      "Wenn bekannt, beschleunigt und verbessert das Knacken.";
+  }
+
   function refreshCipherInfo() {
     const cipher = getSelectedCipher();
     if (!cipher) {
@@ -154,6 +184,27 @@
     return raw;
   }
 
+  function parseCrackOptions(cipher) {
+    const options = {};
+
+    if (!cipher.supportsCrackLengthHint) {
+      return options;
+    }
+
+    const rawLength = elements.crackLengthInput.value.trim();
+    if (rawLength === "") {
+      return options;
+    }
+
+    const keyLength = Number.parseInt(rawLength, 10);
+    if (Number.isNaN(keyLength) || keyLength <= 0) {
+      throw new Error("Schlüssellänge muss eine positive ganze Zahl sein.");
+    }
+
+    options.keyLength = keyLength;
+    return options;
+  }
+
   function runCipher() {
     const text = elements.inputText.value;
     if (!text.trim()) {
@@ -190,7 +241,8 @@
       return;
     }
 
-    const cracked = cipher.crack(text);
+    const crackOptions = parseCrackOptions(cipher);
+    const cracked = cipher.crack(text, crackOptions);
     elements.outputText.value = cracked.text;
 
     if (cracked.key != null) {
@@ -257,8 +309,11 @@
     });
 
     elements.modeSelect.addEventListener("change", refreshKeyUI);
+    elements.modeSelect.addEventListener("change", refreshCrackLengthUI);
+    elements.keyInput.addEventListener("input", refreshCrackLengthUI);
     elements.cipherSelect.addEventListener("change", () => {
       refreshKeyUI();
+      refreshCrackLengthUI();
       refreshCipherInfo();
     });
     elements.runButton.addEventListener("click", () => {
@@ -277,6 +332,7 @@
     wireEvents();
     setupDragAndDrop();
     refreshKeyUI();
+    refreshCrackLengthUI();
     refreshCipherInfo();
   }
 

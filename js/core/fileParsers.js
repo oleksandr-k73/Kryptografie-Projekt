@@ -64,53 +64,53 @@
     }
   }
 
+  const strongTextKeys = [
+    "coded",
+    "code",
+    "cipher",
+    "ciphertext",
+    "encrypted",
+    "decoded",
+    "plaintext",
+    "cleartext",
+    "plain",
+    "text",
+    "message",
+    "msg",
+    "payload",
+    "body",
+    "content",
+    "input",
+    "output",
+    "data",
+    "value",
+  ];
+
+  const weakMetaKeys = [
+    "title",
+    "name",
+    "label",
+    "level",
+    "task",
+    "task_type",
+    "method",
+    "status",
+    "format",
+    "hash",
+    "signature",
+    "checksum",
+    "id",
+    "version",
+    "explain",
+    "description",
+    "hint",
+  ];
+
   function scoreJsonCandidate(candidate) {
     const text = candidate.text;
     const lowerText = text.toLowerCase();
     const keyPath = candidate.path.join(".").toLowerCase();
     const lastKey = (candidate.path.at(-1) || "").toLowerCase();
-
-    const strongTextKeys = [
-      "coded",
-      "code",
-      "cipher",
-      "ciphertext",
-      "encrypted",
-      "decoded",
-      "plaintext",
-      "cleartext",
-      "plain",
-      "text",
-      "message",
-      "msg",
-      "payload",
-      "body",
-      "content",
-      "input",
-      "output",
-      "data",
-      "value",
-    ];
-
-    const weakMetaKeys = [
-      "title",
-      "name",
-      "label",
-      "level",
-      "task",
-      "task_type",
-      "method",
-      "status",
-      "format",
-      "hash",
-      "signature",
-      "checksum",
-      "id",
-      "version",
-      "explain",
-      "description",
-      "hint",
-    ];
 
     let score = 0;
 
@@ -184,6 +184,111 @@
     return best ? best.text : null;
   }
 
+  function decodeJsStringLiteral(literal) {
+    if (!literal || literal.length < 2) {
+      return "";
+    }
+
+    const quote = literal[0];
+    let body = literal.slice(1, -1);
+
+    body = body
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+        String.fromCharCode(Number.parseInt(hex, 16))
+      )
+      .replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) =>
+        String.fromCharCode(Number.parseInt(hex, 16))
+      )
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\r")
+      .replace(/\\t/g, "\t")
+      .replace(/\\'/g, "'")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\");
+
+    if (quote === "`") {
+      body = body.replace(/\$\{[^}]*\}/g, " ");
+    }
+
+    return body.trim();
+  }
+
+  function normalizeJsKey(rawKey) {
+    if (!rawKey) {
+      return "";
+    }
+
+    const isQuoted =
+      (rawKey.startsWith('"') && rawKey.endsWith('"')) ||
+      (rawKey.startsWith("'") && rawKey.endsWith("'"));
+
+    if (isQuoted) {
+      return decodeJsStringLiteral(rawKey);
+    }
+
+    return rawKey;
+  }
+
+  function extractBestStringFromJs(source) {
+    const candidates = [];
+    const seen = new Set();
+
+    function pushCandidate(text, path) {
+      const normalizedText = text.trim();
+      if (!normalizedText) {
+        return;
+      }
+
+      const key = `${path.join(".")}::${normalizedText}`;
+      if (seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      candidates.push({ text: normalizedText, path });
+    }
+
+    const assignmentRegex =
+      /\b(?:const|let|var|export\s+const|export\s+let|export\s+var)\s+([A-Za-z_$][\w$]*)\s*=\s*("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/g;
+
+    for (const match of source.matchAll(assignmentRegex)) {
+      const key = match[1];
+      const literal = match[2];
+      pushCandidate(decodeJsStringLiteral(literal), [key]);
+    }
+
+    const propertyRegex =
+      /(?:^|[,{]\s*)([A-Za-z_$][\w$]*|"(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*')\s*:\s*("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/gm;
+
+    for (const match of source.matchAll(propertyRegex)) {
+      const key = normalizeJsKey(match[1]);
+      const literal = match[2];
+      pushCandidate(decodeJsStringLiteral(literal), [key]);
+    }
+
+    const literalRegex =
+      /("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/g;
+    for (const match of source.matchAll(literalRegex)) {
+      pushCandidate(decodeJsStringLiteral(match[1]), ["value"]);
+    }
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (const candidate of candidates) {
+      const score = scoreJsonCandidate(candidate);
+      if (score > bestScore) {
+        best = candidate;
+        bestScore = score;
+      }
+    }
+
+    return best ? best.text : null;
+  }
+
   const parserRules = [
     {
       extensions: ["txt", "log", "md"],
@@ -231,6 +336,10 @@
           .join(" ")
           .trim();
       },
+    },
+    {
+      extensions: ["js", "mjs", "cjs"],
+      parse: (text) => extractBestStringFromJs(text) || text,
     },
   ];
 
