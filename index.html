@@ -84,12 +84,18 @@
           readonly
           placeholder="Ergebnis erscheint hier..."
         ></textarea>
+        <section id="candidateSection" class="candidates" hidden>
+          <h3>Top-Kandidaten</h3>
+          <p id="candidateStatus" class="status"></p>
+          <ol id="candidateList"></ol>
+        </section>
         <button id="copyButton" type="button">Ausgabe kopieren</button>
       </section>
     </main>
 
     <script src="js/core/cipherRegistry.js"></script>
     <script src="js/core/fileParsers.js"></script>
+    <script src="js/core/dictionaryScorer.js"></script>
     <script src="js/ciphers/caesarCipher.js"></script>
     <script src="js/ciphers/leetCipher.js"></script>
     <script src="js/ciphers/vigenereCipher.js"></script>

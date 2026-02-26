@@ -6,3 +6,5 @@ Das Programm muss derzeit mindestens folgende Funktionen haben:
 3. Es soll eine Drop-Down-Liste von verfügbaren Verschlüsselungen geben. Füge jetzt keine andere Verschlüsselungsmethoden als Cäsar: Ich werde dir im Laufe der Zeit sagen, was du noch hinzufügen muss.
 4. Man muss zwischen den Modi "Verschlüsseln" und "Entschlüsseln" wählen können. Beim Entschlüsseln, falls man kein Schlüssel eingibt, soll das Programm die jeweilige Verschlüsselungen knacken und den verschlüsselten Text selbstverständlich entschlüsseln. Das Letztere ist dann die Ausgabe.
 5. Es soll auch ein Feld geben, wo dann die Ausgabe angezeigt und zum Kopieren bereit steht.
+
+

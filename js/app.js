@@ -26,6 +26,9 @@
     cipherInfoHow: document.getElementById("cipherInfoHow"),
     cipherInfoCrack: document.getElementById("cipherInfoCrack"),
     cipherInfoUse: document.getElementById("cipherInfoUse"),
+    candidateSection: document.getElementById("candidateSection"),
+    candidateStatus: document.getElementById("candidateStatus"),
+    candidateList: document.getElementById("candidateList"),
     runButton: document.getElementById("runButton"),
     outputText: document.getElementById("outputText"),
     resultInfo: document.getElementById("resultInfo"),
@@ -150,6 +153,105 @@
     elements.fileStatus.textContent = message;
   }
 
+  function hideCandidates() {
+    elements.candidateSection.hidden = true;
+    elements.candidateStatus.textContent = "";
+    elements.candidateList.innerHTML = "";
+  }
+
+  function formatScore(value) {
+    if (!Number.isFinite(value)) {
+      return "-";
+    }
+    return value.toFixed(2);
+  }
+
+  function normalizeCrackCandidates(cracked) {
+    const list = Array.isArray(cracked.candidates)
+      ? cracked.candidates
+      : [
+          {
+            key: cracked.key,
+            text: cracked.text,
+            confidence: cracked.confidence,
+          },
+        ];
+
+    return list
+      .filter((candidate) => candidate && typeof candidate.text === "string")
+      .map((candidate) => ({
+        key: candidate.key,
+        text: candidate.text,
+        confidence: Number(candidate.confidence) || 0,
+      }))
+      .sort((a, b) => b.confidence - a.confidence);
+  }
+
+  function renderCandidates(candidates, apiAvailable, context) {
+    if (!candidates || candidates.length <= 1) {
+      hideCandidates();
+      return;
+    }
+
+    elements.candidateSection.hidden = false;
+    elements.candidateList.innerHTML = "";
+
+    const top = candidates.slice(0, 5);
+    for (const candidate of top) {
+      const item = document.createElement("li");
+      const keyPart =
+        candidate.key != null ? `Schlüssel: ${candidate.key} | ` : "";
+      const dictPart = candidate.dictionary
+        ? ` | Wörterbuch: ${(candidate.dictionary.coverage * 100).toFixed(0)}%`
+        : "";
+      item.textContent = `${keyPart}Score: ${formatScore(
+        candidate.confidence
+      )}${dictPart} | ${candidate.text}`;
+      elements.candidateList.append(item);
+    }
+
+    const bestCoverage =
+      candidates[0] && candidates[0].dictionary
+        ? candidates[0].dictionary.coverage
+        : 0;
+
+    if (bestCoverage === 0) {
+      const hintText =
+        context && context.keyLengthHint
+          ? " Prüfe, ob die Schlüssellänge korrekt ist."
+          : " Gib wenn möglich eine Schlüssellänge an.";
+      elements.candidateStatus.textContent = apiAvailable
+        ? `Kein Kandidat enthält erkannte Wörterbuchwörter.${hintText}`
+        : `Kein Kandidat enthält erkannte Wörterbuchwörter (API nicht verfügbar, lokales Wörterbuch aktiv).${hintText}`;
+      return;
+    }
+
+    elements.candidateStatus.textContent = apiAvailable
+      ? "Kandidaten wurden mit Wörterbuch-API nachbewertet."
+      : "Kandidaten basieren auf lokalem Sprach-Scoring (API nicht verfügbar).";
+  }
+
+  async function rankCandidatesWithDictionary(candidates) {
+    const scorer = core.dictionaryScorer;
+    if (!scorer || typeof scorer.rankCandidates !== "function") {
+      return {
+        rankedCandidates: candidates,
+        bestCandidate: candidates[0] || null,
+        apiAvailable: false,
+      };
+    }
+
+    try {
+      return await scorer.rankCandidates(candidates, { languageHints: ["de", "en"] });
+    } catch (_error) {
+      return {
+        rankedCandidates: candidates,
+        bestCandidate: candidates[0] || null,
+        apiAvailable: false,
+      };
+    }
+  }
+
   async function handleFile(file) {
     try {
       const parsed = await core.parseInputFile(file);
@@ -205,7 +307,7 @@
     return options;
   }
 
-  function runCipher() {
+  async function runCipher() {
     const text = elements.inputText.value;
     if (!text.trim()) {
       throw new Error("Bitte zuerst Text eingeben oder eine Datei laden.");
@@ -226,6 +328,7 @@
 
       const encrypted = cipher.encrypt(text, key);
       elements.outputText.value = encrypted;
+      hideCandidates();
       setStatus(
         cipher.supportsKey
           ? `${cipher.name}: Text verschlüsselt (Schlüssel: ${key}).`
@@ -237,17 +340,37 @@
     if (cipher.supportsKey && key != null) {
       const decrypted = cipher.decrypt(text, key);
       elements.outputText.value = decrypted;
+      hideCandidates();
       setStatus(`${cipher.name}: Text entschlüsselt (Schlüssel: ${key}).`);
       return;
     }
 
     const crackOptions = parseCrackOptions(cipher);
     const cracked = cipher.crack(text, crackOptions);
-    elements.outputText.value = cracked.text;
+    const localCandidates = normalizeCrackCandidates(cracked);
+    const ranked = await rankCandidatesWithDictionary(localCandidates);
+    const rankedCandidates =
+      ranked.rankedCandidates && ranked.rankedCandidates.length > 0
+        ? ranked.rankedCandidates
+        : localCandidates;
+    const bestCandidate =
+      ranked.bestCandidate || rankedCandidates[0] || cracked;
 
-    if (cracked.key != null) {
+    elements.outputText.value = bestCandidate.text;
+    const shortVigenereWarning =
+      cipher.id === "vigenere" &&
+      !crackOptions.keyLength &&
+      (text.match(/[A-Za-z]/g) || []).length < 18;
+    renderCandidates(rankedCandidates, ranked.apiAvailable, {
+      keyLengthHint: crackOptions.keyLength,
+    });
+
+    if (bestCandidate.key != null) {
+      const suffix = shortVigenereWarning
+        ? " Hinweis: Sehr kurzer Text, Ergebnis kann unzuverlässig sein."
+        : "";
       setStatus(
-        `${cipher.name}: Schlüssel geknackt (${cracked.key}), Text entschlüsselt.`
+        `${cipher.name}: Schlüssel geknackt (${bestCandidate.key}), Text entschlüsselt.${suffix}`
       );
     } else {
       setStatus(`${cipher.name}: Text automatisch geknackt und entschlüsselt.`);
@@ -316,9 +439,9 @@
       refreshCrackLengthUI();
       refreshCipherInfo();
     });
-    elements.runButton.addEventListener("click", () => {
+    elements.runButton.addEventListener("click", async () => {
       try {
-        runCipher();
+        await runCipher();
       } catch (error) {
         setStatus(error.message);
       }
