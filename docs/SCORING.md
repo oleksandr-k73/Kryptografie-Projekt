@@ -1,0 +1,91 @@
+---
+name: sprachscoring-und-kandidatenbewertung
+description: Lokales Sprachscoring in den Ciphers und optionales Wörterbuch-Reranking in js/core/dictionaryScorer.js.
+---
+
+# Scoring- und Kandidatenbewertung
+
+## Ziel
+Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und im UI dargestellt werden.
+
+## 1) Lokales Sprach-Scoring in den Ciphers
+
+1. Cäsar (`caesarCipher.js`)
+- Bewertet Kandidaten über:
+  - häufige Wörter (DE/EN)
+  - Bigramme/Trigramme
+  - Buchstabenverteilung (Chi-Quadrat)
+  - Vokal- und Leerzeichenverhältnis
+- `crack(...)` testet alle 26 Schlüssel und liefert Top-Kandidaten.
+
+2. Vigenère (`vigenereCipher.js`)
+- Nutzt:
+  - Schlüssellängen-Kandidaten (IoC-basiert)
+  - Spaltenweise Shift-Rangfolge (Chi-Quadrat)
+  - lokale Verfeinerung per Search
+  - Sprach-Scoring auf Kandidatentext
+- Optionaler `keyLength`-Hint erhöht Präzision und reduziert Suchraum.
+- `crack(...)` liefert bestes Ergebnis plus Kandidatenliste.
+
+3. Leetspeak (`leetCipher.js`)
+- Beam-Search für Rückübersetzungen.
+- Übergangs-Scoring während der Sequenzbildung.
+- Sprach-Scoring auf erzeugtem Klartext.
+- Liefert primär den besten Kandidaten.
+
+## 2) Kandidatenfluss in `app.js`
+
+1. `crack(...)`-Ergebnis wird normalisiert:
+- Mindestfelder: `key`, `text`, `confidence`
+- optional: `candidates`
+
+2. Lokale Sortierung:
+- Absteigend nach `confidence`.
+
+3. Optionales Wörterbuch-Reranking:
+- `dictionaryScorer.rankCandidates(candidates, { languageHints: ["de", "en"] })`
+
+4. Ergebnisübernahme:
+- `bestCandidate` wird in die Ausgabe geschrieben.
+- Top-Kandidaten werden im Kandidatenbereich angezeigt.
+
+## 3) Wörterbuch-Reranking (`js/core/dictionaryScorer.js`)
+
+1. Tokenisierung
+- Extrahiert Wörter aus Kandidatentexten.
+- Normalisiert (u. a. Kleinbuchstaben, `ß -> ss`).
+- Dedupliziert und begrenzt die Wortanzahl pro Kandidat.
+
+2. Validierung
+- API-Prüfung über `dictionaryapi.dev` je Sprache (`de`, `en`) mit Timeout.
+- Lokales Lexikon als Fallback und Ergänzung.
+- Cache auf Wort-/Sprachpaar-Ebene.
+
+3. Kombinierter Score
+- Basis: `base = Number(candidate.confidence) || 0`
+- Wörterbuch-Anteil:
+  - `dictBoost = coverage * 20 + validWords * 1.2`
+- Malus:
+  - `zeroPenalty = -3.2`, wenn mindestens 2 Wörter geprüft und 0 erkannt
+- Gesamtscore:
+  - `combinedScore = base * 0.35 + dictBoost + zeroPenalty`
+
+4. Sortierung
+- Primär nach `combinedScore` absteigend.
+- Tie-Breaker: ursprüngliche Reihenfolge (`rankIndex`).
+
+## 4) UI-Darstellung
+
+1. Kandidatenliste
+- Zeigt Schlüssel (wenn vorhanden), Score und ggf. Wörterbuchabdeckung.
+
+2. Statusmeldungen
+- API verfügbar: Hinweis auf API-Nachbewertung.
+- API nicht verfügbar: Hinweis auf lokales Scoring.
+- 0% Abdeckung: zusätzlicher Hinweis (inkl. Schlüssellängen-Tipp bei Bedarf).
+
+## 5) Grenzen und Nebenwirkungen
+
+- Wörterbuch-Reranking kann lokales Cipher-Ranking bewusst überstimmen.
+- Sehr kurze Texte bleiben trotz Heuristiken unsicher (besonders Vigenère).
+- API-Ausfälle dürfen Funktionalität nicht blockieren.

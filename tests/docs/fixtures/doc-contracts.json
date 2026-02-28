@@ -1,0 +1,69 @@
+{
+  "AGENTS.md": {
+    "requiredHeadings": [
+      "## 1) Projektüberblick",
+      "## 2) Technischer Rahmen",
+      "## 3) Projektstruktur",
+      "## 4) Arbeitsregeln",
+      "### Coding-Stil",
+      "## 5) Dokumentationslandkarte",
+      "## 6) Debugging-Playbook"
+    ],
+    "mustContain": [
+      "docs/DATENFLUSS.md",
+      "docs/SCORING.md",
+      "js/ciphers/AGENTS.md",
+      "Schlecht: `// parse key`",
+      "Schlecht: `// fallback bei api-fehler`"
+    ]
+  },
+  "docs/DATENFLUSS.md": {
+    "requiredHeadings": [
+      "# Laufzeit-Datenfluss",
+      "## Ziel",
+      "## Ablauf",
+      "## Fehler- und Fallback-Verhalten",
+      "## Ergebnisgarantie auf UI-Ebene"
+    ],
+    "mustContain": [
+      "parseInputFile(file)",
+      "dictionaryScorer.rankCandidates",
+      "navigator.clipboard.writeText",
+      "document.execCommand(\"copy\")"
+    ]
+  },
+  "docs/SCORING.md": {
+    "requiredHeadings": [
+      "# Scoring- und Kandidatenbewertung",
+      "## Ziel",
+      "## 1) Lokales Sprach-Scoring in den Ciphers",
+      "## 2) Kandidatenfluss in `app.js`",
+      "## 3) Wörterbuch-Reranking (`js/core/dictionaryScorer.js`)",
+      "## 4) UI-Darstellung",
+      "## 5) Grenzen und Nebenwirkungen"
+    ],
+    "mustContain": [
+      "combinedScore = base * 0.35 + dictBoost + zeroPenalty",
+      "zeroPenalty = -3.2",
+      "coverage * 20",
+      "languageHints: [\"de\", \"en\"]"
+    ]
+  },
+  "js/ciphers/AGENTS.md": {
+    "requiredHeadings": [
+      "# AGENTS.md für `js/ciphers/`",
+      "## Zweck",
+      "## Gemeinsamer Cipher-Vertrag",
+      "## Cäsar (`js/ciphers/caesarCipher.js`)",
+      "## Leetspeak (`js/ciphers/leetCipher.js`)",
+      "## Vigenère (`js/ciphers/vigenereCipher.js`)",
+      "## Pflegehinweis"
+    ],
+    "mustContain": [
+      "`encrypt(text, key?)`",
+      "`decrypt(text, key?)`",
+      "`crack(text, options?)`",
+      "supportsCrackLengthHint"
+    ]
+  }
+}

@@ -7,4 +7,27 @@ Das Programm muss derzeit mindestens folgende Funktionen haben:
 4. Man muss zwischen den Modi "Verschlüsseln" und "Entschlüsseln" wählen können. Beim Entschlüsseln, falls man kein Schlüssel eingibt, soll das Programm die jeweilige Verschlüsselungen knacken und den verschlüsselten Text selbstverständlich entschlüsseln. Das Letztere ist dann die Ausgabe.
 5. Es soll auch ein Feld geben, wo dann die Ausgabe angezeigt und zum Kopieren bereit steht.
 
+Du bist ein Experte-Webentwickler und flüssig in Markdown-Dateien und -Dokumentationen sowie Arbeit mit KI-Codingwerkzeugen (z. B. Context Engineering), darunter AGENTS.md. Überprüfe alle md.-Dokumentationen wie AGENTS.md oder DATENFLUSS.md (noch keine Skills) auf Vollständigkeit, Richtigkeit und Prägnanz (siehe dazu die Links). Mache einen Review, wo du erklärst, wozu die Änderungen dienen. Am Ende sollen die Markdowns im Einklang mit dem Context Engineering und den Best-Practices gestaltet sein. Informationen im Überblick von AGENTS.md sollen jedoch bei Veränderungen vollständig beibehalten sein. Die Skills werden nur zuletzt nach allen anderen Änderungen verändert, unter meiner Führung. 
+Beispiele für Konventionen/Best-Practices: 
+- https://www.aihero.dev/a-complete-guide-to-agents-md
+- https://github.com/agentsmd/agents.md/issues/135
+
+
+https://www.aihero.dev/a-complete-guide-to-agents-md -- Prompt: Ausprobieren, wie der Agent sich bei einem solchen vorgefertigten Prompt verhält --> Modifikation davon und als Basis für eigene
+https://github.com/agentsmd/agents.md/issues/135 -- verschiedene Konventionen ausprobieren und lernen, wie man sie anwenden könnte
+
+
+-----
+
+
+
+-----
+Skill: AGENTS.md-Dokumentation erstellen
+
+Beschreibung: Leitfaden zur Erneuerung von AGENTS.md-Dateien
+
+Schritte:
+1. Analysiere die gesamte Repository und finde Unterschiede zu AGENTS.md
+2. 
+
 
