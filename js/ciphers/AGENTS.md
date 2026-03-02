@@ -41,6 +41,7 @@ Optionale Metadaten:
 - Crack kombiniert:
   - IoC-basierte Schlüssellängen-Auswahl
   - spaltenweise Shift-Rangfolge (Chi-Quadrat)
+  - exhaustive Suche für `keyLength`-Hint bis Länge 5 (vollständig über `26^5`)
   - budgetierte Suche (`candidateBudget`, `stateBudget`, `evaluationBudget`)
   - Kurztext-Rettungsmodus bei bekannter Schlüssellänge
   - lokale Suchverfeinerung
@@ -57,6 +58,7 @@ Optionale Metadaten:
   - `enabled`, `maxKeyLength` (hart `<=6`), `shortTextMaxLetters`
   - `maxTotalMs`, `maxMsPerLength`, `stageWidths` (Default `[12,18,26]`)
 - Harte Gate-Bedingung: kurzer Text + niedrige Sinnhaftigkeit + `keyLength <= maxKeyLength`.
+- Ohne `keyLength`-Hint greift zusätzlich ein adaptives Größen-Gate (`maxMsPerLength`), um teure Kurztextfälle zu begrenzen.
 - Zusätzliche Suche-Telemetrie in `result.search`:
   - `bruteforceFallbackTriggered`, `bruteforceFallbackReason`, `bruteforceFallbackKeyLength`
   - `bruteforceCombosVisited`, `bruteforceElapsedMs`, `sense`

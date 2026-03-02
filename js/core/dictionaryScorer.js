@@ -655,6 +655,9 @@
           ...candidate,
           rankIndex: index,
           localConfidence: base,
+          // Rohwert bleibt erhalten, damit ein späteres API-Rescoring nicht den
+          // bereits lokal gemischten Score ein zweites Mal abdämpft.
+          rawConfidence: base,
           confidence: combinedLocal,
           dictionary: localDict,
         };
@@ -666,9 +669,13 @@
       const TOP_API_CHECK = Math.min(8, Math.max(1, Math.floor(localEvaluated.length * 0.12)) || 1);
       const toApi = localEvaluated.slice(0, TOP_API_CHECK);
 
-      // Before launching many potentially slow network calls, probe API reachability.
-      const primaryLang = languageHints[0] || 'en';
-      const apiReachable = await probeDictionaryApi(primaryLang).catch(() => false);
+      // Reachability wird über alle Hint-Sprachen geprüft; so vermeiden wir False-Negatives,
+      // wenn nur eine Teilmenge der Sprachen gerade API-seitig erreichbar ist.
+      const probeHints = languageHints.length > 0 ? languageHints : ["en"];
+      const probeResults = await Promise.all(
+        probeHints.map((language) => probeDictionaryApi(language).catch(() => false))
+      );
+      const apiReachable = probeResults.some((reachable) => reachable === true);
 
       let apiResults = [];
       if (apiReachable) {
@@ -676,7 +683,9 @@
         apiResults = await Promise.all(
           toApi.map(async (candidate) => {
             const dict = await evaluateTextWithDictionary(candidate.text, languageHints);
-            const base = Number(candidate.confidence) || 0;
+            // API-Reweighting startet vom Rohscore, damit lokal bereits gemischte
+            // Confidence nicht nochmals mit dem 0.35-Faktor gedämpft wird.
+            const base = Number(candidate.rawConfidence) || 0;
             const dictBoost = dict.coverage * 20 + dict.validWords * 1.2;
             const zeroPenalty = dict.totalWords >= 2 && dict.validWords === 0 ? -3.2 : 0;
             const languagePriorityBonus = dict.preferredHint ? 0.8 : 0;
@@ -695,8 +704,7 @@
 
       // Merge API results back into localEvaluated
       const apiAvailableFromResults = apiResults.some((r) => r.dictionary && r.dictionary.apiAvailable);
-      const fetchPresent = typeof fetch === 'function';
-      const apiAvailable = apiReachable || apiAvailableFromResults || fetchPresent;
+      const apiAvailable = apiReachable || apiAvailableFromResults;
       const merged = localEvaluated.map((entry) => ({ ...entry }));
       for (const res of apiResults) {
         const idx = merged.findIndex((e) => e.rankIndex === res.index);

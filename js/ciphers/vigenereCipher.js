@@ -376,7 +376,6 @@
       const cacheKey = `${fingerprint}::${shift}`;
       chiMemoCache.set(cacheKey, chi);
     }
-
     return chi;
   }
 
@@ -1434,11 +1433,13 @@
     }
 
     // Heuristic fallback: if the caller provided a hinted length and it's small
-    // (<=4) we can attempt a bounded exhaustive search over all 26^L keys. This
+    // (<=5) we can attempt a bounded exhaustive search over all 26^L keys. This
     // helps short-text rescue cases (small keys) where combinatorial pruning may
     // miss the true key. The cap prevents runaway work for larger lengths.
-    if (hinted && safeLength <= 4) {
-      const maxExhaustive = 200_000; // cap on total combinations
+    if (hinted && safeLength <= 5) {
+      // 26^5 bleibt bewusst die harte Obergrenze, damit bei Hint-Länge 5 der
+      // vollständige Suchraum garantiert durchlaufen wird.
+      const maxExhaustive = Math.pow(26, 5);
       const combos = Math.pow(26, safeLength);
       if (combos <= maxExhaustive) {
         let bestGlobal = { key: null, text: null, score: -Infinity };
@@ -1459,7 +1460,9 @@
           // increment shifts
           for (let p = safeLength - 1; p >= 0; p -= 1) {
             shifts[p] = (shifts[p] + 1) % 26;
-            if (shifts[p] !== 0) break;
+            if (shifts[p] !== 0) {
+              break;
+            }
           }
         }
 
@@ -1483,24 +1486,9 @@
     const shortTextRescue =
       (hinted || optimizationContext.enabled) &&
       letters.length <= Math.max(20, safeLength * 3);
-    let candidateBudget = resolveCandidateBudget(
-      options,
-      hinted,
-      safeLength,
-      shortTextRescue
-    );
-    let stateBudget = resolveStateBudget(
-      options,
-      candidateBudget,
-      hinted,
-      shortTextRescue
-    );
-    let evaluationBudget = resolveEvaluationBudget(
-      options,
-      stateBudget,
-      hinted,
-      shortTextRescue
-    );
+    let candidateBudget = resolveCandidateBudget(options, hinted, safeLength, shortTextRescue);
+    let stateBudget = resolveStateBudget(options, candidateBudget, hinted, shortTextRescue);
+    let evaluationBudget = resolveEvaluationBudget(options, stateBudget, hinted, shortTextRescue);
 
     if (optimizationContext.enabled && hinted && !shortTextRescue && letters.length <= 140) {
       // Moderat höhere Budgets für bekannte Schlüssellängen auf mittleren Texten:
@@ -1740,7 +1728,17 @@
         // Bei kurzen, wenig plausiblen Kandidaten schalten wir bewusst eine zweite,
         // zeitbudgetierte Suche zu, weil der normale Pfad in diesem Bereich öfter
         // auf lokal guten, aber semantisch schlechten Plateaus landet.
-        const fallbackEligibleLength = keyLengthHint != null && length === keyLengthHint;
+        // Ohne Längen-Hint erlauben wir den Fallback nur bei adaptiv "günstigen"
+        // Fällen, damit der teure Pfad auf kleine Suchräume beschränkt bleibt.
+        const estimatedFallbackMs =
+          (lettersCount * Math.pow(26, length)) / 20_000;
+        const fallbackEligibleWithoutHint =
+          keyLengthHint == null &&
+          Number.isFinite(estimatedFallbackMs) &&
+          estimatedFallbackMs <= bruteforceFallbackConfig.maxMsPerLength;
+        const fallbackEligibleLength =
+          (keyLengthHint != null && length === keyLengthHint) ||
+          fallbackEligibleWithoutHint;
         if (gate.triggered && fallbackEligibleLength) {
           const remainingTotalMs = Math.max(
             0,
@@ -1784,7 +1782,8 @@
             bruteforceFallbackReason = "total_budget_exhausted";
           }
         } else if (gate.triggered && !fallbackEligibleLength) {
-          bruteforceFallbackReason = "requires_keylength_hint";
+          bruteforceFallbackReason =
+            keyLengthHint != null ? "requires_keylength_hint" : "adaptive_size_gate_not_met";
         }
 
         const search = Object.assign({}, result.search || {}, {

@@ -14,6 +14,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - `app.js` lädt `KryptoCore` und `KryptoCiphers`.
 - `CipherRegistry` registriert alle gültigen Cipher.
 - Dropdown und UI-Zustände werden initial gesetzt.
+ 
 
 2. Eingabe
 - Textquelle:
@@ -31,6 +32,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Validiert, ob Text vorhanden ist.
 - Liest Modus (`encrypt`/`decrypt`) und gewählten Cipher.
 - Optional: Schlüssel-Parsing und Crack-Optionen.
+ 
 
 5. Verschlüsseln
 - `cipher.encrypt(text, key)` wird aufgerufen.
@@ -47,8 +49,10 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
   - `Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...`
   - `runButton` wird deaktiviert
   - `requestAnimationFrame` wird einmal abgewartet, damit der Hinweis sichtbar ist
+ 
 - `cipher.crack(text, options)` liefert besten Kandidaten und optional `candidates`.
 - Vigenère nutzt bei kurzem Text + niedriger Sinnhaftigkeit + kleiner Schlüssellänge einen staged Bruteforce-Fallback (`[12,18,26]`).
+- Ohne `keyLength`-Hint wird dieser Fallback nur bei adaptiv günstigen Fällen aktiviert (`maxMsPerLength`-Gate).
 - Kandidaten werden normalisiert und nach `confidence` sortiert.
 - Optionales Reranking via `dictionaryScorer.rankCandidates(...)`.
 - Bester Kandidat wird als Ausgabe gesetzt.
@@ -59,6 +63,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - API-Verfügbarkeit beeinflusst den Kandidatenstatus-Text.
 - Nach dem Crack wird `runButton` wieder aktiviert.
 - Falls Fallback lief, kann der Endstatus Bruteforce-Info enthalten.
+- Fallback-Telemetrie wird defensiv formatiert, damit keine `NaN`/`undefined`-Werte im Status erscheinen.
 
 9. Kopieren
 - Primär `navigator.clipboard.writeText(...)`.
@@ -75,6 +80,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 3. Wörterbuch-API nicht verfügbar
 - Kein Abbruch.
 - Lokales Scoring bleibt aktiv, `apiAvailable = false`.
+- API-Verfügbarkeit folgt Reachability-/Wortcheck-Ergebnissen und nicht nur der Existenz von `fetch`.
 
 4. Fehlender Dictionary-Scorer
 - Kandidaten bleiben in lokalem Cipher-Ranking.
@@ -86,6 +92,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - `bruteforceCombosVisited`
 - `bruteforceElapsedMs`
 - `sense`
+ 
 
 ## Ergebnisgarantie auf UI-Ebene
 

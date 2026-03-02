@@ -22,6 +22,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Nutzt:
   - Schlüssellängen-Kandidaten (IoC-basiert)
   - Spaltenweise Shift-Rangfolge (Chi-Quadrat)
+  - exhaustive Kurzschlüssel-Suche bei `keyLength`-Hint bis Länge 5 (`26^5` Vollraum)
   - budgetierte Kandidatensuche
   - Kurztext-Rettungsmodus
   - lokale Verfeinerung per Search
@@ -31,6 +32,8 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - Stage 1: Top-12 je Spalte
   - Stage 2: Top-18 je Spalte
   - Stage 3: Top-26 je Spalte
+- Ohne `keyLength`-Hint bleibt dieser Fallback auf adaptiv günstige Kurzfälle begrenzt
+  (`maxMsPerLength`), damit Laufzeitbudgets stabil bleiben.
 - Sense-Metriken (`evaluateSenseMetrics(text)`):
   - `dictCoverageProxy`
   - `meaningfulTokenRatio`
@@ -74,11 +77,12 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 
 2. Validierung
 - API-Prüfung über `dictionaryapi.dev` je Sprache (`de`, `en`) mit Timeout.
+- Reachability-Probe läuft über alle `languageHints` (Fallback `en`) statt nur über den ersten Eintrag.
 - Lokales Lexikon als Fallback und Ergänzung.
 - Cache auf Wort-/Sprachpaar-Ebene.
 
 3. Kombinierter Score
-- Basis: `base = Number(candidate.confidence) || 0`
+- Basis für API-Rescoring: `base = Number(candidate.rawConfidence) || 0`
 - Wörterbuch-Anteil:
   - `dictBoost = coverage * 20 + validWords * 1.2`
 - Malus:
@@ -94,7 +98,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 
 1. Kandidatenliste
 - Zeigt Schlüssel (wenn vorhanden), Score und ggf. Wörterbuchabdeckung.
-
+ 
 2. Statusmeldungen
 - API verfügbar: Hinweis auf API-Nachbewertung.
 - API nicht verfügbar: Hinweis auf lokales Scoring.

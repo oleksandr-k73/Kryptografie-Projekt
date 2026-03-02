@@ -428,10 +428,19 @@
       });
 
       const search = cracked && cracked.search ? cracked.search : null;
+      const fallbackKeyLength = Number.isFinite(search && search.bruteforceFallbackKeyLength)
+        ? Math.max(1, Math.floor(search.bruteforceFallbackKeyLength))
+        : null;
+      const fallbackCombosVisited = Number.isFinite(search && search.bruteforceCombosVisited)
+        ? Math.max(0, Math.floor(search.bruteforceCombosVisited))
+        : 0;
+      // Nur validierte Zahlen werden formatiert, damit Statusmeldungen nie NaN/undefined zeigen.
+      const fallbackElapsedMs = Number.isFinite(search && search.bruteforceElapsedMs)
+        ? Math.max(0, Math.round(search.bruteforceElapsedMs))
+        : 0;
       const fallbackSuffix =
-        search &&
-        search.bruteforceFallbackTriggered
-          ? ` Bruteforce-Fallback aktiv (Länge ${search.bruteforceFallbackKeyLength}, ${search.bruteforceCombosVisited} Kombinationen, ${Math.round(search.bruteforceElapsedMs)} ms).`
+        search && search.bruteforceFallbackTriggered
+          ? ` Bruteforce-Fallback aktiv (Länge ${fallbackKeyLength == null ? "unbekannt" : fallbackKeyLength}, ${fallbackCombosVisited} Kombinationen, ${fallbackElapsedMs} ms).`
           : "";
 
       if (bestCandidate.key != null) {
