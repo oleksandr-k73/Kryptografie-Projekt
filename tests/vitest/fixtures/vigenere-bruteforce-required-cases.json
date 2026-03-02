@@ -1,0 +1,14 @@
+[
+  {
+    "id": "required-case-1",
+    "ciphertext": "SIDR NDX CUBVZRR",
+    "keyLength": 5,
+    "expectFallbackTriggered": true
+  },
+  {
+    "id": "required-case-2",
+    "ciphertext": "UHEEZYY NVOUUU",
+    "keyLength": 5,
+    "expectFallbackTriggered": true
+  }
+]

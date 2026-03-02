@@ -31,3 +31,26 @@ Schritte:
 2. 
 
 
+Ändere die bestehenden Tests so, dass sie sich mit Dictionary-API verbinden können. Ziel: 
+- möglichst realitätsnahe Testumgebung, damit wir das System auf den wahrscheinlichsten Fall (Internetverbindung vorhanden) anpassen.
+- keine Ressourcen werden beim Testen/Debugging unnötiger/unwahrscheinlicher Fälle verschwendet
+Nicht-Ziel:
+- ich will, dass man Randfälle beim Entschlüsseln (kurze Texte, lange Schlüssel) berücksichtigt. Das heißt, diese Fälle sind nicht unnötig!
+###
+
+Implementiere ein Bruteforce-Fallback für Vigenere. Er soll nur unter folgenden Umständen aktiviert werden:
+1. Der entschlüsselte Text is kurz (die ungefähre Länge mit Tests herausfinden)
+2. Der entschlüsselte Text hat einen geringen Wörterbuch-Scoring UND der Großteil des Textes ist nicht sinnergebend (ungefähre Werte für Scoring mit Tests herausfinden und einen Algorithmus entwerfen/eine Möglichkeit dafür finden, wie viel Sinn der entschlüsselte Text ergibt)
+3. Die Schlüssellänge liegt unter n (n mit Test herausfinden; ein guter Start ist n = 6, aber NICHT HÖHER)
+
+Anweisungen:
+Plane:
+    - die Tests (dürfen einen angemessen Zeitlimit (10 Minuten, damit die echte Implementierung simuliert wird -- der Nutzer will nicht eine halbe oder zwei Stunden warten))
+    - die Tests sollen am Besten mathematischer Natur sein; experimentelle Unterstützung ist aber auch willkommen
+    - mögliche Ansätze für Implementierung der Checks (1. bis 3.) --> Algorithmen und/oder Vorschläge für externe Abhängigkeiten
+
+Abgabevoraussetzungen:
+- zumindest "SIDR NDX CUBVZRR" (Schlüssellänge 5) und "UHEEZYY NVOUUU" (Schlüssellänge 5) werden sinnvoll entschlüsselt
+- die Tests sind korrekt, fehlerfrei und implementierbar
+- die Algorithmen, falls sie generiert werden, sind fehlerfrei und ergeben richtige Ausgaben (dafür Tests machen)
+- die Abhängigkeiten sind unbedingt nötig und können in derzeitigem Zustand nicht ersetzt werden
