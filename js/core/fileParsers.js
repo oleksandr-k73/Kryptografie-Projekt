@@ -37,6 +37,18 @@
     return /^[a-f0-9]{24,}$/i.test(compact);
   }
 
+  /**
+   * Recursively traverses a value and collects non-empty trimmed string entries with their access paths.
+   *
+   * Traversal stops when depth exceeds 12 or the value is null/undefined. For each string found, a
+   * candidate object { text, path } is appended to `out`, where `text` is the trimmed string and
+   * `path` is an array of keys/indexes describing how to reach that string from the root value.
+   *
+   * @param {*} value - The value to scan (may be an object, array, string, or other).
+   * @param {string[]} path - The access path to `value` from the root (array of keys/indexes).
+   * @param {number} depth - Current recursion depth (used to limit traversal).
+   * @param {Array<{text: string, path: string[]}>} out - Array that will be populated with found candidates.
+   */
   function collectStringCandidates(value, path, depth, out) {
     if (depth > 12 || value == null) {
       return;
@@ -64,53 +76,59 @@
     }
   }
 
+  const strongTextKeys = [
+    "coded",
+    "code",
+    "cipher",
+    "ciphertext",
+    "encrypted",
+    "decoded",
+    "plaintext",
+    "cleartext",
+    "plain",
+    "text",
+    "message",
+    "msg",
+    "payload",
+    "body",
+    "content",
+    "input",
+    "output",
+    "data",
+    "value",
+  ];
+
+  const weakMetaKeys = [
+    "title",
+    "name",
+    "label",
+    "level",
+    "task",
+    "task_type",
+    "method",
+    "status",
+    "format",
+    "hash",
+    "signature",
+    "checksum",
+    "id",
+    "version",
+    "explain",
+    "description",
+    "hint",
+  ];
+
+  /**
+   * Evaluate how likely a string candidate (with its object path) contains meaningful text.
+   * Considers key names, candidate path, length, character content, and hash-like patterns to produce the score.
+   * @param {{text: string, path: string[]}} candidate - Object with `text` (the candidate string) and `path` (array of keys leading to the value).
+   * @returns {number} A numeric score where higher values indicate greater likelihood that `text` is a meaningful textual field.
+   */
   function scoreJsonCandidate(candidate) {
     const text = candidate.text;
     const lowerText = text.toLowerCase();
     const keyPath = candidate.path.join(".").toLowerCase();
     const lastKey = (candidate.path.at(-1) || "").toLowerCase();
-
-    const strongTextKeys = [
-      "coded",
-      "code",
-      "cipher",
-      "ciphertext",
-      "encrypted",
-      "decoded",
-      "plaintext",
-      "cleartext",
-      "plain",
-      "text",
-      "message",
-      "msg",
-      "payload",
-      "body",
-      "content",
-      "input",
-      "output",
-      "data",
-      "value",
-    ];
-
-    const weakMetaKeys = [
-      "title",
-      "name",
-      "label",
-      "level",
-      "task",
-      "task_type",
-      "method",
-      "status",
-      "format",
-      "hash",
-      "signature",
-      "checksum",
-      "id",
-      "version",
-      "explain",
-      "description",
-      "hint",
-    ];
 
     let score = 0;
 
@@ -162,9 +180,142 @@
     return score;
   }
 
+  /**
+   * Selects the most likely meaningful text string from a parsed JSON value.
+   *
+   * Traverses the input to collect string candidates, scores each candidate for relevance, and returns the highest-scoring string or `null` if none are found.
+   * @param {*} value - A JSON-parsed value (object, array, or primitive) to search for textual candidates.
+   * @returns {string|null} The highest-scoring candidate text when found, otherwise `null`.
+   */
   function extractBestStringFromJson(value) {
     const candidates = [];
     collectStringCandidates(value, [], 0, candidates);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (const candidate of candidates) {
+      const score = scoreJsonCandidate(candidate);
+      if (score > bestScore) {
+        best = candidate;
+        bestScore = score;
+      }
+    }
+
+    return best ? best.text : null;
+  }
+
+  /**
+   * Decode a JavaScript string literal to its plain string value.
+   *
+   * Decodes escape sequences (`\uXXXX`, `\xXX`, `\n`, `\r`, `\t`, escaped quotes and backslashes`) and, for template literals, replaces `${...}` expressions with a single space, then trims the result. If `literal` is falsy or shorter than two characters, returns an empty string.
+   *
+   * @param {string} literal - A JavaScript string literal including its surrounding quotes or backticks.
+   * @returns {string} The decoded and trimmed string value.
+   */
+  function decodeJsStringLiteral(literal) {
+    if (!literal || literal.length < 2) {
+      return "";
+    }
+
+    const quote = literal[0];
+    let body = literal.slice(1, -1);
+
+    body = body
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+        String.fromCharCode(Number.parseInt(hex, 16))
+      )
+      .replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) =>
+        String.fromCharCode(Number.parseInt(hex, 16))
+      )
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\r")
+      .replace(/\\t/g, "\t")
+      .replace(/\\'/g, "'")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\");
+
+    if (quote === "`") {
+      body = body.replace(/\$\{[^}]*\}/g, " ");
+    }
+
+    return body.trim();
+  }
+
+  /**
+   * Normalize a JavaScript object/property key string by decoding quoted keys to their unescaped value.
+   * @param {string} rawKey - The raw key as found in source code; may be a quoted JS string or an unquoted identifier.
+   * @returns {string} The normalized key: decoded and unquoted if `rawKey` was a quoted string, an empty string if `rawKey` is falsy, or `rawKey` unchanged otherwise.
+   */
+  function normalizeJsKey(rawKey) {
+    if (!rawKey) {
+      return "";
+    }
+
+    const isQuoted =
+      (rawKey.startsWith('"') && rawKey.endsWith('"')) ||
+      (rawKey.startsWith("'") && rawKey.endsWith("'"));
+
+    if (isQuoted) {
+      return decodeJsStringLiteral(rawKey);
+    }
+
+    return rawKey;
+  }
+
+  /**
+   * Extracts the most likely meaningful string from JavaScript or TypeScript source.
+   *
+   * Scans assignments, object properties, and string literals, decodes candidate literals,
+   * scores them by contextual heuristics, and returns the highest-scoring text.
+   * @param {string} source - Source code to analyze.
+   * @returns {string|null} The best candidate text if one is found, or `null` when no suitable string is detected.
+   */
+  function extractBestStringFromJs(source) {
+    const candidates = [];
+    const seen = new Set();
+
+    function pushCandidate(text, path) {
+      const normalizedText = text.trim();
+      if (!normalizedText) {
+        return;
+      }
+
+      const key = `${path.join(".")}::${normalizedText}`;
+      if (seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      candidates.push({ text: normalizedText, path });
+    }
+
+    const assignmentRegex =
+      /\b(?:const|let|var|export\s+const|export\s+let|export\s+var)\s+([A-Za-z_$][\w$]*)\s*=\s*("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/g;
+
+    for (const match of source.matchAll(assignmentRegex)) {
+      const key = match[1];
+      const literal = match[2];
+      pushCandidate(decodeJsStringLiteral(literal), [key]);
+    }
+
+    const propertyRegex =
+      /(?:^|[,{]\s*)([A-Za-z_$][\w$]*|"(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*')\s*:\s*("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/gm;
+
+    for (const match of source.matchAll(propertyRegex)) {
+      const key = normalizeJsKey(match[1]);
+      const literal = match[2];
+      pushCandidate(decodeJsStringLiteral(literal), [key]);
+    }
+
+    const literalRegex =
+      /("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/g;
+    for (const match of source.matchAll(literalRegex)) {
+      pushCandidate(decodeJsStringLiteral(match[1]), ["value"]);
+    }
 
     if (candidates.length === 0) {
       return null;
@@ -213,9 +364,16 @@
           return "";
         }
 
+        // If there's only one row treat it as data (no header).
+        if (rows.length === 1) {
+          return rows[0].join(" ").trim();
+        }
+
         const header = rows[0].map((cell) => cell.toLowerCase());
+
+        // Prefer any of the strong text keys (e.g. "coded", "ciphertext", "text")
         const textColumn = header.findIndex((h) =>
-          ["text", "message", "ciphertext", "content"].includes(h)
+          strongTextKeys.includes(h) || strongTextKeys.some((k) => h.includes(k))
         );
 
         if (textColumn >= 0) {
@@ -226,14 +384,25 @@
             .trim();
         }
 
+        // If we have multiple rows and couldn't detect a text column,
+        // assume the first row is a header and only join subsequent rows.
         return rows
+          .slice(1)
           .flatMap((row) => row)
           .join(" ")
           .trim();
       },
     },
+    {
+      extensions: ["js", "mjs", "cjs"],
+      parse: (text) => extractBestStringFromJs(text) || text,
+    },
   ];
 
+  /**
+   * Get the lowercase file extension from a filename.
+   * @returns {string} The file extension in lowercase (without the leading dot), or an empty string if the filename has no extension.
+   */
   function getExtension(fileName) {
     const parts = fileName.toLowerCase().split(".");
     return parts.length > 1 ? parts.pop() : "";
