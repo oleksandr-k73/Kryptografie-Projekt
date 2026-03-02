@@ -376,7 +376,6 @@
       const cacheKey = `${fingerprint}::${shift}`;
       chiMemoCache.set(cacheKey, chi);
     }
-
     return chi;
   }
 
@@ -389,6 +388,10 @@
 
     const ranked = [];
     for (let shift = 0; shift < 26; shift += 1) {
+      ranked.push({
+        shift,
+        chi: chiSquaredForShift(columnLetters, shift, optimizationContext, fingerprint),
+      });
       ranked.push({
         shift,
         chi: chiSquaredForShift(columnLetters, shift, optimizationContext, fingerprint),
@@ -830,6 +833,8 @@
       const vowels = lettersOnly.match(/[aeiou]/g)?.length ?? 0;
       const vowelRatio = vowels / lettersOnly.length;
       score += 2.5 - Math.abs(0.38 - vowelRatio) * 9;
+
+      score += compactCoverageScore(lettersOnly) * 5.5;
 
       score += compactCoverageScore(lettersOnly) * 5.5;
     }
@@ -1461,7 +1466,9 @@
           // increment shifts
           for (let p = safeLength - 1; p >= 0; p -= 1) {
             shifts[p] = (shifts[p] + 1) % 26;
-            if (shifts[p] !== 0) break;
+            if (shifts[p] !== 0) {
+              break;
+            }
           }
         }
 
@@ -1485,24 +1492,9 @@
     const shortTextRescue =
       (hinted || optimizationContext.enabled) &&
       letters.length <= Math.max(20, safeLength * 3);
-    let candidateBudget = resolveCandidateBudget(
-      options,
-      hinted,
-      safeLength,
-      shortTextRescue
-    );
-    let stateBudget = resolveStateBudget(
-      options,
-      candidateBudget,
-      hinted,
-      shortTextRescue
-    );
-    let evaluationBudget = resolveEvaluationBudget(
-      options,
-      stateBudget,
-      hinted,
-      shortTextRescue
-    );
+    let candidateBudget = resolveCandidateBudget(options, hinted, safeLength, shortTextRescue);
+    let stateBudget = resolveStateBudget(options, candidateBudget, hinted, shortTextRescue);
+    let evaluationBudget = resolveEvaluationBudget(options, stateBudget, hinted, shortTextRescue);
 
     if (optimizationContext.enabled && hinted && !shortTextRescue && letters.length <= 140) {
       // Moderat höhere Budgets für bekannte Schlüssellängen auf mittleren Texten:

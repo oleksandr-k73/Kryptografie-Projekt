@@ -104,6 +104,8 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - API nicht verfügbar: Hinweis auf lokales Scoring.
 - 0% Abdeckung: zusätzlicher Hinweis.
 - Bei aktivem Bruteforce-Fallback kann der Endstatus Dauer + Kombinationsanzahl anzeigen.
+- 0% Abdeckung: zusätzlicher Hinweis.
+- Bei aktivem Bruteforce-Fallback kann der Endstatus Dauer + Kombinationsanzahl anzeigen.
 
 ## 5) Grenzen und Nebenwirkungen
 

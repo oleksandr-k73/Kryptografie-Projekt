@@ -14,6 +14,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - `app.js` lädt `KryptoCore` und `KryptoCiphers`.
 - `CipherRegistry` registriert alle gültigen Cipher.
 - Dropdown und UI-Zustände werden initial gesetzt.
+- Dropdown und UI-Zustände werden initial gesetzt.
 
 2. Eingabe
 - Textquelle:
@@ -31,6 +32,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Validiert, ob Text vorhanden ist.
 - Liest Modus (`encrypt`/`decrypt`) und gewählten Cipher.
 - Optional: Schlüssel-Parsing und Crack-Optionen.
+- Optional: Schlüssel-Parsing und Crack-Optionen.
 
 5. Verschlüsseln
 - `cipher.encrypt(text, key)` wird aufgerufen.
@@ -43,6 +45,10 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Kandidatenbereich wird ausgeblendet.
 
 7. Entschlüsseln ohne Schlüssel (Knacken)
+- Bei Vigenère setzt die UI vor `cipher.crack(...)` den Hinweis:
+  - `Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...`
+  - `runButton` wird deaktiviert
+  - `requestAnimationFrame` wird einmal abgewartet, damit der Hinweis sichtbar ist
 - Bei Vigenère setzt die UI vor `cipher.crack(...)` den Hinweis:
   - `Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...`
   - `runButton` wird deaktiviert
@@ -81,6 +87,14 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 
 4. Fehlender Dictionary-Scorer
 - Kandidaten bleiben in lokalem Cipher-Ranking.
+
+5. Bruteforce-Telemetrie (`result.search`)
+- `bruteforceFallbackTriggered`
+- `bruteforceFallbackReason`
+- `bruteforceFallbackKeyLength`
+- `bruteforceCombosVisited`
+- `bruteforceElapsedMs`
+- `sense`
 
 5. Bruteforce-Telemetrie (`result.search`)
 - `bruteforceFallbackTriggered`
