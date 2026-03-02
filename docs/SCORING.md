@@ -22,10 +22,29 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Nutzt:
   - Schlüssellängen-Kandidaten (IoC-basiert)
   - Spaltenweise Shift-Rangfolge (Chi-Quadrat)
+  - exhaustive Kurzschlüssel-Suche bei `keyLength`-Hint bis Länge 5 (`26^5` Vollraum)
+  - budgetierte Kandidatensuche
+  - Kurztext-Rettungsmodus
   - lokale Verfeinerung per Search
   - Sprach-Scoring auf Kandidatentext
 - Optionaler `keyLength`-Hint erhöht Präzision und reduziert Suchraum.
-- `crack(...)` liefert bestes Ergebnis plus Kandidatenliste.
+- Bei kurzen und sinnarmen Kandidaten kann ein staged Bruteforce-Fallback laufen:
+  - Stage 1: Top-12 je Spalte
+  - Stage 2: Top-18 je Spalte
+  - Stage 3: Top-26 je Spalte
+- Ohne `keyLength`-Hint bleibt dieser Fallback auf adaptiv günstige Kurzfälle begrenzt
+  (`maxMsPerLength`), damit Laufzeitbudgets stabil bleiben.
+- Sense-Metriken (`evaluateSenseMetrics(text)`):
+  - `dictCoverageProxy`
+  - `meaningfulTokenRatio`
+  - `nonsenseRatio = 1 - meaningfulTokenRatio`
+  - `gibberishBigramRatio`
+  - `senseScore = 0.50*dictCoverageProxy + 0.35*meaningfulTokenRatio + 0.15*(1-gibberishBigramRatio)`
+- Fallback-Kandidatenscore:
+  - `scoreLanguage`
+  - `+ dictionaryBoostScore`
+  - `+ senseBonus` (aus `senseScore` + `meaningfulTokenRatio`)
+- Merge-Regel: Fallback ersetzt Basiskandidat nur bei klarer Qualitätsverbesserung.
 
 3. Leetspeak (`leetCipher.js`)
 - Beam-Search für Rückübersetzungen.
@@ -58,11 +77,12 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 
 2. Validierung
 - API-Prüfung über `dictionaryapi.dev` je Sprache (`de`, `en`) mit Timeout.
+- Reachability-Probe läuft über alle `languageHints` (Fallback `en`) statt nur über den ersten Eintrag.
 - Lokales Lexikon als Fallback und Ergänzung.
 - Cache auf Wort-/Sprachpaar-Ebene.
 
 3. Kombinierter Score
-- Basis: `base = Number(candidate.confidence) || 0`
+- Basis für API-Rescoring: `base = Number(candidate.rawConfidence) || 0`
 - Wörterbuch-Anteil:
   - `dictBoost = coverage * 20 + validWords * 1.2`
 - Malus:
@@ -82,7 +102,8 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 2. Statusmeldungen
 - API verfügbar: Hinweis auf API-Nachbewertung.
 - API nicht verfügbar: Hinweis auf lokales Scoring.
-- 0% Abdeckung: zusätzlicher Hinweis (inkl. Schlüssellängen-Tipp bei Bedarf).
+- 0% Abdeckung: zusätzlicher Hinweis.
+- Bei aktivem Bruteforce-Fallback kann der Endstatus Dauer + Kombinationsanzahl anzeigen.
 
 ## 5) Grenzen und Nebenwirkungen
 

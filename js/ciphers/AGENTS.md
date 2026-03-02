@@ -41,9 +41,27 @@ Optionale Metadaten:
 - Crack kombiniert:
   - IoC-basierte Schlüssellängen-Auswahl
   - spaltenweise Shift-Rangfolge (Chi-Quadrat)
+  - exhaustive Suche für `keyLength`-Hint bis Länge 5 (vollständig über `26^5`)
+  - budgetierte Suche (`candidateBudget`, `stateBudget`, `evaluationBudget`)
+  - Kurztext-Rettungsmodus bei bekannter Schlüssellänge
   - lokale Suchverfeinerung
   - Sprach-Scoring und Kandidaten-Ranking
 - Liefert bestes Ergebnis plus Kandidatenliste.
+
+### Änderungen / Hinweise (aktuell)
+
+- Optimierungsvertrag bleibt unter `options.optimizations`.
+  - `false`/unset = Legacy, `true` = Defaults, Objekt = Overrides.
+  - Flags: `memoChi`, `incrementalScoring`, `localSearchK`, `progressiveWidening`, `collectStats`.
+  - `collectStats` schreibt Telemetrie nach `result.search.telemetry`.
+- Bruteforce-Fallback unter `options.bruteforceFallback`:
+  - `enabled`, `maxKeyLength` (hart `<=6`), `shortTextMaxLetters`
+  - `maxTotalMs`, `maxMsPerLength`, `stageWidths` (Default `[12,18,26]`)
+- Harte Gate-Bedingung: kurzer Text + niedrige Sinnhaftigkeit + `keyLength <= maxKeyLength`.
+- Ohne `keyLength`-Hint greift zusätzlich ein adaptives Größen-Gate (`maxMsPerLength`), um teure Kurztextfälle zu begrenzen.
+- Zusätzliche Suche-Telemetrie in `result.search`:
+  - `bruteforceFallbackTriggered`, `bruteforceFallbackReason`, `bruteforceFallbackKeyLength`
+  - `bruteforceCombosVisited`, `bruteforceElapsedMs`, `sense`
 
 ## Pflegehinweis
 
