@@ -1,0 +1,24 @@
+{
+  "name": "kryptografie-projekt",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browserbasierte Kryptografie-Werkbank mit reproduzierbaren Doku-/Qualitätschecks.",
+  "scripts": {
+    "test": "node --test tests/docs/*.test.mjs && vitest run tests/vitest/*.test.mjs && node scripts/docs/run_quality_gates.mjs --iterations 25",
+    "test:node": "node --test tests/docs/*.test.mjs",
+    "test:vitest": "vitest run tests/vitest/*.test.mjs",
+    "test:gates": "node scripts/docs/run_quality_gates.mjs --iterations 25",
+    "bench:context": "node scripts/docs/benchmark_context_tokens.mjs --iterations 50",
+    "check:syntax": "for f in scripts/docs/*.mjs tests/docs/*.test.mjs tests/vitest/*.test.mjs; do node --check \"$f\"; done"
+  },
+  "devDependencies": {
+    "fast-glob": "^3.3.3",
+    "gpt-tokenizer": "^3.4.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-parse": "^11.0.0",
+    "tinybench": "^6.0.0",
+    "unified": "^11.0.5",
+    "vitest": "^4.0.18",
+    "yaml": "^2.8.2"
+  }
+}

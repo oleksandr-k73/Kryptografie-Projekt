@@ -1,0 +1,4 @@
+interface:
+  display_name: "Neues Verschlüsselungsverfahren"
+  short_description: "Cipher mit Doku-Gates implementieren und reproduzierbar debuggen"
+  default_prompt: "Use $cipher-new-method and enforce this order before coding: AGENTS.md -> docs/DATENFLUSS.md -> docs/SCORING.md -> js/ciphers/AGENTS.md. Then implement/repair the cipher contract, run the full debug checklist, validate dictionary fallback behavior, and keep docs aligned with code changes."

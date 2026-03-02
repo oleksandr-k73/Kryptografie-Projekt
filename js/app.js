@@ -231,7 +231,55 @@
       : "Kandidaten basieren auf lokalem Sprach-Scoring (API nicht verfügbar).";
   }
 
-  async function rankCandidatesWithDictionary(candidates) {
+  function normalizeLanguageTag(rawLanguage) {
+    const normalized = String(rawLanguage || "").toLowerCase();
+    if (normalized.startsWith("de")) {
+      return "de";
+    }
+    if (normalized.startsWith("en")) {
+      return "en";
+    }
+    return null;
+  }
+
+  function deriveLanguageHints(text) {
+    const hints = [];
+    const seen = new Set();
+    const pushHint = (hint) => {
+      if (!hint || seen.has(hint)) {
+        return;
+      }
+      seen.add(hint);
+      hints.push(hint);
+    };
+
+    const lower = String(text || "").toLowerCase();
+    if (/[äöüß]/i.test(lower) || /\b(der|die|und|nicht|ist|ein)\b/.test(lower)) {
+      pushHint("de");
+    }
+    if (/\b(the|and|you|not|is|to)\b/.test(lower)) {
+      pushHint("en");
+    }
+
+    const browserLanguages = Array.isArray(navigator.languages)
+      ? navigator.languages
+      : [navigator.language];
+    for (const entry of browserLanguages) {
+      pushHint(normalizeLanguageTag(entry));
+    }
+
+    if (hints.length === 0) {
+      pushHint("de");
+      pushHint("en");
+    } else {
+      pushHint("de");
+      pushHint("en");
+    }
+
+    return hints.slice(0, 3);
+  }
+
+  async function rankCandidatesWithDictionary(candidates, sourceText) {
     const scorer = core.dictionaryScorer;
     if (!scorer || typeof scorer.rankCandidates !== "function") {
       return {
@@ -242,7 +290,9 @@
     }
 
     try {
-      return await scorer.rankCandidates(candidates, { languageHints: ["de", "en"] });
+      return await scorer.rankCandidates(candidates, {
+        languageHints: deriveLanguageHints(sourceText),
+      });
     } catch (_error) {
       return {
         rankedCandidates: candidates,
@@ -346,34 +396,56 @@
     }
 
     const crackOptions = parseCrackOptions(cipher);
-    const cracked = cipher.crack(text, crackOptions);
-    const localCandidates = normalizeCrackCandidates(cracked);
-    const ranked = await rankCandidatesWithDictionary(localCandidates);
-    const rankedCandidates =
-      ranked.rankedCandidates && ranked.rankedCandidates.length > 0
-        ? ranked.rankedCandidates
-        : localCandidates;
-    const bestCandidate =
-      ranked.bestCandidate || rankedCandidates[0] || cracked;
+    if (cipher.id === "vigenere") {
+      setStatus("Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...");
+    }
 
-    elements.outputText.value = bestCandidate.text;
-    const shortVigenereWarning =
-      cipher.id === "vigenere" &&
-      !crackOptions.keyLength &&
-      (text.match(/[A-Za-z]/g) || []).length < 18;
-    renderCandidates(rankedCandidates, ranked.apiAvailable, {
-      keyLengthHint: crackOptions.keyLength,
-    });
+    // Die Deaktivierung verhindert Doppelstarts während langer Crack-Läufe;
+    // ohne diesen Guard entstehen leicht konkurrierende Berechnungen und UI-Rennen.
+    elements.runButton.disabled = true;
+    try {
+      // Das Rendering muss vor dem CPU-intensiven Crack einmal zurück an den Browser,
+      // damit der Wartehinweis sichtbar ist, bevor die Hauptschleife blockiert.
+      await new Promise((resolve) => requestAnimationFrame(resolve));
 
-    if (bestCandidate.key != null) {
-      const suffix = shortVigenereWarning
-        ? " Hinweis: Sehr kurzer Text, Ergebnis kann unzuverlässig sein."
-        : "";
-      setStatus(
-        `${cipher.name}: Schlüssel geknackt (${bestCandidate.key}), Text entschlüsselt.${suffix}`
-      );
-    } else {
-      setStatus(`${cipher.name}: Text automatisch geknackt und entschlüsselt.`);
+      const cracked = cipher.crack(text, crackOptions);
+      const localCandidates = normalizeCrackCandidates(cracked);
+      const ranked = await rankCandidatesWithDictionary(localCandidates, text);
+      const rankedCandidates =
+        ranked.rankedCandidates && ranked.rankedCandidates.length > 0
+          ? ranked.rankedCandidates
+          : localCandidates;
+      const bestCandidate =
+        ranked.bestCandidate || rankedCandidates[0] || cracked;
+
+      elements.outputText.value = bestCandidate.text;
+      const shortVigenereWarning =
+        cipher.id === "vigenere" &&
+        !crackOptions.keyLength &&
+        (text.match(/[A-Za-z]/g) || []).length < 18;
+      renderCandidates(rankedCandidates, ranked.apiAvailable, {
+        keyLengthHint: crackOptions.keyLength,
+      });
+
+      const search = cracked && cracked.search ? cracked.search : null;
+      const fallbackSuffix =
+        search &&
+        search.bruteforceFallbackTriggered
+          ? ` Bruteforce-Fallback aktiv (Länge ${search.bruteforceFallbackKeyLength}, ${search.bruteforceCombosVisited} Kombinationen, ${Math.round(search.bruteforceElapsedMs)} ms).`
+          : "";
+
+      if (bestCandidate.key != null) {
+        const suffix = shortVigenereWarning
+          ? " Hinweis: Sehr kurzer Text, Ergebnis kann unzuverlässig sein."
+          : "";
+        setStatus(
+          `${cipher.name}: Schlüssel geknackt (${bestCandidate.key}), Text entschlüsselt.${suffix}${fallbackSuffix}`
+        );
+      } else {
+        setStatus(`${cipher.name}: Text automatisch geknackt und entschlüsselt.${fallbackSuffix}`);
+      }
+    } finally {
+      elements.runButton.disabled = false;
     }
   }
 

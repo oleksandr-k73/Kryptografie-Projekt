@@ -1,0 +1,24 @@
+[
+  {
+    "id": "new-cipher-build",
+    "title": "Neuen Cipher bauen",
+    "requiredKeywords": [
+      "Cipher-Vertrag",
+      "crack(text, options?)",
+      "CipherRegistry.register",
+      "index.html",
+      "js/app.js"
+    ]
+  },
+  {
+    "id": "parsing-debug-only",
+    "title": "Nur Parsing debuggen",
+    "requiredKeywords": [
+      "Input-/Output-Nachverfolgung",
+      "parseInputFile",
+      "Fallback",
+      "docs/DATENFLUSS.md",
+      "debug-checklist"
+    ]
+  }
+]

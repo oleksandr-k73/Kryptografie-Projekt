@@ -7,4 +7,50 @@ Das Programm muss derzeit mindestens folgende Funktionen haben:
 4. Man muss zwischen den Modi "Verschlüsseln" und "Entschlüsseln" wählen können. Beim Entschlüsseln, falls man kein Schlüssel eingibt, soll das Programm die jeweilige Verschlüsselungen knacken und den verschlüsselten Text selbstverständlich entschlüsseln. Das Letztere ist dann die Ausgabe.
 5. Es soll auch ein Feld geben, wo dann die Ausgabe angezeigt und zum Kopieren bereit steht.
 
+Du bist ein Experte-Webentwickler und flüssig in Markdown-Dateien und -Dokumentationen sowie Arbeit mit KI-Codingwerkzeugen (z. B. Context Engineering), darunter AGENTS.md. Überprüfe alle md.-Dokumentationen wie AGENTS.md oder DATENFLUSS.md (noch keine Skills) auf Vollständigkeit, Richtigkeit und Prägnanz (siehe dazu die Links). Mache einen Review, wo du erklärst, wozu die Änderungen dienen. Am Ende sollen die Markdowns im Einklang mit dem Context Engineering und den Best-Practices gestaltet sein. Informationen im Überblick von AGENTS.md sollen jedoch bei Veränderungen vollständig beibehalten sein. Die Skills werden nur zuletzt nach allen anderen Änderungen verändert, unter meiner Führung. 
+Beispiele für Konventionen/Best-Practices: 
+- https://www.aihero.dev/a-complete-guide-to-agents-md
+- https://github.com/agentsmd/agents.md/issues/135
 
+
+https://www.aihero.dev/a-complete-guide-to-agents-md -- Prompt: Ausprobieren, wie der Agent sich bei einem solchen vorgefertigten Prompt verhält --> Modifikation davon und als Basis für eigene
+https://github.com/agentsmd/agents.md/issues/135 -- verschiedene Konventionen ausprobieren und lernen, wie man sie anwenden könnte
+
+
+-----
+
+
+
+-----
+Skill: AGENTS.md-Dokumentation erstellen
+
+Beschreibung: Leitfaden zur Erneuerung von AGENTS.md-Dateien
+
+Schritte:
+1. Analysiere die gesamte Repository und finde Unterschiede zu AGENTS.md
+2. 
+
+
+Ändere die bestehenden Tests so, dass sie sich mit Dictionary-API verbinden können. Ziel: 
+- möglichst realitätsnahe Testumgebung, damit wir das System auf den wahrscheinlichsten Fall (Internetverbindung vorhanden) anpassen.
+- keine Ressourcen werden beim Testen/Debugging unnötiger/unwahrscheinlicher Fälle verschwendet
+Nicht-Ziel:
+- ich will, dass man Randfälle beim Entschlüsseln (kurze Texte, lange Schlüssel) berücksichtigt. Das heißt, diese Fälle sind nicht unnötig!
+###
+
+Implementiere ein Bruteforce-Fallback für Vigenere. Er soll nur unter folgenden Umständen aktiviert werden:
+1. Der entschlüsselte Text is kurz (die ungefähre Länge mit Tests herausfinden)
+2. Der entschlüsselte Text hat einen geringen Wörterbuch-Scoring UND der Großteil des Textes ist nicht sinnergebend (ungefähre Werte für Scoring mit Tests herausfinden und einen Algorithmus entwerfen/eine Möglichkeit dafür finden, wie viel Sinn der entschlüsselte Text ergibt)
+3. Die Schlüssellänge liegt unter n (n mit Test herausfinden; ein guter Start ist n = 6, aber NICHT HÖHER)
+
+Anweisungen:
+Plane:
+    - die Tests (dürfen einen angemessen Zeitlimit (10 Minuten, damit die echte Implementierung simuliert wird -- der Nutzer will nicht eine halbe oder zwei Stunden warten))
+    - die Tests sollen am Besten mathematischer Natur sein; experimentelle Unterstützung ist aber auch willkommen
+    - mögliche Ansätze für Implementierung der Checks (1. bis 3.) --> Algorithmen und/oder Vorschläge für externe Abhängigkeiten
+
+Abgabevoraussetzungen:
+- zumindest "SIDR NDX CUBVZRR" (Schlüssellänge 5) und "UHEEZYY NVOUUU" (Schlüssellänge 5) werden sinnvoll entschlüsselt
+- die Tests sind korrekt, fehlerfrei und implementierbar
+- die Algorithmen, falls sie generiert werden, sind fehlerfrei und ergeben richtige Ausgaben (dafür Tests machen)
+- die Abhängigkeiten sind unbedingt nötig und können in derzeitigem Zustand nicht ersetzt werden

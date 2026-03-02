@@ -1,0 +1,69 @@
+{
+  "generatedAt": "2026-03-01",
+  "environment": "local offline dictionary (API unavailable)",
+  "budgetResults": [
+    {
+      "budget": "1M",
+      "runtimeMs": 5797,
+      "success": true,
+      "bestKey": "BRICK",
+      "bestText": "Youshallntpass",
+      "statesGenerated": 161051,
+      "statesEvaluated": 60000,
+      "optionCount": 11
+    },
+    {
+      "budget": "10M",
+      "runtimeMs": 5715,
+      "success": true,
+      "bestKey": "BRICK",
+      "bestText": "Youshallntpass",
+      "statesGenerated": 161051,
+      "statesEvaluated": 60000,
+      "optionCount": 11
+    },
+    {
+      "budget": "n^L",
+      "runtimeMs": 5561,
+      "success": true,
+      "bestKey": "BRICK",
+      "bestText": "Youshallntpass",
+      "statesGenerated": 161051,
+      "statesEvaluated": 60000,
+      "optionCount": 11
+    }
+  ],
+  "sample": {
+    "sampleSize": 100,
+    "totalMs": 75333,
+    "avgMs": 753.33,
+    "successRate": 0.92,
+    "buckets": {
+      "short": {
+        "total": 1,
+        "ok": 1,
+        "successRate": 1,
+        "avgMs": 2661
+      },
+      "medium": {
+        "total": 64,
+        "ok": 57,
+        "successRate": 0.890625,
+        "avgMs": 652.234375
+      },
+      "long": {
+        "total": 35,
+        "ok": 34,
+        "successRate": 0.9714285714285714,
+        "avgMs": 883.6857142857143
+      }
+    }
+  },
+  "projection10k": {
+    "projectedHours": 2.0925833333333332,
+    "projectedSuccessRate": 0.92,
+    "targetHoursMin": 1,
+    "targetHoursMax": 2.5,
+    "inTargetWindow": true
+  }
+}
