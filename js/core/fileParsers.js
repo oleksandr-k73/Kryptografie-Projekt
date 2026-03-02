@@ -318,9 +318,16 @@
           return "";
         }
 
+        // If there's only one row treat it as data (no header).
+        if (rows.length === 1) {
+          return rows[0].join(" ").trim();
+        }
+
         const header = rows[0].map((cell) => cell.toLowerCase());
+
+        // Prefer any of the strong text keys (e.g. "coded", "ciphertext", "text")
         const textColumn = header.findIndex((h) =>
-          ["text", "message", "ciphertext", "content"].includes(h)
+          strongTextKeys.includes(h) || strongTextKeys.some((k) => h.includes(k))
         );
 
         if (textColumn >= 0) {
@@ -331,7 +338,10 @@
             .trim();
         }
 
+        // If we have multiple rows and couldn't detect a text column,
+        // assume the first row is a header and only join subsequent rows.
         return rows
+          .slice(1)
           .flatMap((row) => row)
           .join(" ")
           .trim();

@@ -392,10 +392,6 @@
         shift,
         chi: chiSquaredForShift(columnLetters, shift, optimizationContext, fingerprint),
       });
-      ranked.push({
-        shift,
-        chi: chiSquaredForShift(columnLetters, shift, optimizationContext, fingerprint),
-      });
     }
     ranked.sort((a, b) => a.chi - b.chi);
     return ranked;
@@ -833,8 +829,6 @@
       const vowels = lettersOnly.match(/[aeiou]/g)?.length ?? 0;
       const vowelRatio = vowels / lettersOnly.length;
       score += 2.5 - Math.abs(0.38 - vowelRatio) * 9;
-
-      score += compactCoverageScore(lettersOnly) * 5.5;
 
       score += compactCoverageScore(lettersOnly) * 5.5;
     }

@@ -98,12 +98,10 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 
 1. Kandidatenliste
 - Zeigt Schlüssel (wenn vorhanden), Score und ggf. Wörterbuchabdeckung.
-
+ 
 2. Statusmeldungen
 - API verfügbar: Hinweis auf API-Nachbewertung.
 - API nicht verfügbar: Hinweis auf lokales Scoring.
-- 0% Abdeckung: zusätzlicher Hinweis.
-- Bei aktivem Bruteforce-Fallback kann der Endstatus Dauer + Kombinationsanzahl anzeigen.
 - 0% Abdeckung: zusätzlicher Hinweis.
 - Bei aktivem Bruteforce-Fallback kann der Endstatus Dauer + Kombinationsanzahl anzeigen.
 
