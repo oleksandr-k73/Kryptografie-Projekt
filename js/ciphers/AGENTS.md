@@ -1,6 +1,7 @@
 # AGENTS.md für `js/ciphers/`
 
 ## Zweck
+
 Diese Datei beschreibt den Vertrag und die Besonderheiten der vorhandenen Cipher-Implementierungen.
 
 ## Gemeinsamer Cipher-Vertrag
