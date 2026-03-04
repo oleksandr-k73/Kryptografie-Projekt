@@ -338,10 +338,9 @@
             .trim();
         }
 
-        // If we have multiple rows and couldn't detect a text column,
-        // assume the first row is a header and only join subsequent rows.
+        // Ohne erkannten Header/Textspalte behalten wir bewusst alle Zeilen:
+        // So verlieren headerlose CSV-Dateien nicht stillschweigend die erste Datenzeile.
         return rows
-          .slice(1)
           .flatMap((row) => row)
           .join(" ")
           .trim();

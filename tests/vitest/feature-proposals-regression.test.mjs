@@ -38,6 +38,11 @@ function loadVigenereVmContext(fetchImpl) {
   return context;
 }
 
+function loadFileParser() {
+  const window = loadBrowserContext(["js/core/fileParsers.js"]);
+  return window.KryptoCore.parseInputFile;
+}
+
 describe("feature proposals regression checks with markdown references", () => {
   it(
     "docs/SCORING.md + js/ciphers/AGENTS.md: unhinted fallback can run and is limited by adaptive-size gate",
@@ -53,7 +58,7 @@ describe("feature proposals regression checks with markdown references", () => {
       expect(allowed.search.bruteforceFallbackReason).toBe("short_text_low_sense_keylength_gate");
       expect(Number.isInteger(allowed.search.bruteforceFallbackKeyLength)).toBe(true);
 
-      // Niedriges maxMsPerLength erzwingt hier den neuen adaptiven Gate-Pfad ohne KeyLength-Hint.
+      // Niedriges maxMsPerLength erzwingt den adaptiven Gate-Pfad ohne KeyLength-Hint.
       const blocked = vigenere.crack(text, {
         optimizations: false,
         bruteforceFallback: { maxTotalMs: 2_000, maxMsPerLength: 1 },
@@ -104,7 +109,7 @@ describe("feature proposals regression checks with markdown references", () => {
       if (String(url).endsWith("/entries/en/test")) {
         return { ok: true };
       }
-      // Alle Wortchecks liefern 'invalid', bleiben aber API-seitig erreichbar.
+      // Alle Wortchecks liefern "invalid", bleiben aber API-seitig erreichbar.
       return { ok: false };
     };
     const { scorer } = loadRuntime(fetchMock);
@@ -116,7 +121,7 @@ describe("feature proposals regression checks with markdown references", () => {
     const best = ranked.bestCandidate;
 
     expect(best.rawConfidence).toBe(100);
-    // Bei Double-Damping läge der Score hier nahe 9; mit Rohscore bleibt er > 25.
+    // Bei Double-Damping läge der Score nahe 9; mit Rohscore bleibt er > 25.
     expect(best.confidence).toBeGreaterThan(25);
     expect(best.confidence).toBeLessThan(40);
   });
@@ -137,24 +142,99 @@ describe("feature proposals regression checks with markdown references", () => {
     expect(appSource.includes("Math.max(0, Math.round(search.bruteforceElapsedMs))")).toBe(true);
   });
 
-  it("js/ciphers/AGENTS.md + docs/SCORING.md: hinted keyLength=5 enters exhaustive branch with 26^5 cap", () => {
-    const context = loadVigenereVmContext(() => Promise.reject(new Error("offline")));
-    // Math.pow wird nur in diesem isolierten VM-Kontext gedrosselt, damit wir die
-    // 5er-Exhaustive-Branch deterministisch und schnell testen können.
-    vm.runInContext(
-      `
-      const __origPow = Math.pow.bind(Math);
-      Math.pow = (a, b) => (a === 26 && b === 5 ? 64 : __origPow(a, b));
-      `,
-      context
-    );
-    const vigenere = context.window.KryptoCiphers.vigenereCipher;
-    const cracked = vigenere.crack("ABCDE", {
-      keyLength: 5,
-      optimizations: false,
-    });
+  it(
+    "docs/SCORING.md + js/ciphers/AGENTS.md: long hinted text uses chi/frequency path and skips bruteforce",
+    () => {
+      const { vigenere } = loadRuntime(() => Promise.reject(new Error("offline")));
+      const cracked = vigenere.crack(
+        "APCZX QYEAXTA SAGW HLK ATSLW EJZ UFH OLIYX XUTWVULRWRO HM VSEWEDWEHLL",
+        {
+          keyLength: 5,
+          optimizations: { memoChi: true, collectStats: true },
+          bruteforceFallback: { enabled: true, shortTextMaxLetters: 22 },
+        }
+      );
 
-    expect(cracked.search.exhaustive).toBe(true);
-    expect(cracked.search.combos).toBe(64);
+      expect(cracked.search.bruteforceFallbackTriggered).toBe(false);
+      expect(cracked.search.bruteforceFallbackReason).toBe("text_not_short");
+      expect(cracked.search.shortTextRescue).toBe(false);
+      expect(cracked.search.statesGenerated).toBeGreaterThan(0);
+      expect(cracked.search.telemetry.chiCalls).toBeGreaterThan(0);
+    }
+  );
+
+  it(
+    "docs/SCORING.md: hinted short fallback uses maxMsPerLength directly without adaptive extra cap",
+    () => {
+      const context = loadVigenereVmContext(() => Promise.reject(new Error("offline")));
+      // Deterministische Zeitsteuerung macht das Budgetverhalten reproduzierbar.
+      vm.runInContext(
+        `
+        let __tick = 0;
+        Date.now = () => {
+          __tick += 350;
+          return __tick;
+        };
+        `,
+        context
+      );
+      const vigenere = context.window.KryptoCiphers.vigenereCipher;
+      const cracked = vigenere.crack("SIDR NDX CUBVZRR", {
+        keyLength: 5,
+        optimizations: true,
+        bruteforceFallback: {
+          enabled: true,
+          maxKeyLength: 6,
+          shortTextMaxLetters: 22,
+          maxTotalMs: 6_000,
+          maxMsPerLength: 6_000,
+          stageWidths: [26],
+        },
+      });
+
+      expect(cracked.search.bruteforceFallbackTriggered).toBe(true);
+      expect(cracked.search.bruteforceFallbackReason).toBe("short_text_low_sense_keylength_gate");
+      // Ohne Fix wäre hier durch adaptive Zusatzkappung deutlich früher Schluss.
+      expect(cracked.search.bruteforceCombosVisited).toBeGreaterThanOrEqual(500);
+      expect(cracked.search.bruteforceElapsedMs).toBeGreaterThanOrEqual(2_000);
+    }
+  );
+
+  it("js/ciphers/vigenereCipher.js: chi memo cache stays bounded and reset across sessions", () => {
+    const { vigenere } = loadRuntime(() => Promise.reject(new Error("offline")));
+    const text = "QWERTYUIOPASDFGHJKLZXCVBNM QWERTYUIOPASDFGHJKLZXCVBNM";
+    const options = {
+      keyLength: 5,
+      optimizations: { memoChi: true, collectStats: true },
+      bruteforceFallback: { enabled: false },
+    };
+
+    const first = vigenere.crack(text, options);
+    const second = vigenere.crack(text, options);
+    const firstTelemetry = first.search.telemetry;
+    const secondTelemetry = second.search.telemetry;
+
+    expect(firstTelemetry.chiMemoMaxSize).toBeGreaterThan(0);
+    expect(firstTelemetry.chiMemoMaxSize).toBeLessThanOrEqual(12_000);
+    expect(secondTelemetry.chiMemoMisses).toBe(firstTelemetry.chiMemoMisses);
+    expect(secondTelemetry.chiMemoHits).toBe(firstTelemetry.chiMemoHits);
+
+    // Ein Zwischenlauf ohne memoChi darf den nächsten memoChi-Lauf nicht beeinflussen.
+    vigenere.crack(text, {
+      keyLength: 5,
+      optimizations: { memoChi: false, collectStats: false },
+      bruteforceFallback: { enabled: false },
+    });
+    const third = vigenere.crack(text, options);
+    expect(third.search.telemetry.chiMemoMisses).toBe(firstTelemetry.chiMemoMisses);
+  });
+
+  it("docs/DATENFLUSS.md: headerlose CSV im Fallback verliert keine erste Datenzeile", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "rows.csv",
+      text: async () => "alpha,beta\ngamma,delta",
+    });
+    expect(parsed.text).toBe("alpha beta gamma delta");
   });
 });

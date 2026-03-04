@@ -180,6 +180,7 @@
     maxMsPerLength: 12_000,
     stageWidths: [12, 18, 26],
   };
+  const MAX_CHI_MEMO_CACHE_SIZE = 12_000;
 
   // Globaler Memoization-Cache für chi-Square-Berechnungen
   // Struktur: Map<"columnLetters::shift" => chiValue>
@@ -203,6 +204,8 @@
       chiCalls: 0,
       chiMemoHits: 0,
       chiMemoMisses: 0,
+      chiMemoEvictions: 0,
+      chiMemoMaxSize: 0,
       rankedShiftCalls: 0,
       localSearchTrials: 0,
       localSearchEarlyStops: 0,
@@ -374,7 +377,23 @@
     // Speichere im Cache, wenn aktiviert
     if (enableMemo) {
       const cacheKey = `${fingerprint}::${shift}`;
+      // Der Cache bleibt bewusst hart begrenzt, damit lange Crack-Sessions keinen
+      // unkontrollierten Speicheranstieg auslösen.
+      if (!chiMemoCache.has(cacheKey) && chiMemoCache.size >= MAX_CHI_MEMO_CACHE_SIZE) {
+        const oldestKey = chiMemoCache.keys().next().value;
+        if (oldestKey !== undefined) {
+          chiMemoCache.delete(oldestKey);
+          if (stats) {
+            stats.chiMemoEvictions += 1;
+          }
+        } else {
+          resetChiMemo();
+        }
+      }
       chiMemoCache.set(cacheKey, chi);
+      if (stats) {
+        stats.chiMemoMaxSize = Math.max(stats.chiMemoMaxSize, chiMemoCache.size);
+      }
     }
     return chi;
   }
@@ -1409,10 +1428,6 @@
     const stats = optimizationContext.stats;
     const startedAt = stats ? nowMs() : 0;
 
-    if (flags.memoChi === true) {
-      resetChiMemo();
-    }
-
     const safeLength = Math.max(1, keyLength);
     const letters = extractLettersUpper(text);
     if (letters.length === 0) {
@@ -1430,55 +1445,6 @@
           optimizations: Object.assign({}, flags),
         },
       };
-    }
-
-    // Heuristic fallback: if the caller provided a hinted length and it's small
-    // (<=5) we can attempt a bounded exhaustive search over all 26^L keys. This
-    // helps short-text rescue cases (small keys) where combinatorial pruning may
-    // miss the true key. The cap prevents runaway work for larger lengths.
-    if (hinted && safeLength <= 5) {
-      // 26^5 bleibt bewusst die harte Obergrenze, damit bei Hint-Länge 5 der
-      // vollständige Suchraum garantiert durchlaufen wird.
-      const maxExhaustive = Math.pow(26, 5);
-      const combos = Math.pow(26, safeLength);
-      if (combos <= maxExhaustive) {
-        let bestGlobal = { key: null, text: null, score: -Infinity };
-        const shifts = Array(safeLength).fill(0);
-
-        // iterate lexicographically over shifts
-        for (let i = 0; i < combos; i += 1) {
-          // decode current shifts to text and score
-          const trialText = applyWithShifts(text, shifts, -1);
-          const trialScore = scoreLanguage(trialText);
-          // include dictionary boost when doing exhaustive short-key search
-          const boost = dictionaryBoostScore(trialText);
-          const combined = trialScore + boost;
-          if (combined > bestGlobal.score) {
-            bestGlobal = { key: shiftsToKey(shifts), text: trialText, score: combined };
-          }
-
-          // increment shifts
-          for (let p = safeLength - 1; p >= 0; p -= 1) {
-            shifts[p] = (shifts[p] + 1) % 26;
-            if (shifts[p] !== 0) {
-              break;
-            }
-          }
-        }
-
-        // return early with exhaustive best candidate
-        const search = { exhaustive: true, combos, dictionaryBoostApplied: true };
-        if (stats) {
-          stats.totalMs = nowMs() - startedAt;
-          search.telemetry = Object.assign({}, stats);
-        }
-
-        return {
-          best: { key: bestGlobal.key, text: bestGlobal.text, confidence: bestGlobal.score },
-          candidates: [{ key: bestGlobal.key, text: bestGlobal.text, confidence: bestGlobal.score }],
-          search,
-        };
-      }
     }
 
     const columns = splitIntoColumns(letters, safeLength);
@@ -1663,171 +1629,190 @@
     },
 
     crack(text, options) {
+      // Session-Start leert den globalen Chi-Cache immer, damit vorherige Aufrufe
+      // (auch mit anderem memoChi-Flag) keine Folgesessions beeinflussen.
+      resetChiMemo();
+
       const safeOptions = options || {};
-      const optimizationContext = createOptimizationContext(safeOptions);
-      const keyLengthHint =
-        safeOptions && Number.isInteger(safeOptions.keyLength) ? safeOptions.keyLength : null;
-      const bruteforceFallbackConfig = resolveBruteforceFallbackOptions(safeOptions);
+      try {
+        const optimizationContext = createOptimizationContext(safeOptions);
+        const keyLengthHint =
+          safeOptions && Number.isInteger(safeOptions.keyLength) ? safeOptions.keyLength : null;
+        const bruteforceFallbackConfig = resolveBruteforceFallbackOptions(safeOptions);
 
-      let best = {
-        key: "A",
-        text,
-        score: -Infinity,
-      };
-      const collectedCandidates = [];
-
-      const lengths = candidateLengths(text, keyLengthHint, optimizationContext);
-      // Wenn der Hint ein vielfaches, repetitives Schlüsselwort repräsentiert,
-      // können Teilerlängen denselben Klartext ergeben. Diese Zusatzprüfung läuft
-      // nur im Optimierungsmodus, damit der Legacy-Pfad unverändert bleibt.
-      if (keyLengthHint != null && optimizationContext.enabled) {
-        for (let divisor = 1; divisor < keyLengthHint; divisor += 1) {
-          if (keyLengthHint % divisor !== 0) {
-            continue;
-          }
-          if (!lengths.includes(divisor)) {
-            lengths.push(divisor);
-          }
-        }
-        lengths.sort((a, b) => a - b);
-      }
-
-      const lettersCount = extractLettersUpper(text).length;
-      const promoteUnhintedShortSearch =
-        keyLengthHint == null && optimizationContext.enabled && lettersCount <= 18;
-      const lengthPenaltyPerChar =
-        keyLengthHint != null ? 0.12 : optimizationContext.enabled ? 1.5 : 0.12;
-      let bruteforceBudgetSpentMs = 0;
-
-      let bestSearch = null;
-      for (const length of lengths) {
-        const useHintedBudgets = keyLengthHint != null || promoteUnhintedShortSearch;
-        const result = crackWithLength(text, length, useHintedBudgets, safeOptions);
-        const baseScored = scoreCandidateForFallback(result.best.text);
-        let selectedBest = {
-          key: result.best.key,
-          text: result.best.text,
-          confidence: result.best.confidence,
-          sense: baseScored.sense,
+        let best = {
+          key: "A",
+          text,
+          score: -Infinity,
         };
-        let selectedCandidates = Array.isArray(result.candidates)
-          ? result.candidates.slice()
-          : [];
+        const collectedCandidates = [];
 
-        const gate = shouldTriggerBruteforceFallback({
-          lettersCount,
-          keyLength: length,
-          sense: baseScored.sense,
-          config: bruteforceFallbackConfig,
-        });
-        let bruteforceFallbackTriggered = false;
-        let bruteforceFallbackReason = gate.reason;
-        let bruteforceCombosVisited = 0;
-        let bruteforceElapsedMs = 0;
-
-        // Bei kurzen, wenig plausiblen Kandidaten schalten wir bewusst eine zweite,
-        // zeitbudgetierte Suche zu, weil der normale Pfad in diesem Bereich öfter
-        // auf lokal guten, aber semantisch schlechten Plateaus landet.
-        // Ohne Längen-Hint erlauben wir den Fallback nur bei adaptiv "günstigen"
-        // Fällen, damit der teure Pfad auf kleine Suchräume beschränkt bleibt.
-        const estimatedFallbackMs =
-          (lettersCount * Math.pow(26, length)) / 20_000;
-        const fallbackEligibleWithoutHint =
-          keyLengthHint == null &&
-          Number.isFinite(estimatedFallbackMs) &&
-          estimatedFallbackMs <= bruteforceFallbackConfig.maxMsPerLength;
-        const fallbackEligibleLength =
-          (keyLengthHint != null && length === keyLengthHint) ||
-          fallbackEligibleWithoutHint;
-        if (gate.triggered && fallbackEligibleLength) {
-          const remainingTotalMs = Math.max(
-            0,
-            bruteforceFallbackConfig.maxTotalMs - bruteforceBudgetSpentMs
-          );
-          if (remainingTotalMs > 0) {
-            // Kurze Texte profitieren nur begrenzt von langen Laufzeiten; ein
-            // adaptiver Deckel hält Legacy-Timeouts stabil, ohne den Konfigvertrag
-            // (`maxMsPerLength`) zu brechen.
-            const adaptivePerLengthMs = Math.min(
-              bruteforceFallbackConfig.maxMsPerLength,
-              Math.max(900, lettersCount * length * 20)
-            );
-            const maxElapsedMs = Math.min(remainingTotalMs, adaptivePerLengthMs);
-            const fallback = runStagedBruteforceFallback(
-              text,
-              length,
-              bruteforceFallbackConfig,
-              optimizationContext,
-              maxElapsedMs
-            );
-            bruteforceBudgetSpentMs += fallback.elapsedMs;
-            bruteforceFallbackTriggered = true;
-            bruteforceFallbackReason = gate.reason;
-            bruteforceCombosVisited = fallback.combosVisited;
-            bruteforceElapsedMs = fallback.elapsedMs;
-
-            if (shouldUseBruteforceResult(baseScored, fallback.best)) {
-              selectedBest = fallback.best;
+        const lengths = candidateLengths(text, keyLengthHint, optimizationContext);
+        // Wenn der Hint ein vielfaches, repetitives Schlüsselwort repräsentiert,
+        // können Teilerlängen denselben Klartext ergeben. Diese Zusatzprüfung läuft
+        // nur im Optimierungsmodus, damit der Legacy-Pfad unverändert bleibt.
+        if (keyLengthHint != null && optimizationContext.enabled) {
+          for (let divisor = 1; divisor < keyLengthHint; divisor += 1) {
+            if (keyLengthHint % divisor !== 0) {
+              continue;
             }
-
-            if (fallback.candidates.length > 0) {
-              selectedCandidates = uniqueTopCandidates(
-                selectedCandidates
-                  .concat(fallback.candidates)
-                  .sort((a, b) => b.confidence - a.confidence),
-                keyLengthHint != null ? 180 : 120
-              );
+            if (!lengths.includes(divisor)) {
+              lengths.push(divisor);
             }
-          } else {
-            bruteforceFallbackReason = "total_budget_exhausted";
           }
-        } else if (gate.triggered && !fallbackEligibleLength) {
-          bruteforceFallbackReason =
-            keyLengthHint != null ? "requires_keylength_hint" : "adaptive_size_gate_not_met";
+          lengths.sort((a, b) => a - b);
         }
 
-        const search = Object.assign({}, result.search || {}, {
-          bruteforceFallbackTriggered,
-          bruteforceFallbackReason,
-          bruteforceFallbackKeyLength: bruteforceFallbackTriggered ? length : null,
-          bruteforceCombosVisited,
-          bruteforceElapsedMs,
-          sense: selectedBest.sense || baseScored.sense,
-        });
+        const lettersCount = extractLettersUpper(text).length;
+        const promoteUnhintedShortSearch =
+          keyLengthHint == null && optimizationContext.enabled && lettersCount <= 18;
+        const lengthPenaltyPerChar =
+          keyLengthHint != null ? 0.12 : optimizationContext.enabled ? 1.5 : 0.12;
+        let bruteforceBudgetSpentMs = 0;
 
-        for (const candidate of selectedCandidates) {
-          collectedCandidates.push({
-            key: candidate.key,
-            text: candidate.text,
-            confidence: candidate.confidence - length * lengthPenaltyPerChar,
-            keyLength: length,
-          });
-        }
-
-        const adjustedScore = selectedBest.confidence - length * lengthPenaltyPerChar;
-        if (adjustedScore > best.score) {
-          best = {
-            key: selectedBest.key,
-            text: selectedBest.text,
-            score: adjustedScore,
+        let bestSearch = null;
+        for (const length of lengths) {
+          const useHintedBudgets = keyLengthHint != null || promoteUnhintedShortSearch;
+          const result = crackWithLength(text, length, useHintedBudgets, safeOptions);
+          const baseScored = scoreCandidateForFallback(result.best.text);
+          let selectedBest = {
+            key: result.best.key,
+            text: result.best.text,
+            confidence: result.best.confidence,
+            sense: baseScored.sense,
           };
-          bestSearch = search;
+          let selectedCandidates = Array.isArray(result.candidates)
+            ? result.candidates.slice()
+            : [];
+
+          const gate = shouldTriggerBruteforceFallback({
+            lettersCount,
+            keyLength: length,
+            sense: baseScored.sense,
+            config: bruteforceFallbackConfig,
+          });
+          let bruteforceFallbackTriggered = false;
+          let bruteforceFallbackReason = gate.reason;
+          let bruteforceCombosVisited = 0;
+          let bruteforceElapsedMs = 0;
+
+          // Bei kurzen, wenig plausiblen Kandidaten schalten wir bewusst eine zweite,
+          // zeitbudgetierte Suche zu, weil der normale Pfad in diesem Bereich öfter
+          // auf lokal guten, aber semantisch schlechten Plateaus landet.
+          // Ohne Längen-Hint erlauben wir den Fallback nur bei adaptiv "günstigen"
+          // Fällen, damit der teure Pfad auf kleine Suchräume beschränkt bleibt.
+          const estimatedFallbackMs =
+            (lettersCount * Math.pow(26, length)) / 20_000;
+          const fallbackEligibleWithoutHint =
+            keyLengthHint == null &&
+            Number.isFinite(estimatedFallbackMs) &&
+            estimatedFallbackMs <= bruteforceFallbackConfig.maxMsPerLength;
+          const fallbackEligibleLength =
+            (keyLengthHint != null && length === keyLengthHint) ||
+            fallbackEligibleWithoutHint;
+          if (gate.triggered && fallbackEligibleLength) {
+            const remainingTotalMs = Math.max(
+              0,
+              bruteforceFallbackConfig.maxTotalMs - bruteforceBudgetSpentMs
+            );
+            if (remainingTotalMs > 0) {
+              let maxElapsedMs;
+              if (keyLengthHint != null) {
+                // Bei explizitem KeyLength-Hint gilt direkt die Konfiguration ohne
+                // adaptive Zusatzkappung, damit das Budget verlässlich planbar bleibt.
+                maxElapsedMs = Math.min(
+                  remainingTotalMs,
+                  bruteforceFallbackConfig.maxMsPerLength
+                );
+              } else {
+                // Ohne Hint bleibt das adaptive Größen-Gate aktiv, damit der teure
+                // Pfad nur auf kleine, voraussichtlich günstige Suchräume fällt.
+                const adaptivePerLengthMs = Math.min(
+                  bruteforceFallbackConfig.maxMsPerLength,
+                  Math.max(900, lettersCount * length * 20)
+                );
+                maxElapsedMs = Math.min(remainingTotalMs, adaptivePerLengthMs);
+              }
+              const fallback = runStagedBruteforceFallback(
+                text,
+                length,
+                bruteforceFallbackConfig,
+                optimizationContext,
+                maxElapsedMs
+              );
+              bruteforceBudgetSpentMs += fallback.elapsedMs;
+              bruteforceFallbackTriggered = true;
+              bruteforceFallbackReason = gate.reason;
+              bruteforceCombosVisited = fallback.combosVisited;
+              bruteforceElapsedMs = fallback.elapsedMs;
+
+              if (shouldUseBruteforceResult(baseScored, fallback.best)) {
+                selectedBest = fallback.best;
+              }
+
+              if (fallback.candidates.length > 0) {
+                selectedCandidates = uniqueTopCandidates(
+                  selectedCandidates
+                    .concat(fallback.candidates)
+                    .sort((a, b) => b.confidence - a.confidence),
+                  keyLengthHint != null ? 180 : 120
+                );
+              }
+            } else {
+              bruteforceFallbackReason = "total_budget_exhausted";
+            }
+          } else if (gate.triggered && !fallbackEligibleLength) {
+            bruteforceFallbackReason =
+              keyLengthHint != null ? "requires_keylength_hint" : "adaptive_size_gate_not_met";
+          }
+
+          const search = Object.assign({}, result.search || {}, {
+            bruteforceFallbackTriggered,
+            bruteforceFallbackReason,
+            bruteforceFallbackKeyLength: bruteforceFallbackTriggered ? length : null,
+            bruteforceCombosVisited,
+            bruteforceElapsedMs,
+            sense: selectedBest.sense || baseScored.sense,
+          });
+
+          for (const candidate of selectedCandidates) {
+            collectedCandidates.push({
+              key: candidate.key,
+              text: candidate.text,
+              confidence: candidate.confidence - length * lengthPenaltyPerChar,
+              keyLength: length,
+            });
+          }
+
+          const adjustedScore = selectedBest.confidence - length * lengthPenaltyPerChar;
+          if (adjustedScore > best.score) {
+            best = {
+              key: selectedBest.key,
+              text: selectedBest.text,
+              score: adjustedScore,
+            };
+            bestSearch = search;
+          }
         }
+
+        collectedCandidates.sort((a, b) => b.confidence - a.confidence);
+        const ranked = uniqueTopCandidates(
+          collectedCandidates,
+          keyLengthHint != null ? 120 : 60
+        );
+
+        return {
+          key: best.key,
+          text: best.text,
+          confidence: best.score,
+          candidates: ranked,
+          search: bestSearch,
+        };
+      } finally {
+        // Session-Ende leert den Cache erneut, damit der globale Speicher selbst
+        // bei wiederholten Aufrufen mit wechselnden Optionen stabil bleibt.
+        resetChiMemo();
       }
-
-      collectedCandidates.sort((a, b) => b.confidence - a.confidence);
-      const ranked = uniqueTopCandidates(
-        collectedCandidates,
-        keyLengthHint != null ? 120 : 60
-      );
-
-      return {
-        key: best.key,
-        text: best.text,
-        confidence: best.score,
-        candidates: ranked,
-        search: bestSearch,
-      };
     },
   };
 })(window);

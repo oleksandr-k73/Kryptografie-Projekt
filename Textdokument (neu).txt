@@ -54,3 +54,22 @@ Abgabevoraussetzungen:
 - die Tests sind korrekt, fehlerfrei und implementierbar
 - die Algorithmen, falls sie generiert werden, sind fehlerfrei und ergeben richtige Ausgaben (dafür Tests machen)
 - die Abhängigkeiten sind unbedingt nötig und können in derzeitigem Zustand nicht ersetzt werden
+
+
+Das Vigenere-Verfahren ist immer noch fehlerhaft. Hier sind zwei Testfälle:
+###
+(Länge 5, 189631 Kombinationen, 1405 ms)
+Schlüssel: THSOX | Score: 14.69 | Wörterbuch: 33% | SETGOAR EIN ENNS
+Schlüssel: RYSOX | Score: 14.54 | Wörterbuch: 33% | UNTGOCA EIN GWNS
+Schlüssel: TYSOX | Score: 14.50 | Wörterbuch: 33% | SNTGOAA EIN EWNS
+Schlüssel: TMSOX | Score: 14.20 | Wörterbuch: 33% | SZTGOAM EIN EINS
+Schlüssel: RQSOX | Score: 14.20 | Wörterbuch: 33% | UVTGOCI EIN GENS
+
+Zu wenig Kombinationen, daher keine sinnvolle Kandidaten
+###
+"APCZX QYEAXTA SAGW HLK ATSLW EJZ UFH OLIYX XUTWVULRWRO HM VSEWEDWEHLL" dauert viel zu lange
+###
+
+Plane einen Fix mit folgener Vorgehensweise:
+1. Überprüfe die Dateien nach Fehlern
+2. Untersuche, warum das Verhalten in Testfällen auftritt. Plane den Fix dafür
