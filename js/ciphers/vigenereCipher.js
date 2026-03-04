@@ -1636,8 +1636,13 @@
       const safeOptions = options || {};
       try {
         const optimizationContext = createOptimizationContext(safeOptions);
-        const keyLengthHint =
+        const rawKeyLengthHint =
           safeOptions && Number.isInteger(safeOptions.keyLength) ? safeOptions.keyLength : null;
+        const lettersCount = extractLettersUpper(text).length;
+        // Der Hint wird einmal auf die real testbare Länge begrenzt, damit alle
+        // nachgelagerten Gates denselben Suchraum sehen und nicht mit Rohwerten driften.
+        const clampedKeyLength =
+          rawKeyLengthHint == null ? null : Math.max(1, Math.min(rawKeyLengthHint, lettersCount));
         const bruteforceFallbackConfig = resolveBruteforceFallbackOptions(safeOptions);
 
         let best = {
@@ -1647,13 +1652,13 @@
         };
         const collectedCandidates = [];
 
-        const lengths = candidateLengths(text, keyLengthHint, optimizationContext);
+        const lengths = candidateLengths(text, clampedKeyLength, optimizationContext);
         // Wenn der Hint ein vielfaches, repetitives Schlüsselwort repräsentiert,
         // können Teilerlängen denselben Klartext ergeben. Diese Zusatzprüfung läuft
         // nur im Optimierungsmodus, damit der Legacy-Pfad unverändert bleibt.
-        if (keyLengthHint != null && optimizationContext.enabled) {
-          for (let divisor = 1; divisor < keyLengthHint; divisor += 1) {
-            if (keyLengthHint % divisor !== 0) {
+        if (clampedKeyLength != null && optimizationContext.enabled) {
+          for (let divisor = 1; divisor < clampedKeyLength; divisor += 1) {
+            if (clampedKeyLength % divisor !== 0) {
               continue;
             }
             if (!lengths.includes(divisor)) {
@@ -1663,16 +1668,15 @@
           lengths.sort((a, b) => a - b);
         }
 
-        const lettersCount = extractLettersUpper(text).length;
         const promoteUnhintedShortSearch =
-          keyLengthHint == null && optimizationContext.enabled && lettersCount <= 18;
+          clampedKeyLength == null && optimizationContext.enabled && lettersCount <= 18;
         const lengthPenaltyPerChar =
-          keyLengthHint != null ? 0.12 : optimizationContext.enabled ? 1.5 : 0.12;
+          clampedKeyLength != null ? 0.12 : optimizationContext.enabled ? 1.5 : 0.12;
         let bruteforceBudgetSpentMs = 0;
 
         let bestSearch = null;
         for (const length of lengths) {
-          const useHintedBudgets = keyLengthHint != null || promoteUnhintedShortSearch;
+          const useHintedBudgets = clampedKeyLength != null || promoteUnhintedShortSearch;
           const result = crackWithLength(text, length, useHintedBudgets, safeOptions);
           const baseScored = scoreCandidateForFallback(result.best.text);
           let selectedBest = {
@@ -1704,11 +1708,11 @@
           const estimatedFallbackMs =
             (lettersCount * Math.pow(26, length)) / 20_000;
           const fallbackEligibleWithoutHint =
-            keyLengthHint == null &&
+            clampedKeyLength == null &&
             Number.isFinite(estimatedFallbackMs) &&
             estimatedFallbackMs <= bruteforceFallbackConfig.maxMsPerLength;
           const fallbackEligibleLength =
-            (keyLengthHint != null && length === keyLengthHint) ||
+            (clampedKeyLength != null && length === clampedKeyLength) ||
             fallbackEligibleWithoutHint;
           if (gate.triggered && fallbackEligibleLength) {
             const remainingTotalMs = Math.max(
@@ -1717,7 +1721,7 @@
             );
             if (remainingTotalMs > 0) {
               let maxElapsedMs;
-              if (keyLengthHint != null) {
+              if (clampedKeyLength != null) {
                 // Bei explizitem KeyLength-Hint gilt direkt die Konfiguration ohne
                 // adaptive Zusatzkappung, damit das Budget verlässlich planbar bleibt.
                 maxElapsedMs = Math.min(
@@ -1755,7 +1759,7 @@
                   selectedCandidates
                     .concat(fallback.candidates)
                     .sort((a, b) => b.confidence - a.confidence),
-                  keyLengthHint != null ? 180 : 120
+                  clampedKeyLength != null ? 180 : 120
                 );
               }
             } else {
@@ -1763,7 +1767,7 @@
             }
           } else if (gate.triggered && !fallbackEligibleLength) {
             bruteforceFallbackReason =
-              keyLengthHint != null ? "requires_keylength_hint" : "adaptive_size_gate_not_met";
+              clampedKeyLength != null ? "requires_keylength_hint" : "adaptive_size_gate_not_met";
           }
 
           const search = Object.assign({}, result.search || {}, {
@@ -1798,7 +1802,7 @@
         collectedCandidates.sort((a, b) => b.confidence - a.confidence);
         const ranked = uniqueTopCandidates(
           collectedCandidates,
-          keyLengthHint != null ? 120 : 60
+          clampedKeyLength != null ? 120 : 60
         );
 
         return {

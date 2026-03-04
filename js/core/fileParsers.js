@@ -106,6 +106,110 @@
     "hint",
   ];
 
+  const genericCsvHeaderKeys = new Set([
+    "col",
+    "cols",
+    "column",
+    "columns",
+    "feld",
+    "felder",
+    "spalte",
+    "spalten",
+    "header",
+    "headers",
+    "klasse",
+    "kategorie",
+    "category",
+    "typ",
+    "type",
+    "date",
+    "datum",
+    "zeit",
+    "time",
+    "city",
+    "ort",
+    "land",
+    "country",
+  ]);
+
+  function isNumericCsvCell(value) {
+    const normalized = String(value || "")
+      .trim()
+      .replace(",", ".");
+    return /^[-+]?\d+(\.\d+)?$/.test(normalized);
+  }
+
+  function isLikelyHeaderToken(value) {
+    const token = String(value || "").trim().toLowerCase();
+    if (!token || token.length > 24 || isNumericCsvCell(token)) {
+      return false;
+    }
+    return /^[a-zäöü_][a-zäöü0-9_ -]*$/i.test(token);
+  }
+
+  function isLikelyCsvHeaderRow(rows) {
+    if (!Array.isArray(rows) || rows.length < 2 || !Array.isArray(rows[0])) {
+      return false;
+    }
+
+    const firstRow = rows[0];
+    const secondRow = Array.isArray(rows[1]) ? rows[1] : [];
+    const normalizedFirst = firstRow.map((cell) => String(cell || "").trim().toLowerCase());
+    const nonEmptyTokens = normalizedFirst.filter((token) => token.length > 0);
+
+    if (nonEmptyTokens.length === 0) {
+      return false;
+    }
+
+    const keywordHits = nonEmptyTokens.filter((token) => {
+      return (
+        strongTextKeys.includes(token) ||
+        weakMetaKeys.includes(token) ||
+        genericCsvHeaderKeys.has(token)
+      );
+    }).length;
+
+    const headerLikeHits = nonEmptyTokens.filter((token) => isLikelyHeaderToken(token)).length;
+
+    let contrastHits = 0;
+    for (let index = 0; index < firstRow.length; index += 1) {
+      const headerCell = String(firstRow[index] || "").trim();
+      const dataCell = String(secondRow[index] || "").trim();
+      if (!headerCell || !dataCell) {
+        continue;
+      }
+
+      const headerNumeric = isNumericCsvCell(headerCell);
+      const dataNumeric = isNumericCsvCell(dataCell);
+      if (!headerNumeric && dataNumeric) {
+        contrastHits += 1;
+        continue;
+      }
+
+      // Groß-/Kleinschreibung im Folgerow ist ein robustes Signal für "Bezeichner -> Wert".
+      if (/^[a-zäöü_ -]+$/i.test(headerCell) && /^[A-ZÄÖÜ]/.test(dataCell)) {
+        contrastHits += 1;
+        continue;
+      }
+
+      if (
+        headerCell.toLowerCase() !== dataCell.toLowerCase() &&
+        headerCell.length <= 14 &&
+        dataCell.length >= headerCell.length + 3
+      ) {
+        contrastHits += 1;
+      }
+    }
+
+    // Konservativ: Wir droppen nur bei starkem Signal, um echte erste Datenzeilen
+    // in headerlosen CSV-Dateien weiterhin zu erhalten.
+    if (keywordHits >= 2 && headerLikeHits >= Math.ceil(nonEmptyTokens.length * 0.6)) {
+      return true;
+    }
+
+    return keywordHits >= 1 && contrastHits >= 1 && headerLikeHits === nonEmptyTokens.length;
+  }
+
   function scoreJsonCandidate(candidate) {
     const text = candidate.text;
     const lowerText = text.toLowerCase();
@@ -338,9 +442,10 @@
             .trim();
         }
 
-        // Ohne erkannten Header/Textspalte behalten wir bewusst alle Zeilen:
-        // So verlieren headerlose CSV-Dateien nicht stillschweigend die erste Datenzeile.
-        return rows
+        // Ohne explizite Textspalte droppen wir die erste Zeile nur bei starker
+        // Header-Evidenz; so vermeiden wir Header-Leaks, ohne headerlose CSVs zu beschädigen.
+        const payloadRows = isLikelyCsvHeaderRow(rows) ? rows.slice(1) : rows;
+        return payloadRows
           .flatMap((row) => row)
           .join(" ")
           .trim();

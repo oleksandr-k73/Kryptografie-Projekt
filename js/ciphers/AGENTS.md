@@ -59,6 +59,9 @@ Optionale Metadaten:
 - Fallback ist strikt gate-gebunden; die genaue Gate-/Scoringlogik ist in `docs/SCORING.md` dokumentiert.
 - Mit `keyLength`-Hint gilt für den Fallback direkt: `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`.
 - Ohne `keyLength`-Hint bleibt ein adaptives Größen-Gate aktiv, um teure Kurztextfälle zu begrenzen.
+- `keyLength`-Hint-Normalisierung (Clamp auf testbare Buchstabenlänge) und die konsistente
+  Nutzung in Schlüssellängen-Auswahl, Divisor-Erweiterung und Fallback-Gates sind zentral in
+  `docs/SCORING.md` dokumentiert.
 - Der Chi-Memo-Cache ist auf `MAX_CHI_MEMO_CACHE_SIZE` begrenzt und wird zu Beginn/Ende jeder Crack-Session geleert.
 - Zusätzliche Suche-Telemetrie in `result.search`:
   - `bruteforceFallbackTriggered`, `bruteforceFallbackReason`, `bruteforceFallbackKeyLength`

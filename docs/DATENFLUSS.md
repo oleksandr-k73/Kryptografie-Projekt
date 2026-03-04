@@ -26,8 +26,10 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 3. Dateiparsing (`js/core/fileParsers.js`)
 - Format nach Extension.
 - Unterstützt: `txt`, `log`, `md`, `json`, `csv`, `js`, `mjs`, `cjs`.
-- CSV ohne erkannte Textspalte nutzt einen Zeilen-Fallback über alle Zellen, damit
-  headerlose Dateien keine erste Datenzeile verlieren.
+- CSV ohne erkannte Textspalte nutzt weiterhin einen Zeilen-Fallback über alle Zellen.
+- Vor dem Flatten prüft eine konservative Header-Heuristik die erste Zeile.
+- Die erste Zeile wird nur bei starkem Header-Signal entfernt; bei unklaren Fällen bleibt
+  sie erhalten, damit headerlose Dateien keine erste Datenzeile verlieren.
 - Unbekanntes Format: Fallback als Klartext (`fallback: true`).
 
 4. Ausführung (`runCipher`)

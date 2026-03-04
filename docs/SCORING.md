@@ -27,6 +27,11 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - lokale Verfeinerung per Search
   - Sprach-Scoring auf Kandidatentext
 - Optionaler `keyLength`-Hint erhöht Präzision und reduziert Suchraum.
+- Der `keyLength`-Hint wird vor der Suche einmal auf die testbare Buchstabenlänge
+  (`extractLettersUpper(text).length`) begrenzt.
+- Diese effektive (geclampte) Länge wird konsistent für Schlüssellängen-Kandidaten,
+  Divisor-Erweiterung und Hint-basiertes Fallback-Gating verwendet.
+- Dadurch öffnen übergroße Hints keinen größeren Suchraum als tatsächlich testbar.
 - Bei kurzen und sinnarmen Kandidaten kann ein staged Bruteforce-Fallback laufen:
   - Stage 1: Top-12 je Spalte
   - Stage 2: Top-18 je Spalte

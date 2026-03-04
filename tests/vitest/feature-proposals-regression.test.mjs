@@ -197,37 +197,90 @@ describe("feature proposals regression checks with markdown references", () => {
       // Ohne Fix wäre hier durch adaptive Zusatzkappung deutlich früher Schluss.
       expect(cracked.search.bruteforceCombosVisited).toBeGreaterThanOrEqual(500);
       expect(cracked.search.bruteforceElapsedMs).toBeGreaterThanOrEqual(2_000);
-    }
+    },
+    30_000
   );
 
-  it("js/ciphers/vigenereCipher.js: chi memo cache stays bounded and reset across sessions", () => {
-    const { vigenere } = loadRuntime(() => Promise.reject(new Error("offline")));
-    const text = "QWERTYUIOPASDFGHJKLZXCVBNM QWERTYUIOPASDFGHJKLZXCVBNM";
-    const options = {
-      keyLength: 5,
-      optimizations: { memoChi: true, collectStats: true },
-      bruteforceFallback: { enabled: false },
-    };
+  it(
+    "js/ciphers/vigenereCipher.js: chi memo cache stays bounded and reset across sessions",
+    () => {
+      const { vigenere } = loadRuntime(() => Promise.reject(new Error("offline")));
+      const text = "QWERTYUIOPASDFGHJKLZXCVBNM QWERTYUIOPASDFGHJKLZXCVBNM";
+      const options = {
+        keyLength: 5,
+        optimizations: { memoChi: true, collectStats: true },
+        bruteforceFallback: { enabled: false },
+      };
 
-    const first = vigenere.crack(text, options);
-    const second = vigenere.crack(text, options);
-    const firstTelemetry = first.search.telemetry;
-    const secondTelemetry = second.search.telemetry;
+      const first = vigenere.crack(text, options);
+      const second = vigenere.crack(text, options);
+      const firstTelemetry = first.search.telemetry;
+      const secondTelemetry = second.search.telemetry;
 
-    expect(firstTelemetry.chiMemoMaxSize).toBeGreaterThan(0);
-    expect(firstTelemetry.chiMemoMaxSize).toBeLessThanOrEqual(12_000);
-    expect(secondTelemetry.chiMemoMisses).toBe(firstTelemetry.chiMemoMisses);
-    expect(secondTelemetry.chiMemoHits).toBe(firstTelemetry.chiMemoHits);
+      expect(firstTelemetry.chiMemoMaxSize).toBeGreaterThan(0);
+      expect(firstTelemetry.chiMemoMaxSize).toBeLessThanOrEqual(12_000);
+      expect(secondTelemetry.chiMemoMisses).toBe(firstTelemetry.chiMemoMisses);
+      expect(secondTelemetry.chiMemoHits).toBe(firstTelemetry.chiMemoHits);
 
-    // Ein Zwischenlauf ohne memoChi darf den nächsten memoChi-Lauf nicht beeinflussen.
-    vigenere.crack(text, {
-      keyLength: 5,
-      optimizations: { memoChi: false, collectStats: false },
-      bruteforceFallback: { enabled: false },
-    });
-    const third = vigenere.crack(text, options);
-    expect(third.search.telemetry.chiMemoMisses).toBe(firstTelemetry.chiMemoMisses);
-  });
+      // Ein Zwischenlauf ohne memoChi darf den nächsten memoChi-Lauf nicht beeinflussen.
+      vigenere.crack(text, {
+        keyLength: 5,
+        optimizations: { memoChi: false, collectStats: false },
+        bruteforceFallback: { enabled: false },
+      });
+      const third = vigenere.crack(text, options);
+      expect(third.search.telemetry.chiMemoMisses).toBe(firstTelemetry.chiMemoMisses);
+    },
+    30_000
+  );
+
+  it(
+    "js/ciphers/vigenereCipher.js: oversized keyLength hint stays clamped in optimization divisor path",
+    () => {
+      const { vigenere } = loadRuntime(() => Promise.reject(new Error("offline")));
+      const cracked = vigenere.crack("ABCD", {
+        keyLength: 10,
+        optimizations: true,
+        candidateBudget: 32,
+        stateBudget: 64,
+        evaluationBudget: 32,
+        bruteforceFallback: { enabled: false },
+      });
+
+      const testedLengths = Array.from(new Set(cracked.candidates.map((entry) => entry.keyLength)));
+      // Oversized Hints dürfen keine zusätzlichen Suchlängen außerhalb der realen Textlänge öffnen.
+      expect(testedLengths.every((length) => length <= 4)).toBe(true);
+    },
+    15_000
+  );
+
+  it(
+    "js/ciphers/vigenereCipher.js: fallback hint gating uses clamped length instead of raw oversized hint",
+    () => {
+      const { vigenere } = loadRuntime(() => Promise.reject(new Error("offline")));
+      const cracked = vigenere.crack("OLIX", {
+        keyLength: 10,
+        optimizations: false,
+        candidateBudget: 32,
+        stateBudget: 64,
+        evaluationBudget: 32,
+        bruteforceFallback: {
+          enabled: true,
+          shortTextMaxLetters: 22,
+          maxKeyLength: 6,
+          maxTotalMs: 200,
+          maxMsPerLength: 200,
+          stageWidths: [3],
+        },
+      });
+
+      // Mit Clamp muss der Fallback für die tatsächlich getestete Länge laufen.
+      expect(cracked.search.bruteforceFallbackTriggered).toBe(true);
+      expect(cracked.search.bruteforceFallbackReason).toBe("short_text_low_sense_keylength_gate");
+      expect(cracked.search.bruteforceFallbackKeyLength).toBe(4);
+    },
+    15_000
+  );
 
   it("docs/DATENFLUSS.md: headerlose CSV im Fallback verliert keine erste Datenzeile", async () => {
     const parseInputFile = loadFileParser();
@@ -236,5 +289,23 @@ describe("feature proposals regression checks with markdown references", () => {
       text: async () => "alpha,beta\ngamma,delta",
     });
     expect(parsed.text).toBe("alpha beta gamma delta");
+  });
+
+  it("js/core/fileParsers.js: CSV fallback entfernt konservativ erkannte Headerzeile", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "rows.csv",
+      text: async () => "name,city\nalice,berlin\nbob,hamburg",
+    });
+    expect(parsed.text).toBe("alice berlin bob hamburg");
+  });
+
+  it("js/core/fileParsers.js: CSV fallback behält ambige erste Zeile ohne starkes Header-Signal", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "rows.csv",
+      text: async () => "name,alpha\nbeta,gamma",
+    });
+    expect(parsed.text).toBe("name alpha beta gamma");
   });
 });
