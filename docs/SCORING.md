@@ -22,18 +22,32 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Nutzt:
   - Schlüssellängen-Kandidaten (IoC-basiert)
   - Spaltenweise Shift-Rangfolge (Chi-Quadrat)
-  - exhaustive Kurzschlüssel-Suche bei `keyLength`-Hint bis Länge 5 (`26^5` Vollraum)
   - budgetierte Kandidatensuche
   - Kurztext-Rettungsmodus
   - lokale Verfeinerung per Search
   - Sprach-Scoring auf Kandidatentext
 - Optionaler `keyLength`-Hint erhöht Präzision und reduziert Suchraum.
+- Der `keyLength`-Hint wird vor der Suche einmal auf die testbare Buchstabenlänge
+  (`extractLettersUpper(text).length`) begrenzt.
+- Diese effektive (geclampte) Länge wird konsistent für Schlüssellängen-Kandidaten,
+  Divisor-Erweiterung und Hint-basiertes Fallback-Gating verwendet.
+- Dadurch öffnen übergroße Hints keinen größeren Suchraum als tatsächlich testbar.
 - Bei kurzen und sinnarmen Kandidaten kann ein staged Bruteforce-Fallback laufen:
   - Stage 1: Top-12 je Spalte
   - Stage 2: Top-18 je Spalte
   - Stage 3: Top-26 je Spalte
+- Fallback läuft ausschließlich über das AND-Gate:
+  - Text ist kurz
+  - Kandidat ist sinnarm (Sense-Gate)
+  - Schlüssellänge liegt innerhalb `maxKeyLength`
+- Wenn der Text nicht kurz ist, bleibt der Pfad bei Frequenz-/Chi-Analyse und
+  `bruteforceFallbackReason` wird als `text_not_short` ausgewiesen.
+- Mit `keyLength`-Hint gilt für den Fallback direkt:
+  - `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`
 - Ohne `keyLength`-Hint bleibt dieser Fallback auf adaptiv günstige Kurzfälle begrenzt
   (`maxMsPerLength`), damit Laufzeitbudgets stabil bleiben.
+- Der Chi-Memo-Cache ist hart begrenzt (`MAX_CHI_MEMO_CACHE_SIZE`) und wird pro
+  Crack-Session explizit zurückgesetzt, damit kein Session-Leak entsteht.
 - Sense-Metriken (`evaluateSenseMetrics(text)`):
   - `dictCoverageProxy`
   - `meaningfulTokenRatio`

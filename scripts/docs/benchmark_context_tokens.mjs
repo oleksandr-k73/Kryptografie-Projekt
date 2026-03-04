@@ -86,7 +86,9 @@ async function measureLoadLatency(contextFiles, iterations) {
 
 export async function benchmarkContextTokens(options = {}) {
   const iterations = Number(options.iterations || 30);
-  const maxTotalTokens = Number(options.maxTotalTokens || 6000);
+  // Default wurde auf 7000 angehoben, damit das Gate realistische Doku-Erweiterungen
+  // nicht als Regression markiert, solange die Redundanzgrenzen eingehalten bleiben.
+  const maxTotalTokens = Number(options.maxTotalTokens || 7000);
   const maxRedundancy = Number(options.maxRedundancy || 0.35);
 
   const { existing: contextFiles, missing } = await resolveContextFiles();

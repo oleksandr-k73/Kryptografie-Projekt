@@ -26,6 +26,10 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 3. Dateiparsing (`js/core/fileParsers.js`)
 - Format nach Extension.
 - Unterstützt: `txt`, `log`, `md`, `json`, `csv`, `js`, `mjs`, `cjs`.
+- CSV ohne erkannte Textspalte nutzt weiterhin einen Zeilen-Fallback über alle Zellen.
+- Vor dem Flatten prüft eine konservative Header-Heuristik die erste Zeile.
+- Die erste Zeile wird nur bei starkem Header-Signal entfernt; bei unklaren Fällen bleibt
+  sie erhalten, damit headerlose Dateien keine erste Datenzeile verlieren.
 - Unbekanntes Format: Fallback als Klartext (`fallback: true`).
 
 4. Ausführung (`runCipher`)
@@ -51,8 +55,10 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
   - `requestAnimationFrame` wird einmal abgewartet, damit der Hinweis sichtbar ist
  
 - `cipher.crack(text, options)` liefert besten Kandidaten und optional `candidates`.
-- Vigenère nutzt bei kurzem Text + niedriger Sinnhaftigkeit + kleiner Schlüssellänge einen staged Bruteforce-Fallback (`[12,18,26]`).
-- Ohne `keyLength`-Hint wird dieser Fallback nur bei adaptiv günstigen Fällen aktiviert (`maxMsPerLength`-Gate).
+- Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
+- Bei `keyLength`-Hint wird das Fallback-Budget direkt über `maxMsPerLength` begrenzt.
+- Ohne `keyLength`-Hint wird der Fallback zusätzlich über ein adaptives Größen-Gate begrenzt.
+- Die konkrete Gate-/Sense-Logik liegt in `docs/SCORING.md`; hier bleibt nur der Laufzeitpfad dokumentiert.
 - Kandidaten werden normalisiert und nach `confidence` sortiert.
 - Optionales Reranking via `dictionaryScorer.rankCandidates(...)`.
 - Bester Kandidat wird als Ausgabe gesetzt.

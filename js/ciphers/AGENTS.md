@@ -41,7 +41,6 @@ Optionale Metadaten:
 - Crack kombiniert:
   - IoC-basierte Schlüssellängen-Auswahl
   - spaltenweise Shift-Rangfolge (Chi-Quadrat)
-  - exhaustive Suche für `keyLength`-Hint bis Länge 5 (vollständig über `26^5`)
   - budgetierte Suche (`candidateBudget`, `stateBudget`, `evaluationBudget`)
   - Kurztext-Rettungsmodus bei bekannter Schlüssellänge
   - lokale Suchverfeinerung
@@ -57,8 +56,13 @@ Optionale Metadaten:
 - Bruteforce-Fallback unter `options.bruteforceFallback`:
   - `enabled`, `maxKeyLength` (hart `<=6`), `shortTextMaxLetters`
   - `maxTotalMs`, `maxMsPerLength`, `stageWidths` (Default `[12,18,26]`)
-- Harte Gate-Bedingung: kurzer Text + niedrige Sinnhaftigkeit + `keyLength <= maxKeyLength`.
-- Ohne `keyLength`-Hint greift zusätzlich ein adaptives Größen-Gate (`maxMsPerLength`), um teure Kurztextfälle zu begrenzen.
+- Fallback ist strikt gate-gebunden; die genaue Gate-/Scoringlogik ist in `docs/SCORING.md` dokumentiert.
+- Mit `keyLength`-Hint gilt für den Fallback direkt: `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`.
+- Ohne `keyLength`-Hint bleibt ein adaptives Größen-Gate aktiv, um teure Kurztextfälle zu begrenzen.
+- `keyLength`-Hint-Normalisierung (Clamp auf testbare Buchstabenlänge) und die konsistente
+  Nutzung in Schlüssellängen-Auswahl, Divisor-Erweiterung und Fallback-Gates sind zentral in
+  `docs/SCORING.md` dokumentiert.
+- Der Chi-Memo-Cache ist auf `MAX_CHI_MEMO_CACHE_SIZE` begrenzt und wird zu Beginn/Ende jeder Crack-Session geleert.
 - Zusätzliche Suche-Telemetrie in `result.search`:
   - `bruteforceFallbackTriggered`, `bruteforceFallbackReason`, `bruteforceFallbackKeyLength`
   - `bruteforceCombosVisited`, `bruteforceElapsedMs`, `sense`

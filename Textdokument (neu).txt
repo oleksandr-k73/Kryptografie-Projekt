@@ -54,3 +54,58 @@ Abgabevoraussetzungen:
 - die Tests sind korrekt, fehlerfrei und implementierbar
 - die Algorithmen, falls sie generiert werden, sind fehlerfrei und ergeben richtige Ausgaben (dafür Tests machen)
 - die Abhängigkeiten sind unbedingt nötig und können in derzeitigem Zustand nicht ersetzt werden
+
+
+Das Vigenere-Verfahren ist immer noch fehlerhaft. Hier sind zwei Testfälle:
+###
+(Länge 5, 189631 Kombinationen, 1405 ms)
+Schlüssel: THSOX | Score: 14.69 | Wörterbuch: 33% | SETGOAR EIN ENNS
+Schlüssel: RYSOX | Score: 14.54 | Wörterbuch: 33% | UNTGOCA EIN GWNS
+Schlüssel: TYSOX | Score: 14.50 | Wörterbuch: 33% | SNTGOAA EIN EWNS
+Schlüssel: TMSOX | Score: 14.20 | Wörterbuch: 33% | SZTGOAM EIN EINS
+Schlüssel: RQSOX | Score: 14.20 | Wörterbuch: 33% | UVTGOCI EIN GENS
+
+Zu wenig Kombinationen, daher keine sinnvolle Kandidaten
+###
+"APCZX QYEAXTA SAGW HLK ATSLW EJZ UFH OLIYX XUTWVULRWRO HM VSEWEDWEHLL" dauert viel zu lange
+###
+
+Plane einen Fix mit folgener Vorgehensweise:
+1. Überprüfe die Dateien nach Fehlern
+2. Untersuche, warum das Verhalten in Testfällen auftritt. Plane den Fix dafür
+
+Reviewe die Meldungen unten. Falls die dort beschriebenen Probleme tatschächlich vorliegen, plane Fixes dafür.
+Meldungen:
+Verify each finding against the current code and only fix it if needed.
+
+
+In `@js/ciphers/vigenereCipher.js` around lines 1639 - 1661, Normalize the
+incoming keyLength hint once (e.g., compute a clampedKeyLength =
+Math.min(Number(safeOptions.keyLength) if integer else null, text.length) or
+null) and replace all uses of keyLengthHint with clampedKeyLength when calling
+candidateLengths, when computing divisors in the optimizationContext.enabled
+branch, and when evaluating fallbackEligibleLength; ensure
+candidateLengths(text, clampedKeyLength, optimizationContext) and the divisor
+loop use clampedKeyLength so divisors never exceed text length and
+fallbackEligibleLength compares to the actual tested (clamped) length.
+###
+Verify each finding against the current code and only fix it if needed.
+
+
+In `@js/core/fileParsers.js` around lines 341 - 346, The fallback that returns
+rows.flatMap((row) => row).join(" ").trim() mixes an unrecognized header row
+into the payload; before flattening, run a lightweight header heuristic on rows
+(e.g., inspect the first row for non-numeric tokens, short token lengths, high
+likelihood of column names or repeated non-data patterns) and drop the first row
+only when the heuristic signals it is a header; replace the direct return with
+logic that conditionally removes rows[0] when headerDetected and then performs
+the existing flatMap(...).join(...).trim() so header names are not injected into
+the Crack input.
+###
+
+
+Gib mir nur dann den Plan, wenn:
+1. Alle vorhandenen Probleme wurden behoben.
+2. Die Implementierungen für Fixes sind fehlerfrei und erschaffen keine neuen Fehler.
+3. Die Funktionalität bleibt diesselbe. Behebe nur die Bugs. Falls du an der Funktionalität der App etwas ändern musst, frage nach.
+04.03.26
