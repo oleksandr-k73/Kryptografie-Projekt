@@ -187,11 +187,8 @@
         continue;
       }
 
-      // Groß-/Kleinschreibung im Folgerow ist ein robustes Signal für "Bezeichner -> Wert".
-      if (/^[a-zäöü_ -]+$/i.test(headerCell) && /^[A-ZÄÖÜ]/.test(dataCell)) {
-        contrastHits += 1;
-        continue;
-      }
+      // Reine Großschreibung im Folgerow ist zu unscharf und markiert Datenzeilen
+      // wie "message,HELLO" fälschlich als Header; wir zählen daher nur stärkere Kontraste.
 
       if (
         headerCell.toLowerCase() !== dataCell.toLowerCase() &&
@@ -494,8 +491,10 @@
         });
 
         if (textColumn >= 0) {
-          return rows
-            .slice(1)
+          // Auch mit erkannter Textspalte droppen wir Zeile 1 nur bei klarer Header-Evidenz,
+          // damit headerlose CSVs mit starken Tokens in der ersten Datenzeile nichts verlieren.
+          const payloadRows = isLikelyCsvHeaderRow(rows) ? rows.slice(1) : rows;
+          return payloadRows
             .map((row) => row[textColumn] ?? "")
             .join("\n")
             .trim();

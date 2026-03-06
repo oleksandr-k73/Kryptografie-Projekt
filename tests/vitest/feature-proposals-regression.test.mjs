@@ -413,6 +413,28 @@ describe("feature proposals regression checks with markdown references", () => {
     expect(parsed.text).toBe("abc\\\\");
   });
 
+  it("js/core/fileParsers.js: headerlose CSV mit starker Textspalte behält erste Datenzeile", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "rows.csv",
+      text: async () => "message,HELLO\nWORLD,SECOND",
+    });
+    // Der Regressionstest verhindert, dass die erste Datenzeile im Textspalten-Pfad
+    // pauschal als Header behandelt und damit stillschweigend verworfen wird.
+    expect(parsed.text).toBe("message\nWORLD");
+  });
+
+  it("js/core/fileParsers.js: echte Headerzeile wird im Textspalten-Pfad weiterhin verworfen", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "rows.csv",
+      text: async () => "message,meta\nHELLO,1\nWORLD,2",
+    });
+    // Der Positivfall stellt sicher, dass der Fix keine Header-Leaks einführt und
+    // CSVs mit klarer Headerstruktur weiter nur Nutzdatenzeilen liefern.
+    expect(parsed.text).toBe("HELLO\nWORLD");
+  });
+
   it('js/core/fileParsers.js: CSV-Header "metadata,message" wählt message statt metadata', async () => {
     const parseInputFile = loadFileParser();
     const parsed = await parseInputFile({
