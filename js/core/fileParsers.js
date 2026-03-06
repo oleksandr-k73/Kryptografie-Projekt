@@ -297,19 +297,53 @@
     const quote = literal[0];
     let body = literal.slice(1, -1);
 
-    body = body
-      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
-        String.fromCharCode(Number.parseInt(hex, 16))
-      )
-      .replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) =>
-        String.fromCharCode(Number.parseInt(hex, 16))
-      )
-      .replace(/\\n/g, "\n")
-      .replace(/\\r/g, "\r")
-      .replace(/\\t/g, "\t")
-      .replace(/\\'/g, "'")
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, "\\");
+    // Ein Single-Pass verhindert Escape-Overlaps aus gestapelten replace-Aufrufen
+    // (z. B. "\\n" darf nicht nachträglich als echter Newline decodieren).
+    let decoded = "";
+    for (let index = 0; index < body.length; index += 1) {
+      const ch = body[index];
+      if (ch !== "\\") {
+        decoded += ch;
+        continue;
+      }
+
+      const next = body[index + 1];
+      if (next == null) {
+        decoded += "\\";
+        continue;
+      }
+
+      if (next === "u" && /^[0-9a-fA-F]{4}$/.test(body.slice(index + 2, index + 6))) {
+        decoded += String.fromCharCode(Number.parseInt(body.slice(index + 2, index + 6), 16));
+        index += 5;
+        continue;
+      }
+
+      if (next === "x" && /^[0-9a-fA-F]{2}$/.test(body.slice(index + 2, index + 4))) {
+        decoded += String.fromCharCode(Number.parseInt(body.slice(index + 2, index + 4), 16));
+        index += 3;
+        continue;
+      }
+
+      const simpleEscapes = {
+        n: "\n",
+        r: "\r",
+        t: "\t",
+        "'": "'",
+        '"': '"',
+        "\\": "\\",
+      };
+      if (Object.prototype.hasOwnProperty.call(simpleEscapes, next)) {
+        decoded += simpleEscapes[next];
+        index += 1;
+        continue;
+      }
+
+      decoded += next;
+      index += 1;
+    }
+
+    body = decoded;
 
     if (quote === "`") {
       body = body.replace(/\$\{[^}]*\}/g, " ");

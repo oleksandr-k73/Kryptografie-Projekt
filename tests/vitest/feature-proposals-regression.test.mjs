@@ -303,6 +303,61 @@ describe("feature proposals regression checks with markdown references", () => {
     expect(parsed.text).toBe("Zfcurbctpdqrau");
   });
 
+  it("js/core/fileParsers.js: doppelt escaptes \\n bleibt als Literal erhalten", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => 'const message = "A\\\\nB";',
+    });
+    // Der Regressionstest schützt gegen Escape-Overlap: "\\n" steht hier für Backslash+n
+    // und darf nicht durch spätere Decoder-Schritte zu einem echten Zeilenumbruch kippen.
+    expect(parsed.text).toBe("A\\nB");
+  });
+
+  it("js/core/fileParsers.js: doppelt escaptes \\uXXXX bleibt als Literal erhalten", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => 'const message = "\\\\u0041";',
+    });
+    // Der Test verhindert, dass aus einem bewusst doppelten Escape versehentlich eine
+    // echte Unicode-Decodierung wird und damit Nutzdaten semantisch verändert werden.
+    expect(parsed.text).toBe("\\u0041");
+  });
+
+  it("js/core/fileParsers.js: doppelt escaptes \\xXX bleibt als Literal erhalten", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => 'const message = "\\\\x41";',
+    });
+    // Hex-Escapes folgen demselben Overlap-Risiko wie Unicode-Escapes und müssen bei
+    // doppeltem Escape als Literal stabil bleiben.
+    expect(parsed.text).toBe("\\x41");
+  });
+
+  it("js/core/fileParsers.js: einfaches \\uXXXX wird weiterhin decodiert", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => 'const message = "\\u0041";',
+    });
+    // Dieser Positivtest stellt sicher, dass der Fix nur Overlap-Probleme behebt und
+    // legitime Single-Escapes weiterhin wie bisher in Klartext überführt.
+    expect(parsed.text).toBe("A");
+  });
+
+  it("js/core/fileParsers.js: einfaches \\xXX wird weiterhin decodiert", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => 'const message = "\\x41";',
+    });
+    // Der zweite Positivfall sichert die bestehende Hex-Decodierung ab, damit der Bugfix
+    // nicht als Nebenwirkung gültige Literale unbearbeitet durchreicht.
+    expect(parsed.text).toBe("A");
+  });
+
   it('js/core/fileParsers.js: CSV-Header "metadata,message" wählt message statt metadata', async () => {
     const parseInputFile = loadFileParser();
     const parsed = await parseInputFile({
