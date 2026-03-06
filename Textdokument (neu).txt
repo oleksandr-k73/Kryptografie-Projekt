@@ -109,3 +109,43 @@ Gib mir nur dann den Plan, wenn:
 2. Die Implementierungen für Fixes sind fehlerfrei und erschaffen keine neuen Fehler.
 3. Die Funktionalität bleibt diesselbe. Behebe nur die Bugs. Falls du an der Funktionalität der App etwas ändern musst, frage nach.
 04.03.26
+
+06.03.26
+Reviewe die Meldungen unten. Falls die dort beschriebenen Probleme tatschächlich vorliegen, plane Fixes dafür.
+Meldungen:
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/core/fileParsers.js` around lines 372 - 376, Die JS-Literale, die in
+literalRegex erkannt werden und via
+pushCandidate(decodeJsStringLiteral(match[1]), ["value"]) eingefügt werden,
+bekommen fälschlich den starken Text-Key-Bonus weil der Pfad ["value"] in
+scoreJsonCandidate als starker Key gewertet wird; ändere den Pfad beim Aufruf
+von pushCandidate in einen neutralen Pfad (z. B. ["_literal"] oder ein leeres
+Array) so dass decodeJsStringLiteral(...) als Fallback-String ohne starken
+Key-Bonus behandelt wird, und suche/prüfe symbolnamen literalRegex,
+decodeJsStringLiteral und pushCandidate um die Änderung konsistent anzuwenden.
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/core/fileParsers.js` around lines 433 - 435, The current selection of the
+text column uses substring matching (the expression with h.includes) which
+produces false positives (e.g., "updated_at" matching "data"); update the logic
+that computes textColumn to use token-based or whole-word matching instead of
+simple includes: split each header label (the variable header entries used in
+the textColumn calculation) on common delimiters (underscore, space, hyphen) or
+use a regex with word boundaries and then check if any token exactly equals any
+entry in strongTextKeys; update the condition in the textColumn computation (the
+header.findIndex callback that references strongTextKeys and h) to use this
+token/exact-match approach so only whole tokens match.
+###
+Gib mir nur dann den Plan, wenn:
+1. Alle vorhandenen Probleme wurden behoben.
+2. Die Implementierungen für Fixes sind fehlerfrei und erschaffen keine neuen Fehler.
+3. Alle relevante Tests sind grün.
+4. Keine Fehler sind in der Repo vorhanden.
+5. Die Funktionalität bleibt diesselbe. Behebe nur die Bugs. Falls du an der Funktionalität der App etwas ändern musst, frage nach.
+
+(3 und 5 experimentell; weiß nicht, ob das mit 2 schon abgesichert ist)
+
+Gib mir exakt diesen Plan als eine Hand-Off-Version für einen anderen Agent, der diesen Plan tatsächlich implementiert. Außerdem brauche ich einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering).
+"Coding Experte" -- Qualitätssteigerung?

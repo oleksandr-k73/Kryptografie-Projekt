@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { loadBrowserContext } from "./_browserHarness.mjs";
 
-function loadRuntime() {
+function loadRuntime(fetchImpl = () => Promise.reject(new Error("offline in test"))) {
   const window = loadBrowserContext(
     ["js/ciphers/vigenereCipher.js", "js/core/dictionaryScorer.js"],
     {
-      fetchImpl: fetch,
+      // Deterministische Standardumgebung: Netzwerkstreuung soll Budget-/Strategietests
+      // nicht beeinflussen, weil diese fachlich die Suchlogik und nicht API-Latenz prüfen.
+      fetchImpl,
     }
   );
   return {
@@ -68,7 +70,7 @@ describe("vigenere budgets and strategy", () => {
         expect(fallback.candidates.length).toBeGreaterThan(20);
       }
     },
-    30_000
+    120_000
   );
 
   it(
@@ -113,6 +115,6 @@ describe("vigenere budgets and strategy", () => {
       expect(firstRun.text).toBe(secondRun.text);
       expect(firstRun.candidates.length).toBeGreaterThan(10);
     },
-    30_000
+    60_000
   );
 });

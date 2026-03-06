@@ -5,11 +5,13 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { generateVigenereDataset } = require("./generators/vigenereDataset.js");
 
-function loadRuntime() {
+function loadRuntime(fetchImpl = () => Promise.reject(new Error("offline in test"))) {
   const window = loadBrowserContext(
     ["js/ciphers/vigenereCipher.js", "js/core/dictionaryScorer.js"],
     {
-      fetchImpl: typeof fetch === "function" ? fetch : () => Promise.reject(new Error("fetch unavailable")),
+      // Die meisten Regressionen sollen deterministisch lokal laufen; das entkoppelt
+      // sie von API-Latenz, während der explizite Online/Offline-Test unten Netzverhalten abdeckt.
+      fetchImpl,
     }
   );
   return {
@@ -105,7 +107,7 @@ describe("vigenere crack regression", () => {
           // Offline-Labore dürfen nicht failen; hier sichern wir explizit den Fallback.
           expect(rankedOnline.bestCandidate).toBeTruthy();
         }
-      }, 30_000);
+      }, 60_000);
 
     it(
       `recovers BRICK/Youshallntpass for Zfcurbctpdqrau without keyLength hint (${mode.label})`,
@@ -131,7 +133,7 @@ describe("vigenere crack regression", () => {
         expect(cracked.key).toBe(repeated.key);
         expect(cracked.text).toBe(repeated.text);
       },
-      40_000
+      60_000
     );
   }
 

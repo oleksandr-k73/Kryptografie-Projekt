@@ -291,6 +291,40 @@ describe("feature proposals regression checks with markdown references", () => {
     expect(parsed.text).toBe("alpha beta gamma delta");
   });
 
+  it("js/core/fileParsers.js: JS-Literal-Fallback bekommt keinen künstlichen value-Bonus", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () =>
+        'const payload = { title: "Release notes preview", cipher: "Zfcurbctpdqrau" };',
+    });
+    // Der Test sichert, dass echte Key-Signale ("cipher") entscheiden und ein neutraler Fallback
+    // Metadaten-Literale nicht mehr durch einen starken "value"-Pfad nach oben zieht.
+    expect(parsed.text).toBe("Zfcurbctpdqrau");
+  });
+
+  it('js/core/fileParsers.js: CSV-Header "metadata,message" wählt message statt metadata', async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "rows.csv",
+      text: async () => "metadata,message\nmeta-1,Zfcurbctpdqrau\nmeta-2,Second line",
+    });
+    // Exakte Header-Tokens verhindern, dass "metadata" fälschlich über das Teilwort "data"
+    // als Textspalte gewertet wird.
+    expect(parsed.text).toBe("Zfcurbctpdqrau\nSecond line");
+  });
+
+  it('js/core/fileParsers.js: tokenisierte Header wie "cipher_text" bleiben als Textspalte erkennbar', async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "rows.csv",
+      text: async () => "id,cipher_text\n1,Zfcurbctpdqrau\n2,APCZXQYEA",
+    });
+    // Der Positivfall verhindert Regressionen: Delimiter-basierte Tokenisierung muss strukturierte
+    // Header weiterhin als starke Textspalte erkennen.
+    expect(parsed.text).toBe("Zfcurbctpdqrau\nAPCZXQYEA");
+  });
+
   it("js/core/fileParsers.js: CSV fallback entfernt konservativ erkannte Headerzeile", async () => {
     const parseInputFile = loadFileParser();
     const parsed = await parseInputFile({

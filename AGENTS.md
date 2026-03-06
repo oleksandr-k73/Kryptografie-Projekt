@@ -82,3 +82,5 @@ Der Fokus liegt auf:
 - Regressions-Check: feste Testbeispiele vor/nach Änderungen vergleichen.
 - Input-/Output-Nachverfolgung: Rohinput, geparster Text und Ausgabe getrennt prüfen.
 - Parser-Diagnose: Dateityp-Erkennung, Extraktionsheuristik und Fallback-Verhalten validieren.
+- JS-Parser-Regression prüfen: Literal-Fallback muss neutral (`_literal`) bleiben; Assignment-/Property-Keys dürfen nicht durch künstlichen `value`-Bonus übersteuert werden.
+- CSV-Spaltenwahl prüfen: Header-Tokens werden exakt gegen starke Textschlüssel gematcht (`_`, Leerzeichen, `-`), um Substring-Fehlgriffe wie `metadata` -> `data` zu vermeiden.

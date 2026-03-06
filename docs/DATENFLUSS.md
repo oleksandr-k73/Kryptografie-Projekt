@@ -26,6 +26,10 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 3. Dateiparsing (`js/core/fileParsers.js`)
 - Format nach Extension.
 - Unterstützt: `txt`, `log`, `md`, `json`, `csv`, `js`, `mjs`, `cjs`.
+- JS-Parser bewertet reine Literal-Fallback-Kandidaten neutral über den Pfad `_literal`,
+  damit starke Schlüssel wie `value` nur bei echten Key-Signalen aus Assignment/Property wirken.
+- CSV-Textspaltenwahl nutzt exakte Header-Tokens (Delimiter: `_`, Leerzeichen, `-`) statt Substring-Matching;
+  so werden False Positives wie `metadata` -> `data` vermieden, während `cipher_text` weiter erkannt wird.
 - CSV ohne erkannte Textspalte nutzt weiterhin einen Zeilen-Fallback über alle Zellen.
 - Vor dem Flatten prüft eine konservative Header-Heuristik die erste Zeile.
 - Die erste Zeile wird nur bei starkem Header-Signal entfernt; bei unklaren Fällen bleibt

@@ -124,3 +124,9 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Wörterbuch-Reranking kann lokales Cipher-Ranking bewusst überstimmen.
 - Sehr kurze Texte bleiben trotz Heuristiken unsicher (besonders Vigenère).
 - API-Ausfälle dürfen Funktionalität nicht blockieren.
+
+## 6) Parser-Vorpriorisierung (Dateiimport)
+
+- Bei JS-Importen werden Kandidaten weiterhin über Key-Pfade gewichtet; reine Literal-Fallbacks bleiben neutral (`_literal`).
+- Bei CSV-Importen erfolgt die Erkennung der Textspalte über exakte Header-Tokens statt über Teilwort-Treffer.
+- Diese Vorpriorisierung betrifft nur die Textextraktion aus Dateien und ändert nicht das Cipher- oder Wörterbuch-Scoring.

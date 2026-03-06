@@ -85,6 +85,7 @@
     "data",
     "value",
   ];
+  const strongTextKeySet = new Set(strongTextKeys);
 
   const weakMetaKeys = [
     "title",
@@ -372,7 +373,9 @@
     const literalRegex =
       /("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/g;
     for (const match of source.matchAll(literalRegex)) {
-      pushCandidate(decodeJsStringLiteral(match[1]), ["value"]);
+      // Literal-Fallback bleibt absichtlich neutral, damit echte Key-Signale aus Assignment/Property
+      // das Ranking steuern und ein künstlicher "value"-Bonus keine Metadaten nach oben drückt.
+      pushCandidate(decodeJsStringLiteral(match[1]), ["_literal"]);
     }
 
     if (candidates.length === 0) {
@@ -429,10 +432,15 @@
 
         const header = rows[0].map((cell) => cell.toLowerCase());
 
-        // Prefer any of the strong text keys (e.g. "coded", "ciphertext", "text")
-        const textColumn = header.findIndex((h) =>
-          strongTextKeys.includes(h) || strongTextKeys.some((k) => h.includes(k))
-        );
+        // Token-Exact-Matching verhindert Substring-Fehlgriffe wie "metadata" -> "data",
+        // lässt aber strukturierte Header wie "cipher_text" weiterhin zuverlässig treffen.
+        const textColumn = header.findIndex((h) => {
+          const tokens = h
+            .split(/[_\s-]+/)
+            .map((token) => token.trim())
+            .filter((token) => token.length > 0);
+          return tokens.some((token) => strongTextKeySet.has(token));
+        });
 
         if (textColumn >= 0) {
           return rows
