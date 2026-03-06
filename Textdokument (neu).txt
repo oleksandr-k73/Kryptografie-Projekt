@@ -6,3 +6,146 @@ Das Programm muss derzeit mindestens folgende Funktionen haben:
 3. Es soll eine Drop-Down-Liste von verfügbaren Verschlüsselungen geben. Füge jetzt keine andere Verschlüsselungsmethoden als Cäsar: Ich werde dir im Laufe der Zeit sagen, was du noch hinzufügen muss.
 4. Man muss zwischen den Modi "Verschlüsseln" und "Entschlüsseln" wählen können. Beim Entschlüsseln, falls man kein Schlüssel eingibt, soll das Programm die jeweilige Verschlüsselungen knacken und den verschlüsselten Text selbstverständlich entschlüsseln. Das Letztere ist dann die Ausgabe.
 5. Es soll auch ein Feld geben, wo dann die Ausgabe angezeigt und zum Kopieren bereit steht.
+
+Du bist ein Experte-Webentwickler und flüssig in Markdown-Dateien und -Dokumentationen sowie Arbeit mit KI-Codingwerkzeugen (z. B. Context Engineering), darunter AGENTS.md. Überprüfe alle md.-Dokumentationen wie AGENTS.md oder DATENFLUSS.md (noch keine Skills) auf Vollständigkeit, Richtigkeit und Prägnanz (siehe dazu die Links). Mache einen Review, wo du erklärst, wozu die Änderungen dienen. Am Ende sollen die Markdowns im Einklang mit dem Context Engineering und den Best-Practices gestaltet sein. Informationen im Überblick von AGENTS.md sollen jedoch bei Veränderungen vollständig beibehalten sein. Die Skills werden nur zuletzt nach allen anderen Änderungen verändert, unter meiner Führung. 
+Beispiele für Konventionen/Best-Practices: 
+- https://www.aihero.dev/a-complete-guide-to-agents-md
+- https://github.com/agentsmd/agents.md/issues/135
+
+
+https://www.aihero.dev/a-complete-guide-to-agents-md -- Prompt: Ausprobieren, wie der Agent sich bei einem solchen vorgefertigten Prompt verhält --> Modifikation davon und als Basis für eigene
+https://github.com/agentsmd/agents.md/issues/135 -- verschiedene Konventionen ausprobieren und lernen, wie man sie anwenden könnte
+
+
+-----
+
+
+
+-----
+Skill: AGENTS.md-Dokumentation erstellen
+
+Beschreibung: Leitfaden zur Erneuerung von AGENTS.md-Dateien
+
+Schritte:
+1. Analysiere die gesamte Repository und finde Unterschiede zu AGENTS.md
+2. 
+
+
+Ändere die bestehenden Tests so, dass sie sich mit Dictionary-API verbinden können. Ziel: 
+- möglichst realitätsnahe Testumgebung, damit wir das System auf den wahrscheinlichsten Fall (Internetverbindung vorhanden) anpassen.
+- keine Ressourcen werden beim Testen/Debugging unnötiger/unwahrscheinlicher Fälle verschwendet
+Nicht-Ziel:
+- ich will, dass man Randfälle beim Entschlüsseln (kurze Texte, lange Schlüssel) berücksichtigt. Das heißt, diese Fälle sind nicht unnötig!
+###
+
+Implementiere ein Bruteforce-Fallback für Vigenere. Er soll nur unter folgenden Umständen aktiviert werden:
+1. Der entschlüsselte Text is kurz (die ungefähre Länge mit Tests herausfinden)
+2. Der entschlüsselte Text hat einen geringen Wörterbuch-Scoring UND der Großteil des Textes ist nicht sinnergebend (ungefähre Werte für Scoring mit Tests herausfinden und einen Algorithmus entwerfen/eine Möglichkeit dafür finden, wie viel Sinn der entschlüsselte Text ergibt)
+3. Die Schlüssellänge liegt unter n (n mit Test herausfinden; ein guter Start ist n = 6, aber NICHT HÖHER)
+
+Anweisungen:
+Plane:
+    - die Tests (dürfen einen angemessen Zeitlimit (10 Minuten, damit die echte Implementierung simuliert wird -- der Nutzer will nicht eine halbe oder zwei Stunden warten))
+    - die Tests sollen am Besten mathematischer Natur sein; experimentelle Unterstützung ist aber auch willkommen
+    - mögliche Ansätze für Implementierung der Checks (1. bis 3.) --> Algorithmen und/oder Vorschläge für externe Abhängigkeiten
+
+Abgabevoraussetzungen:
+- zumindest "SIDR NDX CUBVZRR" (Schlüssellänge 5) und "UHEEZYY NVOUUU" (Schlüssellänge 5) werden sinnvoll entschlüsselt
+- die Tests sind korrekt, fehlerfrei und implementierbar
+- die Algorithmen, falls sie generiert werden, sind fehlerfrei und ergeben richtige Ausgaben (dafür Tests machen)
+- die Abhängigkeiten sind unbedingt nötig und können in derzeitigem Zustand nicht ersetzt werden
+
+
+Das Vigenere-Verfahren ist immer noch fehlerhaft. Hier sind zwei Testfälle:
+###
+(Länge 5, 189631 Kombinationen, 1405 ms)
+Schlüssel: THSOX | Score: 14.69 | Wörterbuch: 33% | SETGOAR EIN ENNS
+Schlüssel: RYSOX | Score: 14.54 | Wörterbuch: 33% | UNTGOCA EIN GWNS
+Schlüssel: TYSOX | Score: 14.50 | Wörterbuch: 33% | SNTGOAA EIN EWNS
+Schlüssel: TMSOX | Score: 14.20 | Wörterbuch: 33% | SZTGOAM EIN EINS
+Schlüssel: RQSOX | Score: 14.20 | Wörterbuch: 33% | UVTGOCI EIN GENS
+
+Zu wenig Kombinationen, daher keine sinnvolle Kandidaten
+###
+"APCZX QYEAXTA SAGW HLK ATSLW EJZ UFH OLIYX XUTWVULRWRO HM VSEWEDWEHLL" dauert viel zu lange
+###
+
+Plane einen Fix mit folgener Vorgehensweise:
+1. Überprüfe die Dateien nach Fehlern
+2. Untersuche, warum das Verhalten in Testfällen auftritt. Plane den Fix dafür
+
+Reviewe die Meldungen unten. Falls die dort beschriebenen Probleme tatschächlich vorliegen, plane Fixes dafür.
+Meldungen:
+Verify each finding against the current code and only fix it if needed.
+
+
+In `@js/ciphers/vigenereCipher.js` around lines 1639 - 1661, Normalize the
+incoming keyLength hint once (e.g., compute a clampedKeyLength =
+Math.min(Number(safeOptions.keyLength) if integer else null, text.length) or
+null) and replace all uses of keyLengthHint with clampedKeyLength when calling
+candidateLengths, when computing divisors in the optimizationContext.enabled
+branch, and when evaluating fallbackEligibleLength; ensure
+candidateLengths(text, clampedKeyLength, optimizationContext) and the divisor
+loop use clampedKeyLength so divisors never exceed text length and
+fallbackEligibleLength compares to the actual tested (clamped) length.
+###
+Verify each finding against the current code and only fix it if needed.
+
+
+In `@js/core/fileParsers.js` around lines 341 - 346, The fallback that returns
+rows.flatMap((row) => row).join(" ").trim() mixes an unrecognized header row
+into the payload; before flattening, run a lightweight header heuristic on rows
+(e.g., inspect the first row for non-numeric tokens, short token lengths, high
+likelihood of column names or repeated non-data patterns) and drop the first row
+only when the heuristic signals it is a header; replace the direct return with
+logic that conditionally removes rows[0] when headerDetected and then performs
+the existing flatMap(...).join(...).trim() so header names are not injected into
+the Crack input.
+###
+
+
+Gib mir nur dann den Plan, wenn:
+1. Alle vorhandenen Probleme wurden behoben.
+2. Die Implementierungen für Fixes sind fehlerfrei und erschaffen keine neuen Fehler.
+3. Die Funktionalität bleibt diesselbe. Behebe nur die Bugs. Falls du an der Funktionalität der App etwas ändern musst, frage nach.
+04.03.26
+
+06.03.26
+Reviewe die Meldungen unten. Falls die dort beschriebenen Probleme tatschächlich vorliegen, plane Fixes dafür.
+Meldungen:
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/core/fileParsers.js` around lines 372 - 376, Die JS-Literale, die in
+literalRegex erkannt werden und via
+pushCandidate(decodeJsStringLiteral(match[1]), ["value"]) eingefügt werden,
+bekommen fälschlich den starken Text-Key-Bonus weil der Pfad ["value"] in
+scoreJsonCandidate als starker Key gewertet wird; ändere den Pfad beim Aufruf
+von pushCandidate in einen neutralen Pfad (z. B. ["_literal"] oder ein leeres
+Array) so dass decodeJsStringLiteral(...) als Fallback-String ohne starken
+Key-Bonus behandelt wird, und suche/prüfe symbolnamen literalRegex,
+decodeJsStringLiteral und pushCandidate um die Änderung konsistent anzuwenden.
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/core/fileParsers.js` around lines 433 - 435, The current selection of the
+text column uses substring matching (the expression with h.includes) which
+produces false positives (e.g., "updated_at" matching "data"); update the logic
+that computes textColumn to use token-based or whole-word matching instead of
+simple includes: split each header label (the variable header entries used in
+the textColumn calculation) on common delimiters (underscore, space, hyphen) or
+use a regex with word boundaries and then check if any token exactly equals any
+entry in strongTextKeys; update the condition in the textColumn computation (the
+header.findIndex callback that references strongTextKeys and h) to use this
+token/exact-match approach so only whole tokens match.
+###
+Gib mir nur dann den Plan, wenn:
+1. Alle vorhandenen Probleme wurden behoben.
+2. Die Implementierungen für Fixes sind fehlerfrei und erschaffen keine neuen Fehler.
+3. Alle relevante Tests sind grün.
+4. Keine Fehler sind in der Repo vorhanden.
+5. Die Funktionalität bleibt diesselbe. Behebe nur die Bugs. Falls du an der Funktionalität der App etwas ändern musst, frage nach.
+
+(3 und 5 experimentell; weiß nicht, ob das mit 2 schon abgesichert ist)
+
+Gib mir exakt diesen Plan als eine Hand-Off-Version für einen anderen Agent, der diesen Plan tatsächlich implementiert. Außerdem brauche ich einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering).
+"Coding Experte" -- Qualitätssteigerung?

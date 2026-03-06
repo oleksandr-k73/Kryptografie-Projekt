@@ -64,53 +64,155 @@
     }
   }
 
+  const strongTextKeys = [
+    "coded",
+    "code",
+    "cipher",
+    "ciphertext",
+    "encrypted",
+    "decoded",
+    "plaintext",
+    "cleartext",
+    "plain",
+    "text",
+    "message",
+    "msg",
+    "payload",
+    "body",
+    "content",
+    "input",
+    "output",
+    "data",
+    "value",
+  ];
+  const strongTextKeySet = new Set(strongTextKeys);
+
+  const weakMetaKeys = [
+    "title",
+    "name",
+    "label",
+    "level",
+    "task",
+    "task_type",
+    "method",
+    "status",
+    "format",
+    "hash",
+    "signature",
+    "checksum",
+    "id",
+    "version",
+    "explain",
+    "description",
+    "hint",
+  ];
+
+  const genericCsvHeaderKeys = new Set([
+    "col",
+    "cols",
+    "column",
+    "columns",
+    "feld",
+    "felder",
+    "spalte",
+    "spalten",
+    "header",
+    "headers",
+    "klasse",
+    "kategorie",
+    "category",
+    "typ",
+    "type",
+    "date",
+    "datum",
+    "zeit",
+    "time",
+    "city",
+    "ort",
+    "land",
+    "country",
+  ]);
+
+  function isNumericCsvCell(value) {
+    const normalized = String(value || "")
+      .trim()
+      .replace(/,/g, ".");
+    return /^[-+]?\d+(\.\d+)?$/.test(normalized);
+  }
+
+  function isLikelyHeaderToken(value) {
+    const token = String(value || "").trim().toLowerCase();
+    if (!token || token.length > 24 || isNumericCsvCell(token)) {
+      return false;
+    }
+    return /^[a-zäöü_][a-zäöü0-9_ -]*$/i.test(token);
+  }
+
+  function isLikelyCsvHeaderRow(rows) {
+    if (!Array.isArray(rows) || rows.length < 2 || !Array.isArray(rows[0])) {
+      return false;
+    }
+
+    const firstRow = rows[0];
+    const secondRow = Array.isArray(rows[1]) ? rows[1] : [];
+    const normalizedFirst = firstRow.map((cell) => String(cell || "").trim().toLowerCase());
+    const nonEmptyTokens = normalizedFirst.filter((token) => token.length > 0);
+
+    if (nonEmptyTokens.length === 0) {
+      return false;
+    }
+
+    const keywordHits = nonEmptyTokens.filter((token) => {
+      return (
+        strongTextKeys.includes(token) ||
+        weakMetaKeys.includes(token) ||
+        genericCsvHeaderKeys.has(token)
+      );
+    }).length;
+
+    const headerLikeHits = nonEmptyTokens.filter((token) => isLikelyHeaderToken(token)).length;
+
+    let contrastHits = 0;
+    for (let index = 0; index < firstRow.length; index += 1) {
+      const headerCell = String(firstRow[index] || "").trim();
+      const dataCell = String(secondRow[index] || "").trim();
+      if (!headerCell || !dataCell) {
+        continue;
+      }
+
+      const headerNumeric = isNumericCsvCell(headerCell);
+      const dataNumeric = isNumericCsvCell(dataCell);
+      if (!headerNumeric && dataNumeric) {
+        contrastHits += 1;
+        continue;
+      }
+
+      // Reine Großschreibung im Folgerow ist zu unscharf und markiert Datenzeilen
+      // wie "message,HELLO" fälschlich als Header; wir zählen daher nur stärkere Kontraste.
+
+      if (
+        headerCell.toLowerCase() !== dataCell.toLowerCase() &&
+        headerCell.length <= 14 &&
+        dataCell.length >= headerCell.length + 3
+      ) {
+        contrastHits += 1;
+      }
+    }
+
+    // Konservativ: Wir droppen nur bei starkem Signal, um echte erste Datenzeilen
+    // in headerlosen CSV-Dateien weiterhin zu erhalten.
+    if (keywordHits >= 2 && headerLikeHits >= Math.ceil(nonEmptyTokens.length * 0.6)) {
+      return true;
+    }
+
+    return keywordHits >= 1 && contrastHits >= 1 && headerLikeHits === nonEmptyTokens.length;
+  }
+
   function scoreJsonCandidate(candidate) {
     const text = candidate.text;
     const lowerText = text.toLowerCase();
     const keyPath = candidate.path.join(".").toLowerCase();
     const lastKey = (candidate.path.at(-1) || "").toLowerCase();
-
-    const strongTextKeys = [
-      "coded",
-      "code",
-      "cipher",
-      "ciphertext",
-      "encrypted",
-      "decoded",
-      "plaintext",
-      "cleartext",
-      "plain",
-      "text",
-      "message",
-      "msg",
-      "payload",
-      "body",
-      "content",
-      "input",
-      "output",
-      "data",
-      "value",
-    ];
-
-    const weakMetaKeys = [
-      "title",
-      "name",
-      "label",
-      "level",
-      "task",
-      "task_type",
-      "method",
-      "status",
-      "format",
-      "hash",
-      "signature",
-      "checksum",
-      "id",
-      "version",
-      "explain",
-      "description",
-      "hint",
-    ];
 
     let score = 0;
 
@@ -184,6 +286,164 @@
     return best ? best.text : null;
   }
 
+  function decodeJsStringLiteral(literal) {
+    if (!literal || literal.length < 2) {
+      return "";
+    }
+
+    const quote = literal[0];
+    let body = literal.slice(1, -1);
+
+    // Ein Single-Pass verhindert Escape-Overlaps aus gestapelten replace-Aufrufen
+    // (z. B. "\\n" darf nicht nachträglich als echter Newline decodieren).
+    // Der Hot-Path nutzt direkten Branching-Code statt Lookup-Objekt, damit
+    // Escape-Decoding ohne zusätzliche Allokation und Property-Zugriffe bleibt.
+    let decoded = "";
+    for (let index = 0; index < body.length; index += 1) {
+      const ch = body[index];
+      if (ch !== "\\") {
+        decoded += ch;
+        continue;
+      }
+
+      const next = body[index + 1];
+      if (next == null) {
+        decoded += "\\";
+        continue;
+      }
+
+      if (next === "u" && /^[0-9a-fA-F]{4}$/.test(body.slice(index + 2, index + 6))) {
+        decoded += String.fromCharCode(Number.parseInt(body.slice(index + 2, index + 6), 16));
+        index += 5;
+        continue;
+      }
+
+      if (next === "x" && /^[0-9a-fA-F]{2}$/.test(body.slice(index + 2, index + 4))) {
+        decoded += String.fromCharCode(Number.parseInt(body.slice(index + 2, index + 4), 16));
+        index += 3;
+        continue;
+      }
+
+      switch (next) {
+        case "n":
+          decoded += "\n";
+          index += 1;
+          continue;
+        case "r":
+          decoded += "\r";
+          index += 1;
+          continue;
+        case "t":
+          decoded += "\t";
+          index += 1;
+          continue;
+        case "'":
+          decoded += "'";
+          index += 1;
+          continue;
+        case '"':
+          decoded += '"';
+          index += 1;
+          continue;
+        case "\\":
+          decoded += "\\";
+          index += 1;
+          continue;
+        default:
+          break;
+      }
+
+      decoded += next;
+      index += 1;
+    }
+
+    body = decoded;
+
+    if (quote === "`") {
+      body = body.replace(/\$\{[^}]*\}/g, " ");
+    }
+
+    return body.trim();
+  }
+
+  function normalizeJsKey(rawKey) {
+    if (!rawKey) {
+      return "";
+    }
+
+    const isQuoted =
+      (rawKey.startsWith('"') && rawKey.endsWith('"')) ||
+      (rawKey.startsWith("'") && rawKey.endsWith("'"));
+
+    if (isQuoted) {
+      return decodeJsStringLiteral(rawKey);
+    }
+
+    return rawKey;
+  }
+
+  function extractBestStringFromJs(source) {
+    const candidates = [];
+    const seen = new Set();
+
+    function pushCandidate(text, path) {
+      const normalizedText = text.trim();
+      if (!normalizedText) {
+        return;
+      }
+
+      const key = `${path.join(".")}::${normalizedText}`;
+      if (seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      candidates.push({ text: normalizedText, path });
+    }
+
+    const assignmentRegex =
+      /\b(?:const|let|var|export\s+const|export\s+let|export\s+var)\s+([A-Za-z_$][\w$]*)\s*=\s*("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/g;
+
+    for (const match of source.matchAll(assignmentRegex)) {
+      const key = match[1];
+      const literal = match[2];
+      pushCandidate(decodeJsStringLiteral(literal), [key]);
+    }
+
+    const propertyRegex =
+      /(?:^|[,{]\s*)([A-Za-z_$][\w$]*|"(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*')\s*:\s*("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/gm;
+
+    for (const match of source.matchAll(propertyRegex)) {
+      const key = normalizeJsKey(match[1]);
+      const literal = match[2];
+      pushCandidate(decodeJsStringLiteral(literal), [key]);
+    }
+
+    const literalRegex =
+      /("([^"\\]|\\[\s\S])*"|'([^'\\]|\\[\s\S])*'|`([^`\\]|\\[\s\S])*`)/g;
+    for (const match of source.matchAll(literalRegex)) {
+      // Literal-Fallback bleibt absichtlich neutral, damit echte Key-Signale aus Assignment/Property
+      // das Ranking steuern und ein künstlicher "value"-Bonus keine Metadaten nach oben drückt.
+      pushCandidate(decodeJsStringLiteral(match[1]), ["_literal"]);
+    }
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (const candidate of candidates) {
+      const score = scoreJsonCandidate(candidate);
+      if (score > bestScore) {
+        best = candidate;
+        bestScore = score;
+      }
+    }
+
+    return best ? best.text : null;
+  }
+
   const parserRules = [
     {
       extensions: ["txt", "log", "md"],
@@ -213,24 +473,45 @@
           return "";
         }
 
+        // If there's only one row treat it as data (no header).
+        if (rows.length === 1) {
+          return rows[0].join(" ").trim();
+        }
+
         const header = rows[0].map((cell) => cell.toLowerCase());
-        const textColumn = header.findIndex((h) =>
-          ["text", "message", "ciphertext", "content"].includes(h)
-        );
+
+        // Token-Exact-Matching verhindert Substring-Fehlgriffe wie "metadata" -> "data",
+        // lässt aber strukturierte Header wie "cipher_text" weiterhin zuverlässig treffen.
+        const textColumn = header.findIndex((h) => {
+          const tokens = h
+            .split(/[_\s-]+/)
+            .map((token) => token.trim())
+            .filter((token) => token.length > 0);
+          return tokens.some((token) => strongTextKeySet.has(token));
+        });
 
         if (textColumn >= 0) {
-          return rows
-            .slice(1)
+          // Auch mit erkannter Textspalte droppen wir Zeile 1 nur bei klarer Header-Evidenz,
+          // damit headerlose CSVs mit starken Tokens in der ersten Datenzeile nichts verlieren.
+          const payloadRows = isLikelyCsvHeaderRow(rows) ? rows.slice(1) : rows;
+          return payloadRows
             .map((row) => row[textColumn] ?? "")
             .join("\n")
             .trim();
         }
 
-        return rows
+        // Ohne explizite Textspalte droppen wir die erste Zeile nur bei starker
+        // Header-Evidenz; so vermeiden wir Header-Leaks, ohne headerlose CSVs zu beschädigen.
+        const payloadRows = isLikelyCsvHeaderRow(rows) ? rows.slice(1) : rows;
+        return payloadRows
           .flatMap((row) => row)
           .join(" ")
           .trim();
       },
+    },
+    {
+      extensions: ["js", "mjs", "cjs"],
+      parse: (text) => extractBestStringFromJs(text) || text,
     },
   ];
 

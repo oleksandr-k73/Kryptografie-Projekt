@@ -18,10 +18,10 @@
           <input
             id="fileInput"
             type="file"
-            accept=".txt,.json,.csv,.log,.md,text/plain,application/json,text/csv"
+            accept=".txt,.json,.csv,.log,.md,.js,.mjs,.cjs,text/plain,application/json,text/csv,text/javascript,application/javascript"
           />
           <span>Datei auswählen oder hierher ziehen</span>
-          <small>Unterstützt: TXT, JSON, CSV, LOG, MD</small>
+          <small>Unterstützt: TXT, JSON, CSV, LOG, MD, JS</small>
         </label>
         <p id="fileStatus" class="status">Noch keine Datei geladen.</p>
 
@@ -50,6 +50,19 @@
               >Beim Entschlüsseln ohne Schlüssel wird geknackt.</small
             >
           </div>
+          <div id="crackLengthWrap" hidden>
+            <label for="crackLengthInput">Schlüssellänge fürs Knacken (optional)</label>
+            <input
+              id="crackLengthInput"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="z. B. 6"
+            />
+            <small id="crackLengthHint" class="hint"
+              >Wenn bekannt, beschleunigt und verbessert das Knacken.</small
+            >
+          </div>
         </div>
 
         <section id="cipherInfoBox" class="cipher-info" aria-live="polite">
@@ -71,14 +84,21 @@
           readonly
           placeholder="Ergebnis erscheint hier..."
         ></textarea>
+        <section id="candidateSection" class="candidates" hidden>
+          <h3>Top-Kandidaten</h3>
+          <p id="candidateStatus" class="status"></p>
+          <ol id="candidateList"></ol>
+        </section>
         <button id="copyButton" type="button">Ausgabe kopieren</button>
       </section>
     </main>
 
     <script src="js/core/cipherRegistry.js"></script>
     <script src="js/core/fileParsers.js"></script>
+    <script src="js/core/dictionaryScorer.js"></script>
     <script src="js/ciphers/caesarCipher.js"></script>
     <script src="js/ciphers/leetCipher.js"></script>
+    <script src="js/ciphers/vigenereCipher.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

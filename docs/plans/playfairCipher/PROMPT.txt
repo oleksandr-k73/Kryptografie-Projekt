@@ -1,0 +1,5 @@
+Plane einen Update, bei dem die didaktisch vereinfachte (Hinweis aus dem anderen App: "Didaktisch vereinfachte Version: Fokus auf das Bigramm-Prinzip statt vollständiger historischer Spezifikation.") Version von Playfair-Cipher implementiert wird. Außerdem muss eine Unterstützung vom XML-Format hinzugefügt werden (siehe die angehängte Datei für ein Beispiel).
+
+Anforderungen für den Plan:
+- Alle Implementierungen müssen fehlerfrei sein
+- 

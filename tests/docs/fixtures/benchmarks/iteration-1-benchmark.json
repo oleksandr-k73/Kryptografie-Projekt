@@ -1,0 +1,72 @@
+{
+  "createdAt": "2026-02-28T20:15:17.098Z",
+  "name": "benchmark_context_tokens",
+  "ok": true,
+  "failures": [],
+  "details": [
+    "totalEstimatedTokens=4850",
+    "totalWords=1957",
+    "redundancyRatio=0.022",
+    "meanLoadMs=5.076"
+  ],
+  "metrics": {
+    "files": [
+      {
+        "file": "AGENTS.md",
+        "chars": 3978,
+        "words": 429,
+        "estimatedTokens": 995
+      },
+      {
+        "file": "docs/DATENFLUSS.md",
+        "chars": 2839,
+        "words": 336,
+        "estimatedTokens": 710
+      },
+      {
+        "file": "docs/SCORING.md",
+        "chars": 2977,
+        "words": 357,
+        "estimatedTokens": 745
+      },
+      {
+        "file": "js/ciphers/AGENTS.md",
+        "chars": 1673,
+        "words": 177,
+        "estimatedTokens": 419
+      },
+      {
+        "file": "skills/cipher-new-method/SKILL.md",
+        "chars": 2611,
+        "words": 288,
+        "estimatedTokens": 653
+      },
+      {
+        "file": "skills/cipher-new-method/references/debug-checklist.md",
+        "chars": 4849,
+        "words": 321,
+        "estimatedTokens": 1213
+      },
+      {
+        "file": "skills/cipher-new-method/agents/openai.yaml",
+        "chars": 459,
+        "words": 49,
+        "estimatedTokens": 115
+      }
+    ],
+    "totalEstimatedTokens": 4850,
+    "totalWords": 1957,
+    "redundancy": {
+      "duplicates": 6,
+      "total": 270,
+      "ratio": 0.022222222222222223
+    },
+    "benchmark": {
+      "iterations": 25,
+      "meanLoadMs": 5.076188520000001,
+      "p95LoadMs": 18.220314,
+      "minLoadMs": 1.151902,
+      "maxLoadMs": 71.969406
+    }
+  }
+}
