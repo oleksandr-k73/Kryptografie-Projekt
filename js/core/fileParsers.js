@@ -136,7 +136,7 @@
   function isNumericCsvCell(value) {
     const normalized = String(value || "")
       .trim()
-      .replace(",", ".");
+      .replace(/,/g, ".");
     return /^[-+]?\d+(\.\d+)?$/.test(normalized);
   }
 
