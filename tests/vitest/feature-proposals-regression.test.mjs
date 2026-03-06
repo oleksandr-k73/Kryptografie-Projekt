@@ -358,6 +358,61 @@ describe("feature proposals regression checks with markdown references", () => {
     expect(parsed.text).toBe("A");
   });
 
+  it("js/core/fileParsers.js: einfaches \\' wird weiterhin korrekt decodiert", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => String.raw`const message = "\'";`,
+    });
+    // Der Positivtest sichert den Apostroph-Pfad ab, damit der Wechsel auf switch-Branching
+    // keine semantische Lücke bei klassischen einfachen Escapes hinterlässt.
+    expect(parsed.text).toBe("'");
+  });
+
+  it('js/core/fileParsers.js: einfaches \\" wird weiterhin korrekt decodiert', async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => String.raw`const message = "\"";`,
+    });
+    // Dieser Check verhindert, dass der Quote-Escape im Hot-Path verloren geht und dadurch
+    // extrahierte Inhalte mit eingebetteten Anführungszeichen falsch normalisiert werden.
+    expect(parsed.text).toBe('"');
+  });
+
+  it("js/core/fileParsers.js: einfaches \\\\ wird weiterhin korrekt decodiert", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => String.raw`const message = "\\";`,
+    });
+    // Der Test deckt den Backslash-Escape explizit ab, weil er als Basis für doppelt escapte
+    // Sequenzen dient und Regressionen dort besonders schwer auffallen würden.
+    expect(parsed.text).toBe("\\");
+  });
+
+  it("js/core/fileParsers.js: unbekannte Escapes bleiben wie bisher ohne Backslash erhalten", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => String.raw`const message = "\q";`,
+    });
+    // Der Decoder verhält sich absichtlich tolerant: unbekannte Escapes werden wie zuvor
+    // als nacktes Zeichen übernommen, damit Altbestände keine neue Parser-Fehlermeldung erzeugen.
+    expect(parsed.text).toBe("q");
+  });
+
+  it("js/core/fileParsers.js: trailing escaped backslashes bleiben stabil und crashen nicht", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.js",
+      text: async () => String.raw`const message = "abc\\\\";`,
+    });
+    // Das Ende-mit-Backslash-Szenario ist ein klassischer Randfall; der Test sichert, dass
+    // der Decoder den Tail robust verarbeitet statt im letzten Index-Schritt zu kippen.
+    expect(parsed.text).toBe("abc\\\\");
+  });
+
   it('js/core/fileParsers.js: CSV-Header "metadata,message" wählt message statt metadata', async () => {
     const parseInputFile = loadFileParser();
     const parsed = await parseInputFile({

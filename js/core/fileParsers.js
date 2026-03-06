@@ -299,6 +299,8 @@
 
     // Ein Single-Pass verhindert Escape-Overlaps aus gestapelten replace-Aufrufen
     // (z. B. "\\n" darf nicht nachträglich als echter Newline decodieren).
+    // Der Hot-Path nutzt direkten Branching-Code statt Lookup-Objekt, damit
+    // Escape-Decoding ohne zusätzliche Allokation und Property-Zugriffe bleibt.
     let decoded = "";
     for (let index = 0; index < body.length; index += 1) {
       const ch = body[index];
@@ -325,18 +327,33 @@
         continue;
       }
 
-      const simpleEscapes = {
-        n: "\n",
-        r: "\r",
-        t: "\t",
-        "'": "'",
-        '"': '"',
-        "\\": "\\",
-      };
-      if (Object.prototype.hasOwnProperty.call(simpleEscapes, next)) {
-        decoded += simpleEscapes[next];
-        index += 1;
-        continue;
+      switch (next) {
+        case "n":
+          decoded += "\n";
+          index += 1;
+          continue;
+        case "r":
+          decoded += "\r";
+          index += 1;
+          continue;
+        case "t":
+          decoded += "\t";
+          index += 1;
+          continue;
+        case "'":
+          decoded += "'";
+          index += 1;
+          continue;
+        case '"':
+          decoded += '"';
+          index += 1;
+          continue;
+        case "\\":
+          decoded += "\\";
+          index += 1;
+          continue;
+        default:
+          break;
       }
 
       decoded += next;
