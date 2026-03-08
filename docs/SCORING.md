@@ -93,6 +93,18 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Sprach-Scoring auf erzeugtem Klartext.
 - Liefert primär den besten Kandidaten.
 
+5. Rail Fence (`railFenceCipher.js`)
+- Schlüsselbasiert (`supportsKey: true`), Schlüssel ist die Schienenanzahl als ganze Zahl `>= 2`.
+- Im UI nutzt Rail Fence dasselbe Feld als Entschlüsselungswert oder als Trigger für den Crack-Pfad.
+- Ver- und Entschlüsselung laufen über den kompletten Zeichenstrom, nicht nur über Buchstaben.
+- `crack(...)` interpretiert `options.keyLength` als Schienen-Hint.
+- Ohne Hint testet Rail Fence exakt `2..min(12, text.length - 1)`.
+- Mit `dictionaryScorer.analyzeTextQuality(...)` gilt:
+  - `score = qualityScore + coverage * 10 + meaningfulTokenRatio * 8 + max(0, 1 - abs(spaceRatio - 0.16) * 4) - (rails / maxRails) * 0.35`
+- Tie-Breaker: kleinere Rail-Anzahl zuerst.
+- Ohne Dictionary-Scorer greift ein lokales Fallback aus häufigen Wörtern, Bigrammen/Trigrammen und Leerzeichen-Bonus.
+- `displayText` darf auch im normalen `decrypt(...)` statt `rawText` ausgegeben werden, wenn `rawText` keine Whitespaces enthält sowie `coverage >= 0.55` und `meaningfulTokenRatio >= 0.55`.
+
 ## 2) Kandidatenfluss in `app.js`
 
 1. `crack(...)`-Ergebnis wird normalisiert:

@@ -199,4 +199,23 @@ Gib mir nur dann den Plan, wenn:
 1. Das Problem eindeutig indentifiziert wurde (d. h. die Fehler wurden so eingegrenzt, dass mit Sicherheit andere Bugs keine Auswirkung auf das Problem haben könnten; falls solche noch gibt, untersuche das Problem weiter).
 2. Die vorgeschlagene Implementierungen in Sandbox getestet wurden und sind komplett fehlerfrei (falls die Tests nicht völlig grün sind, überarbeiten).
 3. Der Plan die genaue Beschreibung der Implementierung enthält, am Besten mit vorgefertigen Codestücken (die auch getestet und fehlerfrei integriert werden können).
-4. Der Plan den nötigen Kontext für den anderen Agenten hat (zusammen mit dem Prompt). 
+4. Der Plan den nötigen Kontext für den anderen Agenten hat (zusammen mit dem Prompt).
+
+Plane einen Update, bei dem Rail-Fence-Cipher implementiert wird. Außerdem muss eine Unterstützung vom YAML-Format hinzugefügt werden (siehe die angehängte Datei für ein Beispiel). 
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Der Plan muss am Ende ein Hand-Off  mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert 
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen.
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans) (wenn du dies automatisch machst, schreibe kurz was).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.

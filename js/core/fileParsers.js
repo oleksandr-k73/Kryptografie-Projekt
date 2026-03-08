@@ -498,6 +498,497 @@
     return stripXmlTags(source);
   }
 
+  function stripYamlInlineComment(line) {
+    let output = "";
+    let inSingleQuotes = false;
+    let inDoubleQuotes = false;
+    let escaping = false;
+
+    for (let index = 0; index < line.length; index += 1) {
+      const ch = line[index];
+
+      if (escaping) {
+        output += ch;
+        escaping = false;
+        continue;
+      }
+
+      if (inDoubleQuotes && ch === "\\") {
+        output += ch;
+        escaping = true;
+        continue;
+      }
+
+      if (!inDoubleQuotes && ch === "'") {
+        output += ch;
+        if (inSingleQuotes && line[index + 1] === "'") {
+          output += "'";
+          index += 1;
+          continue;
+        }
+        inSingleQuotes = !inSingleQuotes;
+        continue;
+      }
+
+      if (!inSingleQuotes && ch === '"') {
+        output += ch;
+        inDoubleQuotes = !inDoubleQuotes;
+        continue;
+      }
+
+      if (!inSingleQuotes && !inDoubleQuotes && ch === "#") {
+        break;
+      }
+
+      output += ch;
+    }
+
+    return output.replace(/\s+$/g, "");
+  }
+
+  function hasYamlUnsupportedFeature(content) {
+    const trimmed = String(content || "").trim();
+    if (!trimmed) {
+      return false;
+    }
+
+    if (trimmed === "---" || trimmed === "...") {
+      return true;
+    }
+
+    // Der Subset-Parser bricht bei fortgeschrittenen YAML-Features bewusst auf Raw-Text ab,
+    // damit unbekannte Semantik nicht still als falsche Struktur weiterverarbeitet wird.
+    return (
+      /(^|[\s:[-])&[A-Za-z0-9_-]+/.test(trimmed) ||
+      /(^|[\s:[-])\*[A-Za-z0-9_-]+/.test(trimmed) ||
+      /(^|[\s:[-])![A-Za-z0-9!/_-]*/.test(trimmed) ||
+      /^<<\s*:/.test(trimmed) ||
+      /^[\[{]/.test(trimmed)
+    );
+  }
+
+  function decodeYamlDoubleQuoted(text) {
+    let output = "";
+    for (let index = 0; index < text.length; index += 1) {
+      const ch = text[index];
+      if (ch !== "\\") {
+        output += ch;
+        continue;
+      }
+
+      const next = text[index + 1];
+      if (next == null) {
+        output += "\\";
+        continue;
+      }
+
+      switch (next) {
+        case "n":
+          output += "\n";
+          break;
+        case "r":
+          output += "\r";
+          break;
+        case "t":
+          output += "\t";
+          break;
+        case '"':
+          output += '"';
+          break;
+        case "\\":
+          output += "\\";
+          break;
+        default:
+          output += next;
+          break;
+      }
+      index += 1;
+    }
+    return output;
+  }
+
+  function parseYamlScalar(rawValue) {
+    const value = String(rawValue || "").trim();
+    if (!value) {
+      return "";
+    }
+
+    if (value.startsWith('"') && value.endsWith('"')) {
+      return decodeYamlDoubleQuoted(value.slice(1, -1));
+    }
+
+    if (value.startsWith("'") && value.endsWith("'")) {
+      return value.slice(1, -1).replace(/''/g, "'");
+    }
+
+    const lowerValue = value.toLowerCase();
+    if (["null", "~"].includes(lowerValue)) {
+      return null;
+    }
+    if (lowerValue === "true") {
+      return true;
+    }
+    if (lowerValue === "false") {
+      return false;
+    }
+    if (/^[-+]?\d+(\.\d+)?$/.test(value)) {
+      return Number(value);
+    }
+
+    return value;
+  }
+
+  function findYamlColon(content) {
+    let inSingleQuotes = false;
+    let inDoubleQuotes = false;
+    let escaping = false;
+
+    for (let index = 0; index < content.length; index += 1) {
+      const ch = content[index];
+
+      if (escaping) {
+        escaping = false;
+        continue;
+      }
+
+      if (inDoubleQuotes && ch === "\\") {
+        escaping = true;
+        continue;
+      }
+
+      if (!inDoubleQuotes && ch === "'") {
+        if (inSingleQuotes && content[index + 1] === "'") {
+          index += 1;
+          continue;
+        }
+        inSingleQuotes = !inSingleQuotes;
+        continue;
+      }
+
+      if (!inSingleQuotes && ch === '"') {
+        inDoubleQuotes = !inDoubleQuotes;
+        continue;
+      }
+
+      if (!inSingleQuotes && !inDoubleQuotes && ch === ":") {
+        return index;
+      }
+    }
+
+    return -1;
+  }
+
+  function splitYamlKeyValue(content) {
+    const colonIndex = findYamlColon(content);
+    if (colonIndex <= 0) {
+      return null;
+    }
+
+    const rawKey = content.slice(0, colonIndex).trim();
+    const rawValue = content.slice(colonIndex + 1).trim();
+    if (!rawKey) {
+      return null;
+    }
+
+    const key =
+      rawKey.startsWith('"') && rawKey.endsWith('"')
+        ? decodeYamlDoubleQuoted(rawKey.slice(1, -1))
+        : rawKey.startsWith("'") && rawKey.endsWith("'")
+          ? rawKey.slice(1, -1).replace(/''/g, "'")
+          : rawKey;
+
+    return {
+      key,
+      value: rawValue,
+    };
+  }
+
+  function prepareYamlLines(text) {
+    const rawLines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+    const lines = [];
+
+    for (let index = 0; index < rawLines.length; index += 1) {
+      const rawLine = rawLines[index];
+      if (/\t/.test(rawLine)) {
+        throw new Error("yaml_tabs_not_supported");
+      }
+
+      const stripped = stripYamlInlineComment(rawLine);
+      if (!stripped.trim()) {
+        continue;
+      }
+
+      const indentMatch = stripped.match(/^ */);
+      const indent = indentMatch ? indentMatch[0].length : 0;
+      const content = stripped.slice(indent);
+
+      if (hasYamlUnsupportedFeature(content)) {
+        throw new Error("yaml_advanced_feature");
+      }
+
+      lines.push({
+        indent,
+        content,
+        lineNumber: index + 1,
+      });
+    }
+
+    return lines;
+  }
+
+  function foldYamlBlockScalar(lines) {
+    const paragraphs = [];
+    let current = [];
+
+    for (const line of lines) {
+      if (line === "") {
+        if (current.length > 0) {
+          paragraphs.push(current.join(" "));
+          current = [];
+        }
+        paragraphs.push("");
+        continue;
+      }
+      current.push(line);
+    }
+
+    if (current.length > 0) {
+      paragraphs.push(current.join(" "));
+    }
+
+    return paragraphs.join("\n").trimEnd();
+  }
+
+  function readYamlBlockScalar(lines, startIndex, parentIndent, style) {
+    let index = startIndex;
+    let blockIndent = null;
+    const collected = [];
+
+    while (index < lines.length) {
+      const line = lines[index];
+      if (line.indent <= parentIndent) {
+        break;
+      }
+
+      if (blockIndent == null) {
+        blockIndent = line.indent;
+      }
+
+      if (line.indent < blockIndent) {
+        break;
+      }
+
+      // `prepareYamlLines` already strips leading indentation into `line.content` and
+      // the loop guarantees `line.indent >= blockIndent`, so the previous
+      // `slice(Math.min(blockIndent, line.indent) - blockIndent)` is a no-op.
+      // Keep `line.content` directly for clarity and performance.
+      collected.push(line.content);
+      index += 1;
+    }
+
+    const value =
+      style === "|"
+        ? collected.join("\n").replace(/\n+$/g, "")
+        : foldYamlBlockScalar(collected);
+
+    return {
+      value,
+      nextIndex: index,
+    };
+  }
+
+  function mergeYamlObject(target, source) {
+    for (const key of Object.keys(source)) {
+      target[key] = source[key];
+    }
+    return target;
+  }
+
+  function parseYamlBlock(lines, startIndex, indent) {
+    if (startIndex >= lines.length) {
+      return {
+        value: null,
+        nextIndex: startIndex,
+      };
+    }
+
+    const current = lines[startIndex];
+    if (current.indent < indent) {
+      return {
+        value: null,
+        nextIndex: startIndex,
+      };
+    }
+    if (current.indent !== indent) {
+      throw new Error(`yaml_indent_mismatch:${current.lineNumber}`);
+    }
+
+    if (current.content === "-" || current.content.startsWith("- ")) {
+      return parseYamlSequence(lines, startIndex, indent);
+    }
+
+    return parseYamlMapping(lines, startIndex, indent);
+  }
+
+  function parseYamlSequenceItem(lines, startIndex, indent) {
+    const line = lines[startIndex];
+    const rest = line.content.slice(1).trimStart();
+    const childIndent = indent + 2;
+
+    if (!rest) {
+      const nested = parseYamlBlock(lines, startIndex + 1, childIndent);
+      return {
+        value: nested.value,
+        nextIndex: nested.nextIndex,
+      };
+    }
+
+    if (rest === "|" || rest === ">") {
+      const blockScalar = readYamlBlockScalar(lines, startIndex + 1, indent, rest);
+      return {
+        value: blockScalar.value,
+        nextIndex: blockScalar.nextIndex,
+      };
+    }
+
+    const inlinePair = splitYamlKeyValue(rest);
+    if (!inlinePair) {
+      return {
+        value: parseYamlScalar(rest),
+        nextIndex: startIndex + 1,
+      };
+    }
+
+    const entry = {};
+    if (inlinePair.value === "|" || inlinePair.value === ">") {
+      const blockScalar = readYamlBlockScalar(lines, startIndex + 1, indent, inlinePair.value);
+      entry[inlinePair.key] = blockScalar.value;
+
+      let nextIndex = blockScalar.nextIndex;
+      if (nextIndex < lines.length && lines[nextIndex].indent >= childIndent) {
+        const continuation = parseYamlBlock(lines, nextIndex, childIndent);
+        if (continuation.value && !Array.isArray(continuation.value)) {
+          mergeYamlObject(entry, continuation.value);
+          nextIndex = continuation.nextIndex;
+        }
+      }
+
+      return { value: entry, nextIndex };
+    }
+
+    if (inlinePair.value) {
+      entry[inlinePair.key] = parseYamlScalar(inlinePair.value);
+      let nextIndex = startIndex + 1;
+      if (nextIndex < lines.length && lines[nextIndex].indent >= childIndent) {
+        const continuation = parseYamlBlock(lines, nextIndex, childIndent);
+        if (continuation.value && !Array.isArray(continuation.value)) {
+          mergeYamlObject(entry, continuation.value);
+          nextIndex = continuation.nextIndex;
+        }
+      }
+      return { value: entry, nextIndex };
+    }
+
+    const nested = parseYamlBlock(lines, startIndex + 1, childIndent);
+    entry[inlinePair.key] = nested.value;
+    let nextIndex = nested.nextIndex;
+    if (nextIndex < lines.length && lines[nextIndex].indent >= childIndent) {
+      const continuation = parseYamlBlock(lines, nextIndex, childIndent);
+      if (continuation.value && !Array.isArray(continuation.value)) {
+        mergeYamlObject(entry, continuation.value);
+        nextIndex = continuation.nextIndex;
+      }
+    }
+
+    return { value: entry, nextIndex };
+  }
+
+  function parseYamlSequence(lines, startIndex, indent) {
+    const items = [];
+    let index = startIndex;
+
+    while (index < lines.length) {
+      const line = lines[index];
+      if (line.indent < indent) {
+        break;
+      }
+      if (line.indent !== indent) {
+        throw new Error(`yaml_sequence_indent:${line.lineNumber}`);
+      }
+      if (!(line.content === "-" || line.content.startsWith("- "))) {
+        break;
+      }
+
+      const item = parseYamlSequenceItem(lines, index, indent);
+      items.push(item.value);
+      index = item.nextIndex;
+    }
+
+    return {
+      value: items,
+      nextIndex: index,
+    };
+  }
+
+  function parseYamlMapping(lines, startIndex, indent) {
+    const out = {};
+    let index = startIndex;
+
+    while (index < lines.length) {
+      const line = lines[index];
+      if (line.indent < indent) {
+        break;
+      }
+      if (line.indent !== indent) {
+        throw new Error(`yaml_mapping_indent:${line.lineNumber}`);
+      }
+      if (line.content === "-" || line.content.startsWith("- ")) {
+        break;
+      }
+
+      const pair = splitYamlKeyValue(line.content);
+      if (!pair) {
+        throw new Error(`yaml_mapping_expected:${line.lineNumber}`);
+      }
+
+      if (pair.value === "|" || pair.value === ">") {
+        const blockScalar = readYamlBlockScalar(lines, index + 1, indent, pair.value);
+        out[pair.key] = blockScalar.value;
+        index = blockScalar.nextIndex;
+        continue;
+      }
+
+      if (pair.value) {
+        out[pair.key] = parseYamlScalar(pair.value);
+        index += 1;
+        continue;
+      }
+
+      const nested = parseYamlBlock(lines, index + 1, indent + 2);
+      out[pair.key] = nested.value;
+      index = nested.nextIndex;
+    }
+
+    return {
+      value: out,
+      nextIndex: index,
+    };
+  }
+
+  function parseYamlSubset(text) {
+    const lines = prepareYamlLines(text);
+    if (lines.length === 0) {
+      return null;
+    }
+
+    const parsed = parseYamlBlock(lines, 0, lines[0].indent);
+    if (parsed.nextIndex !== lines.length) {
+      throw new Error("yaml_trailing_content");
+    }
+
+    return parsed.value;
+  }
+
   const parserRules = [
     {
       extensions: ["txt", "log", "md"],
@@ -517,6 +1008,20 @@
     {
       extensions: ["xml"],
       parse: (text) => extractPreferredXmlText(text),
+    },
+    {
+      extensions: ["yaml", "yml"],
+      parse: (text) => {
+        try {
+          const parsed = parseYamlSubset(text);
+          const extracted = extractBestStringFromJson(parsed);
+          return extracted || text;
+        } catch (_error) {
+          // YAML bleibt best-effort: Bei nicht tragfähigem Subset oder erweiterten Features
+          // ist Raw-Text sicherer als eine halbkorrekte Struktur, die Nutzdaten verschiebt.
+          return text;
+        }
+      },
     },
     {
       extensions: ["csv"],

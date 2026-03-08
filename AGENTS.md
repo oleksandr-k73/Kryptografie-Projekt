@@ -34,12 +34,12 @@ Der Fokus liegt auf:
 
 ### Core-Module
 - `js/core/cipherRegistry.js`: Registry und Cipher-Basisvalidierung
-- `js/core/fileParsers.js`: Dateityp-Erkennung und Textextraktion (inkl. XML-Strict-Matching)
+- `js/core/fileParsers.js`: Dateityp-Erkennung und Textextraktion (inkl. XML-Strict-Matching und YAML-Subset-Fallback (ohne Browser-Runtime-Dependency))
 - `js/core/segmentLexiconData.js`: deterministisches Offline-Sprachartifact (normalisierte Exact-Wörter + Trigramm-Modell)
 - `js/core/dictionaryScorer.js`: Kandidaten-Reranking mit API-/Offline-Fallback, optionalen Key-Kandidaten und Shared-Textsegmentierung für Crack-Pfade
   
 ### Cipher-Module
-- alle Cipher-Dateien liegen in `js/ciphers/` (z. B. `caesarCipher.js`, `playfairCipher.js`)
+- alle Cipher-Dateien liegen in `js/ciphers/` (z. B. `caesarCipher.js`, `playfairCipher.js`, `railFenceCipher.js`)
 - Cipher-spezifische Details: `js/ciphers/AGENTS.md`
 
 ### Orchestrierung

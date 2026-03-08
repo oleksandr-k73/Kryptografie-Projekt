@@ -142,6 +142,20 @@ describe("feature proposals regression checks with markdown references", () => {
     expect(appSource.includes("Math.max(0, Math.round(search.bruteforceElapsedMs))")).toBe(true);
   });
 
+  it("js/app.js + js/ciphers/railFenceCipher.js: Rail Fence reuses the key field instead of showing a second hint field", () => {
+    const appSource = fs.readFileSync(path.resolve(ROOT_DIR, "js/app.js"), "utf8");
+    const railFenceSource = fs.readFileSync(
+      path.resolve(ROOT_DIR, "js/ciphers/railFenceCipher.js"),
+      "utf8"
+    );
+
+    // Rail Fence nutzt im Decrypt-Modus dasselbe Feld als Entschlüsselungswert oder als
+    // Trigger für den Crack-Pfad; ein zweites UI-Feld würde denselben Hebel doppelt abbilden.
+    expect(railFenceSource.includes("reuseKeyForCrackHint: true")).toBe(true);
+    expect(appSource.includes("!Boolean(cipher && cipher.reuseKeyForCrackHint)")).toBe(true);
+    expect(appSource.includes("cipher.reuseKeyForCrackHint")).toBe(true);
+  });
+
   it(
     "docs/SCORING.md + js/ciphers/AGENTS.md: long hinted text uses chi/frequency path and skips bruteforce",
     () => {
@@ -504,5 +518,81 @@ describe("feature proposals regression checks with markdown references", () => {
       text: async () => `<root><meta>A</meta><note>B C</note></root>`,
     });
     expect(parsed.text).toBe("A B C");
+  });
+
+  it("js/core/fileParsers.js: YAML extrahiert flaches coded-Feld aus .yaml", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "coded_level_06.yaml",
+      text: async () => "level: 6\ncoded: PNLFEOETATPMDLTIOOL\nactive: true\n",
+    });
+
+    // YAML nutzt bewusst denselben JSON-Extraktionspfad, damit starke Text-Keys
+    // wie coded/message/payload formatübergreifend identisch priorisiert werden.
+    expect(parsed.text).toBe("PNLFEOETATPMDLTIOOL");
+  });
+
+  it("js/core/fileParsers.js: YAML extrahiert verschachteltes coded-Feld aus .yml", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.yml",
+      text: async () => "meta:\n  title: Beispiel\npayload:\n  coded: YBSMHOPNKELNFNDKHFKCAY\n",
+    });
+
+    expect(parsed.text).toBe("YBSMHOPNKELNFNDKHFKCAY");
+  });
+
+  it("js/core/fileParsers.js: YAML erkennt Sequenzen mit - key: value", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.yaml",
+      text: async () => "- meta: 1\n- coded: CSUSEKTEFKIA\n",
+    });
+
+    expect(parsed.text).toBe("CSUSEKTEFKIA");
+  });
+
+  it("js/core/fileParsers.js: YAML block scalar | bleibt mehrzeilig stabil", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.yaml",
+      text: async () => "payload:\n  coded: |\n    LINE 1\n    LINE 2\n",
+    });
+
+    expect(parsed.text).toBe("LINE 1\nLINE 2");
+  });
+
+  it("js/core/fileParsers.js: YAML block scalar > faltet Zeilen zu Text", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.yml",
+      text: async () => "payload:\n  message: >\n    POTENTIALTOPF\n    MODELL\n",
+    });
+
+    expect(parsed.text).toBe("POTENTIALTOPF MODELL");
+  });
+
+  it("js/core/fileParsers.js: YAML entfernt Kommentare nur außerhalb von Quotes", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.yaml",
+      text: async () =>
+        'payload:\n  coded: "VALUE # stays"\n  hint: plain # remove this comment\n',
+    });
+
+    expect(parsed.text).toBe("VALUE # stays");
+  });
+
+  it("js/core/fileParsers.js: YAML mit fortgeschrittenem Feature fällt auf Raw-Text zurück", async () => {
+    const parseInputFile = loadFileParser();
+    const source = "defaults: &base\n  coded: PNLFEOETATPMDLTIOOL\ncopy: *base\n";
+    const parsed = await parseInputFile({
+      name: "payload.yaml",
+      text: async () => source,
+    });
+
+    // Bei Anchors/Aliases ist Raw-Text sicherer als eine halbparste Struktur,
+    // weil der Subset-Parser diese Semantik absichtlich nicht emuliert.
+    expect(parsed.text).toBe(source);
   });
 });

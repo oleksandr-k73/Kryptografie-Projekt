@@ -97,8 +97,9 @@
     }
 
     if (mode === "decrypt") {
-      elements.keyHint.textContent =
-        "Leer lassen, um den Schlüssel automatisch zu knacken.";
+      elements.keyHint.textContent = cipher.reuseKeyForCrackHint
+        ? "Leer lassen, um die Schienen automatisch zu knacken. Mit Zahl wird direkt entschlüsselt."
+        : "Leer lassen, um den Schlüssel automatisch zu knacken.";
     } else {
       elements.keyHint.textContent = "Beim Verschlüsseln ist ein Schlüssel erforderlich.";
     }
@@ -111,6 +112,7 @@
 
     const show =
       Boolean(cipher && cipher.supportsCrackLengthHint) &&
+      !Boolean(cipher && cipher.reuseKeyForCrackHint) &&
       mode === "decrypt" &&
       !hasManualKey;
 
@@ -118,6 +120,11 @@
     elements.crackLengthInput.disabled = !show;
 
     if (!show) {
+      // Versteckte Altwerte dürfen keine unbeabsichtigten Hints in Verfahren einspeisen,
+      // die das Schlüssel-Feld selbst schon als Crack-/Decrypt-Schalter verwenden.
+      if (cipher && cipher.reuseKeyForCrackHint) {
+        elements.crackLengthInput.value = "";
+      }
       return;
     }
 
@@ -372,7 +379,7 @@
   function parseCrackOptions(cipher) {
     const options = {};
 
-    if (!cipher.supportsCrackLengthHint) {
+    if (!cipher.supportsCrackLengthHint || cipher.reuseKeyForCrackHint) {
       return options;
     }
 
