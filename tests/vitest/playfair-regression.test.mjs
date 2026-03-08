@@ -19,6 +19,17 @@ function loadRuntime() {
   return runtimeCache;
 }
 
+function loadFreshRuntime() {
+  const window = loadBrowserContext([
+    "js/ciphers/playfairCipher.js",
+    "js/core/dictionaryScorer.js",
+  ]);
+  return {
+    playfair: window.KryptoCiphers.playfairCipher,
+    scorer: window.KryptoCore.dictionaryScorer,
+  };
+}
+
 function compactLetters(text) {
   return String(text || "")
     .replace(/[^A-Za-z]/g, "")
@@ -225,6 +236,36 @@ describe("playfair regression", () => {
     expect(cracked.search.fallbackTriggered).toBe(true);
     expect(cracked.search.phase).toBe("B");
     expect(cracked.search.fallbackReasons.length).toBeGreaterThan(0);
+    expect(compactLetters(cracked.text)).toBe("SICHERHEITNACHRICHT");
+  });
+
+  it("reuses phase A scoring during fallback instead of rescoring the same keys", () => {
+    const { playfair, scorer } = loadFreshRuntime();
+    const plaintext = "SICHERHEIT NACHRICHT";
+    const cipherText = playfair.encrypt(plaintext, "SICHERHEIT");
+    const keyCandidates = scorer.getKeyCandidates({ languageHints: ["de"], limit: 320 });
+
+    let analyzeCalls = 0;
+    const originalAnalyzeTextQuality = scorer.analyzeTextQuality;
+    scorer.analyzeTextQuality = function (...args) {
+      analyzeCalls += 1;
+      return originalAnalyzeTextQuality.apply(this, args);
+    };
+
+    // Die finale Anzeige nutzt denselben Segmentpfad wie der Crack-Gewinner; diese
+    // Zusatzaufrufe werden separat gemessen, damit nur redundante Key-Bewertungen sichtbar bleiben.
+    const displayCalls = (() => {
+      analyzeCalls = 0;
+      playfair.decrypt(cipherText, "SICHERHEIT");
+      return analyzeCalls;
+    })();
+
+    analyzeCalls = 0;
+    const cracked = playfair.crack(cipherText, { keyCandidates });
+
+    expect(cracked.search.phase).toBe("B");
+    expect(cracked.search.phaseBKeyCount).toBeGreaterThan(0);
+    expect(analyzeCalls).toBeLessThanOrEqual(cracked.search.phaseBKeyCount + displayCalls);
     expect(compactLetters(cracked.text)).toBe("SICHERHEITNACHRICHT");
   });
 

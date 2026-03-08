@@ -1,16 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { loadBrowserContext } from "./_browserHarness.mjs";
+import { loadBrowserContext, loadScriptsIntoContext } from "./_browserHarness.mjs";
 import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import vm from "node:vm";
-import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const { generateVigenereDataset } = require("./generators/vigenereDataset.js");
-const THIS_FILE = fileURLToPath(import.meta.url);
-const THIS_DIR = path.dirname(THIS_FILE);
-const ROOT_DIR = path.resolve(THIS_DIR, "../..");
 const LONG_PHASE_KEY = "PHASE";
 const LONG_PHASE_PLAINTEXT =
   "IM DOPPELSPALTEXPERIMENT ERZEUGEN EINZELNE ELEKTRONEN EIN INTERFERENZMUSTER UND ZEIGEN DAMIT DASS MATERIE WELLENCHARAKTER BESITZEN KANN";
@@ -171,19 +168,16 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
   context.window.requestAnimationFrame = context.requestAnimationFrame;
   vm.createContext(context);
 
-  const scripts = [
+  // Der App-Harness nutzt denselben Loader wie die übrigen Browser-Regressionen,
+  // damit Setup-Fehler an einer Stelle klar diagnostiziert und nicht in Teilpfaden verwässert werden.
+  loadScriptsIntoContext(context, [
     "js/core/cipherRegistry.js",
     "js/core/fileParsers.js",
     "js/core/segmentLexiconData.js",
     "js/core/dictionaryScorer.js",
     "js/ciphers/vigenereCipher.js",
     "js/app.js",
-  ];
-  for (const relativePath of scripts) {
-    const absolutePath = path.resolve(ROOT_DIR, relativePath);
-    const source = fs.readFileSync(absolutePath, "utf8");
-    vm.runInContext(source, context, { filename: absolutePath });
-  }
+  ]);
 
   elements.cipherSelect.value = "vigenere";
 
@@ -459,4 +453,28 @@ describe("vigenere crack regression", () => {
     expect(englishFirst.bestCandidate.key).toBe("EN");
     expect(germanFirst.bestCandidate.key).toBe("DE");
   }, 20_000);
+
+  it("reports missing browser harness scripts with an explicit setup error", () => {
+    expect(() => loadBrowserContext(["js/does/not/exist.js"])).toThrow(
+      "Test-Setup fehlgeschlagen: Skript nicht gefunden: js/does/not/exist.js"
+    );
+  });
+
+  it("reports invalid browser harness scripts with an explicit execution error", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "krypto-invalid-script-"));
+    const invalidScriptPath = path.join(tempDir, "broken-script.js");
+    fs.writeFileSync(invalidScriptPath, "window.__broken__ = ;", "utf8");
+
+    try {
+      const context = { window: {}, console };
+      context.window.window = context.window;
+      vm.createContext(context);
+
+      expect(() => loadScriptsIntoContext(context, [invalidScriptPath])).toThrow(
+        /Test-Setup fehlgeschlagen: Skript konnte nicht ausgeführt werden: .*broken-script\.js/
+      );
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
 });

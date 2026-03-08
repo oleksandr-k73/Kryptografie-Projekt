@@ -333,6 +333,24 @@
   const segmentModelCache = new Map();
   const unknownSegmentWordCache = new Map();
   const MAX_UNKNOWN_SEGMENT_WORD_CACHE_SIZE = 20000;
+
+  function evictOldUnknownSegmentCacheEntries() {
+    if (unknownSegmentWordCache.size < MAX_UNKNOWN_SEGMENT_WORD_CACHE_SIZE) {
+      return;
+    }
+
+    // Halbierung glättet Cache-Cliffs, ohne den OOV-Hot-Path mit echter LRU-Buchhaltung
+    // oder zusätzlicher Runtime-Abhängigkeit zu belasten.
+    const deleteCount = Math.max(1, Math.floor(unknownSegmentWordCache.size / 2));
+    let deleted = 0;
+    for (const cacheKey of unknownSegmentWordCache.keys()) {
+      unknownSegmentWordCache.delete(cacheKey);
+      deleted += 1;
+      if (deleted >= deleteCount) {
+        break;
+      }
+    }
+  }
   const HARD_SEGMENT_SUFFIXES = [
     { suffix: "ern", minStemLength: 4, quality: 0.84 },
     { suffix: "ing", minStemLength: 4, quality: 0.84 },
@@ -773,11 +791,9 @@
         meaningfulWeight: 0,
         reward: Number.NEGATIVE_INFINITY,
       };
-      if (unknownSegmentWordCache.size >= MAX_UNKNOWN_SEGMENT_WORD_CACHE_SIZE) {
-        // Der OOV-Cache sieht im 1k-Cracklauf sehr viele einmalige Fragmente;
-        // ein begrenzter Cache verhindert, dass seltene Misses den Prozess in OOM treiben.
-        unknownSegmentWordCache.clear();
-      }
+      // Sehr kurze Fragmente häufen sich im OOV-Pfad; wir halten den Cache deshalb begrenzt,
+      // ohne bei jeder Spitze den kompletten Warmzustand für plausiblere Wörter zu verlieren.
+      evictOldUnknownSegmentCacheEntries();
       unknownSegmentWordCache.set(cacheKey, rejected);
       return rejected;
     }
@@ -862,11 +878,9 @@
         ? letters * (0.92 + quality * 1.55) + trigramLikelihood * 1.6 + bigramRatio * 0.8
         : Number.NEGATIVE_INFINITY,
     };
-    if (unknownSegmentWordCache.size >= MAX_UNKNOWN_SEGMENT_WORD_CACHE_SIZE) {
-      // Vollständiges Leeren ist hier günstiger als permanentes Rehashing auf einer Map,
-      // deren Einträge überwiegend nur in einem sehr kleinen lokalen Zeitfenster wiederverwendet werden.
-      unknownSegmentWordCache.clear();
-    }
+    // Plausible OOV-Treffer sind teurer zu berechnen; wir räumen deshalb nur gestaffelt aus,
+    // damit häufig wiederkehrende Fachwörter nicht durch eine einzelne Lastspitze sofort verschwinden.
+    evictOldUnknownSegmentCacheEntries();
     unknownSegmentWordCache.set(cacheKey, result);
     return result;
   }
@@ -1970,7 +1984,7 @@
       displayTokens.push(...selected.displayTokens);
       runMetrics.push(selected.scoreMetrics);
       lettersTotal += run.length;
-     }
+    }
 
     const aggregated = buildAggregatedMetricsFromRuns(runMetrics, lettersTotal);
 

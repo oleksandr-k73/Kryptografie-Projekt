@@ -571,11 +571,20 @@
     };
   }
 
-  function evaluateKeyList(ciphertext, keys, options) {
+  function evaluateKeyList(ciphertext, keys, options, scoreCache) {
     const candidates = [];
+    const hasCache = scoreCache instanceof Map;
     for (const key of keys) {
-      candidates.push(scoreKeyOnCiphertext(ciphertext, key, options));
+      let candidate = hasCache ? scoreCache.get(key) : null;
+      if (!candidate) {
+        candidate = scoreKeyOnCiphertext(ciphertext, key, options);
+        if (hasCache) {
+          scoreCache.set(key, candidate);
+        }
+      }
+      candidates.push(candidate);
     }
+
     return sortCrackCandidates(candidates);
   }
 
@@ -647,7 +656,8 @@
 
       const cfg = resolveCrackGateConfig(options);
       const phaseAKeys = buildPhaseAKeys(options);
-      const phaseAResults = evaluateKeyList(ciphertext, phaseAKeys, options);
+      const phaseScoreCache = new Map();
+      const phaseAResults = evaluateKeyList(ciphertext, phaseAKeys, options, phaseScoreCache);
       const phaseATop1 = phaseAResults[0] || null;
       const phaseATop2 = phaseAResults[1] || null;
 
@@ -659,7 +669,9 @@
       if (gate.triggered) {
         const phaseBKeys = buildPhaseBKeys(options, phaseAKeys);
         phaseBKeyCount = phaseBKeys.length;
-        const phaseBResults = evaluateKeyList(ciphertext, phaseBKeys, options);
+        // Phase B behält denselben Suchraum und dieselbe Telemetrie; der Cache spart nur
+        // die bereits in Phase A bewerteten Schlüssel ein, damit Ambiguitäts-Fallback kein Blind-Rescoring erzeugt.
+        const phaseBResults = evaluateKeyList(ciphertext, phaseBKeys, options, phaseScoreCache);
 
         const mergedByKey = new Map();
         for (const entry of phaseAResults) {
