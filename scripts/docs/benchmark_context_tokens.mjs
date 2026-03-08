@@ -86,9 +86,9 @@ async function measureLoadLatency(contextFiles, iterations) {
 
 export async function benchmarkContextTokens(options = {}) {
   const iterations = Number(options.iterations || 30);
-  // Default wurde auf 7000 angehoben, damit das Gate realistische Doku-Erweiterungen
-  // nicht als Regression markiert, solange die Redundanzgrenzen eingehalten bleiben.
-  const maxTotalTokens = Number(options.maxTotalTokens || 7000);
+  // Der Default bleibt bewusst knapp über dem aktuellen Doku-Umfang, damit neue Inhalte
+  // (z. B. zusätzliche Cipher-/Parser-Verträge) möglich sind, aber unkontrolliertes Wachstum auffällt.
+  const maxTotalTokens = Number(options.maxTotalTokens || 9000);
   const maxRedundancy = Number(options.maxRedundancy || 0.35);
 
   const { existing: contextFiles, missing } = await resolveContextFiles();

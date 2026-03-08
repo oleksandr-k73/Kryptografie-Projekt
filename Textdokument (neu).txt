@@ -149,3 +149,54 @@ Gib mir nur dann den Plan, wenn:
 
 Gib mir exakt diesen Plan als eine Hand-Off-Version für einen anderen Agent, der diesen Plan tatsächlich implementiert. Außerdem brauche ich einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering).
 "Coding Experte" -- Qualitätssteigerung?
+
+07.03.26:
+"CSUSEKTEFKIA" wird beim Playfair-Cipher falsch entschlüsselt:
+Schlüssel: BOTSC | Score: 16.80 | Wörterbuch: 50% | STR C TEXTELH D
+Schlüssel: BOTS | Score: 12.90 | Wörterbuch: 36% | FBRA TEXTELM O
+Schlüssel: GEBE | Score: 2.07 | Wörterbuch: 0% | BUTRCF RADIAY
+Schlüssel: GEMACHT | Score: 2.01 | Wörterbuch: 0% | AUSRWT EWTONG
+Schlüssel: GESEH | Score: 1.93 | Wörterbuch: 0% | DERAGL QHBNAZ
+###
+Plane einen Fix. Gehe dabei so vor:
+1. Überprüfe, ob bestehende Tests für Playfair korrekt und valide sind. Falls sie nicht brauchbar sind, plane auch einen Fix dafür.
+2. Untersuche, warum dieser Fall falsch entschlüsselt wird. Versuche ggf. ihn selst zu dekodieren und baue auf jeden Fall robustere Tests, mit denen du weitere Analyse machen kannst.
+3. Leite aus den Ergebnissen von 2. einen Fix.
+4. Versichere, dass der Fix funktioniert und keine (unerwartete) Fehler aufweist. Untersuche dafür auch, ob und welche Bugs eventuell entstehen können (FAKTENBASIERT! NICHTS ERFINDEN!)
+
+Dabei darfst und sollst du den Fix im Sandbox virtuell implementieren und in dieser Umgebung die Schritte durchführen. 
+
+Gib den Plan nur ab, wenn:
+1. Der Fix fehlerfrei ist und einwandfrei für eine breite Auswahl an Fällen funktioniert.
+2. Die relevante Tests grün sind. Keine Regressionen entstehen/die restliche Funktionalität wird nicht betroffen.
+3. Der Plan funktioniert im Sandbox und ist fehlerfrei bei der tatsächlichen Implementierung.
+
+Abgabeformat:
+- Eine Hand-Out-Version für einen Agent in einer anderen Session, der den Plan auch mit Medium-Reasoning effizient und fehlerfrei ausführen kann. Zusätzlich dafür ein sofort einsetzbarer Prompt (im Einklang mit Context Engineering).
+
+Plane einen Fix für die Frequenzanalyse bei Vigenere. Ziehe dafür Erkenntnisse aus dem neuesten Fall:
+###
+# Das Schlüsselwort QUANT wird nur später erkannt (ohne Hint)
+
+Schlüssel: QTGNTQUANT | Score: 12.12 | Wörterbuch: 13% | EJHSTEIN ERKMUERTE DEN PIITOEFFEKT EORCH DIE EIOZUEHRUNG VPH PHOTONEN VHD ZEIGTE DBMS ERST AB DFL GRENZFREROENZ ELEKTSINEN AUSGEMIEST WERDEO
+Schlüssel: QTANTQUANT | Score: 11.82 | Wörterbuch: 13% | EJNSTEIN ERKMAERTE DEN PIOTOEFFEKT EURCH DIE EIOFUEHRUNG VPN PHOTONEN VND ZEIGTE DBSS ERST AB DFR GRENZFRERUENZ ELEKTSONEN AUSGEMOEST WERDEO
+Schlüssel: QDNNTQUANT | Score: 11.65 | Wörterbuch: 13% | EZASTEIN ERKCNERTE DEN PYBTOEFFEKT UHRCH DIE EIESUEHRUNG VFA PHOTONEN LAD ZEIGTE DRFS ERST AB DVE GRENZFREHHENZ ELEKTIBNEN AUSGECBEST WERDEE
+Schlüssel: QCGNTQUANT | Score: 10.65 | Wörterbuch: 17% | EAHSTEIN ERKDUERTE DEN PZITOEFFEKT VORCH DIE EIFZUEHRUNG VGH PHOTONEN MHD ZEIGTE DSMS ERST AB DWL GRENZFREIOENZ ELEKTJINEN AUSGEDIEST WERDEF
+Schlüssel: QCGNEQUANT | Score: 10.65 | Wörterbuch: 17% | EAHSIEIN ERKDUEGTE DEN PZITDEFFEKT VORRH DIE EIFZUTHRUNG VGH PWOTONEN MHD OEIGTE DSMS TRST AB DWL GGENZFREIOECZ ELEKTJINTN AUSGEDIEHT WERDEF
+###
+# Mit Hint = 5 erkennt das Programm das Wort problemlos
+
+Schlüssel: QUANT | Score: 39.54 | Wörterbuch: 44% | EINSTEIN ERKLAERTE DEN PHOTOEFFEKT DURCH DIE EINFUEHRUNG VON PHOTONEN UND ZEIGTE DASS ERST AB DER GRENZFREQUENZ ELEKTRONEN AUSGELOEST WERDEN
+Schlüssel: QUAND | Score: 21.15 | Wörterbuch: 31% | EINSJEIN EHKLAEHTE DED PHOTEEFFEAT DURSH DIE UINFUUHRUNW VON PXOTONUN UND PEIGTU DASS URST AR DER GHENZFHEQUEDZ ELEATRONUN AUSWELOEIT WERTEN
+Schlüssel: QUAYS | Score: 17.89 | Wörterbuch: 19% | EINHUEIN TSKLATSTE DTO PHOIPEFFTLT DUGDH DIT FINFJFHRUCH VON EIOTOCFN UNS AEIGIF DASH FRST PC DER VSENZUSEQUTOZ ELTLTROCFN AUHHELOTTT WEGEEN
+Schlüssel: QUANP | Score: 16.75 | Wörterbuch: 31% | EINSXEIN EVKLAEVTE DER PHOTSEFFEOT DURGH DIE IINFUIHRUNK VON PLOTONIN UND DEIGTI DASS IRST AF DER GVENZFVEQUERZ ELEOTRONIN AUSKELOEWT WERHEN
+Schlüssel: QUAZT | Score: 16.17 | Wörterbuch: 13% | EINGTEIN SRKLASRTE DSN PHOHOEFFSKT DUFCH DIS EINFIEHRUBG VON DHOTOBEN UNR ZEIGHE DASG ERST OB DER URENZTREQUSNZ ELSKTROBEN AUGGELOSST WEFDEN
+###
+
+Identifiziere den genauen Bug und gib mir am Ende den Plan als ein Hand-Off für einen anderen Agenten, der ihn in einer separaten Session implementiert. Dafür brauche ich außerdem einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering und Best Practices für GPT 5.4)
+
+Gib mir nur dann den Plan, wenn:
+1. Das Problem eindeutig indentifiziert wurde (d. h. die Fehler wurden so eingegrenzt, dass mit Sicherheit andere Bugs keine Auswirkung auf das Problem haben könnten; falls solche noch gibt, untersuche das Problem weiter).
+2. Die vorgeschlagene Implementierungen in Sandbox getestet wurden und sind komplett fehlerfrei (falls die Tests nicht völlig grün sind, überarbeiten).
+3. Der Plan die genaue Beschreibung der Implementierung enthält, am Besten mit vorgefertigen Codestücken (die auch getestet und fehlerfrei integriert werden können).
+4. Der Plan den nötigen Kontext für den anderen Agenten hat (zusammen mit dem Prompt). 

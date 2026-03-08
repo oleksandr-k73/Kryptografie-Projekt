@@ -68,6 +68,42 @@ Optionale Metadaten:
   - `bruteforceFallbackTriggered`, `bruteforceFallbackReason`, `bruteforceFallbackKeyLength`
   - `bruteforceCombosVisited`, `bruteforceElapsedMs`, `sense`
 
+## Playfair (`js/ciphers/playfairCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`), Schlüsselwort wird auf `A-Z` normalisiert.
+- Didaktische Fixregeln:
+  - `J -> I`
+  - nur `A-Z`
+  - Bigramme
+  - `X` als Filler bei Doppelbuchstaben
+  - `X`-Padding bei ungerader Länge
+- `decrypt(...)` nutzt Entpadding (`A X A` und optionales End-`X`) plus Segmentierung,
+  damit die Ausgabe für Lernfälle lesbar bleibt.
+- Die Segmentierung/Qualitätsanalyse läuft über
+  `KryptoCore.dictionaryScorer.analyzeTextQuality(...)`,
+  damit Decrypt-Ausgabe und Crack-Bewertung denselben Trennpfad verwenden.
+- `segmentText(...)` bleibt kompatibel und spiegelt intern `displayText`.
+- Das Sprachmodell dafür kommt aus `js/core/segmentLexiconData.js`:
+  - normalisierte Exact-Wortbasis aus `de_DE.dic` + `american-english`
+  - kompaktes Trigramm-Modell für OOV-Bewertung
+- Playfair trennt `PHASE_B_LEXICON_KEYS` (Phase-B-Keykorpus) weiterhin strikt von `PLAYFAIR_SEGMENT_WORDS`.
+- `PLAYFAIR_SEGMENT_WORDS` sind nur zusätzliche Domain-Hints.
+- Boundary-Qualität ist zentral:
+  - mehr Tokens sind nicht automatisch besser
+  - zusätzliche Boundaries kosten explizit Score
+  - Bridge-Wörter zählen nur mit starken Nachbarn
+  - bei schwachen Boundaries bleibt die Ausgabe konservativ auf `rawText`
+- `crack(...)` ist hybrid:
+  - Phase A: Shortlist (inkl. `QUANT`)
+  - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
+  - Ambiguitäts-Gate triggert Fallback bei `low_confidence`, `low_delta`, `low_coverage`
+- Default-Grenzen:
+  - `minConfidence = 11.2`
+  - `minDelta = 1.8`
+  - `minCoverage = 0.62`
+- `result.search` enthält u. a.:
+  - `phase`, `fallbackTriggered`, `fallbackReasons`, `gate`
+
 ## Pflegehinweis
 
 - Bei Änderungen an Cipher-Verhalten diese Datei und `docs/SCORING.md` synchron aktualisieren.

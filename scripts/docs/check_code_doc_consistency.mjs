@@ -116,6 +116,7 @@ export async function checkCodeDocConsistency() {
   const cipherDocTokens = [
     "js/ciphers/caesarCipher.js",
     "js/ciphers/leetCipher.js",
+    "js/ciphers/playfairCipher.js",
     "js/ciphers/vigenereCipher.js",
     "encrypt(text, key?)",
     "decrypt(text, key?)",

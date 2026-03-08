@@ -444,6 +444,60 @@
     return best ? best.text : null;
   }
 
+  const preferredXmlTags = [
+    "coded",
+    "ciphertext",
+    "cipher",
+    "text",
+    "message",
+    "payload",
+    "content",
+    "data",
+    "body",
+  ];
+
+  function decodeXmlEntities(text) {
+    return String(text || "")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&amp;/gi, "&")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'");
+  }
+
+  function stripXmlTags(text) {
+    return decodeXmlEntities(
+      String(text || "")
+        .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, " $1 ")
+        .replace(/<[^>]+>/g, " ")
+    )
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function extractPreferredXmlText(xmlText) {
+    const source = String(xmlText || "");
+
+    for (const tag of preferredXmlTags) {
+      // Das strict matching mit (?=[\\s>]) verhindert Präfix-Fehlgriffe wie
+      // <codedExport>..., die sonst fälschlich als <coded> gewertet würden.
+      const regex = new RegExp(
+        `<${tag}(?=[\\s>])(?:[^>]*)>([\\s\\S]*?)<\\/${tag}>`,
+        "gi"
+      );
+
+      let match = null;
+      while ((match = regex.exec(source)) !== null) {
+        const candidate = stripXmlTags(match[1]);
+        if (candidate) {
+          return candidate;
+        }
+      }
+    }
+
+    return stripXmlTags(source);
+  }
+
   const parserRules = [
     {
       extensions: ["txt", "log", "md"],
@@ -459,6 +513,10 @@
         }
         return extracted;
       },
+    },
+    {
+      extensions: ["xml"],
+      parse: (text) => extractPreferredXmlText(text),
     },
     {
       extensions: ["csv"],

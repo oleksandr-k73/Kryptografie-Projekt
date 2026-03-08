@@ -60,7 +60,34 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - `+ senseBonus` (aus `senseScore` + `meaningfulTokenRatio`)
 - Merge-Regel: Fallback ersetzt Basiskandidat nur bei klarer Qualitätsverbesserung.
 
-3. Leetspeak (`leetCipher.js`)
+3. Playfair (`playfairCipher.js`)
+- Didaktische Normalisierung:
+  - `J -> I`
+  - nur `A-Z`
+  - Bigramme mit `X`-Filler bei Doppelzeichen
+  - `X`-Padding bei ungerader Länge
+- Entschlüsselung nutzt Postprocessing:
+  - `removeDidacticPadding` entfernt didaktische `X`-Einfügungen (`A X A`) und optionales End-`X`
+  - Segmentierung/Qualitätsanalyse läuft über `dictionaryScorer.analyzeTextQuality(...)`, damit Decrypt- und Crack-Ausgabe identisch getrennt werden
+  - Dafür wird vor `dictionaryScorer.js` das Offline-Sprachartifact `segmentLexiconData.js` geladen
+  - `PLAYFAIR_SEGMENT_WORDS` bleiben getrennt vom Phase-B-Keykorpus und dienen nur als zusätzliche Domain-Hints
+- Hybrid-Crack:
+  - Phase A: deterministische Key-Shortlist (inkl. `QUANT`)
+  - Phase B: erweitertes Key-Corpus aus Lexikonbegriffen + Präfix-/Stem-Varianten
+- Candidate-Scoring gewichtet primär robuste Segmentierungsmetriken:
+  - `qualityScore` aus der Shared-Analyse als primärer Kandidatenscore
+  - `confidence`, `coverage`, `meaningfulTokenRatio`, `strongSegmentRatio`
+  - Boundary-Risiken (`weakBoundaryCount`, `unsupportedBridgeCount`, `shortTokenCount`)
+- Ambiguitäts-Gate (Default):
+  - `minConfidence = 11.2`
+  - `minDelta = 1.8`
+  - `minCoverage = 0.62`
+- Fallback-Trigger, wenn mindestens eine Bedingung erfüllt ist:
+  - `top1.confidence < minConfidence`
+  - `(top1.confidence - top2.confidence) < minDelta`
+  - `coverage(top1) < minCoverage`
+
+4. Leetspeak (`leetCipher.js`)
 - Beam-Search für Rückübersetzungen.
 - Übergangs-Scoring während der Sequenzbildung.
 - Sprach-Scoring auf erzeugtem Klartext.
@@ -71,6 +98,8 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 1. `crack(...)`-Ergebnis wird normalisiert:
 - Mindestfelder: `key`, `text`, `confidence`
 - optional: `candidates`
+- Für Playfair kann `app.js` optional `keyCandidates` aus
+  `dictionaryScorer.getKeyCandidates(...)` vor dem Crack ergänzen.
 
 2. Lokale Sortierung:
 - Absteigend nach `confidence`.
@@ -97,16 +126,48 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 
 3. Kombinierter Score
 - Basis für API-Rescoring: `base = Number(candidate.rawConfidence) || 0`
+- Shared-Analyse (`analyzeTextQuality`) je Kandidat:
+  - `qualityScore` als Zusatzsignal
+  - Boundary-/Kurztoken-Mali
 - Wörterbuch-Anteil:
   - `dictBoost = coverage * 20 + validWords * 1.2`
 - Malus:
   - `zeroPenalty = -3.2`, wenn mindestens 2 Wörter geprüft und 0 erkannt
 - Gesamtscore:
-  - `combinedScore = base * 0.35 + dictBoost + zeroPenalty`
+  - Basisterm: `combinedScore = base * 0.35 + dictBoost + zeroPenalty`
+  - erweitert um Language-Bonus, `qualityScore` und Boundary-Penalty
 
 4. Sortierung
 - Primär nach `combinedScore` absteigend.
 - Tie-Breaker: ursprüngliche Reihenfolge (`rankIndex`).
+
+5. Optionale Key-Kandidaten für Ciphers
+- `getKeyCandidates(options)` liefert deterministische Schlüsselvorschläge (z. B. für Playfair-Phase B).
+- Quellen:
+  - gemeinsame Seeds + sprachspezifische Seeds (`languageHints`)
+  - optionale `seedWords`
+  - Text-Token aus `options.text`
+  - lokales Lexikon je Sprache
+- Jede Quelle wird mit Präfix-/Stem-Varianten erweitert, damit Key-Korpora robust bleiben,
+  ohne eine teure Vollraumsuche starten zu müssen.
+
+6. Shared-Textsegmentierung
+- Zentrale Funktion: `analyzeTextQuality(text, options?)` liefert:
+  - `rawText`, `displayText`, `displayTokens`, `scoreTokens`
+  - `coverage`, `meaningfulTokenRatio`, `unknownRatio`, `confidence`, `qualityScore`
+  - `averageTokenScore`, `plausibleOovRatio`, `supportedBridgeRatio`, `strongSegmentRatio`, `lexiconCoverage`
+  - `boundaryCount`, `weakBoundaryCount`, `unsupportedBridgeCount`, `shortTokenCount`
+- `segmentText(text, options?)` bleibt API-kompatibel und spiegelt intern `analyzeTextQuality(...)`:
+  - `segmentText(...).text === displayText`
+  - `segmentText(...).tokens === displayTokens`
+- Die Segmentierung nutzt DP auf zusammenhängenden `A-Z`-Runs mit:
+  - Exact-Matches aus `segmentLexiconData.js` (normalisierte Wörter aus `de_DE.dic` + `american-english`)
+  - harter Suffix-Whitelist statt generischem Trim-1..3-Stemming
+  - OOV-Wortmodell aus Trigramm-Likelihood, Vokalverhältnis, Bigrammratio, Konsonantenlauf und Wortlängen-Prior
+  - lokaler Re-Split-Phase für lange unbekannte Runs in bis zu 3 plausible Wörter
+  - Boundary-Qualität statt Split-Quantität (Boundary-Kosten, Short-Token-Skepsis, Bridge-Nachbarschaftsprüfung)
+- Generische Prefix-Matches sind bewusst kein primärer Segmentpfad mehr, weil sie Fehlgriffe wie `TEXTELH -> TEXT` oder `UNDENE -> UND` systematisch überbewerten.
+- `rankCandidates(...)` nutzt dieselbe Shared-Analyse wie Playfair, damit lokales Kandidatenranking und Playfair-Scoring konsistent bleiben.
 
 ## 4) UI-Darstellung
 

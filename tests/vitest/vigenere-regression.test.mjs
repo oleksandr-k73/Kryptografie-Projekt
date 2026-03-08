@@ -1,9 +1,203 @@
 import { describe, expect, it } from "vitest";
 import { loadBrowserContext } from "./_browserHarness.mjs";
 import { createRequire } from "node:module";
+import fs from "node:fs";
+import path from "node:path";
+import vm from "node:vm";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const { generateVigenereDataset } = require("./generators/vigenereDataset.js");
+const THIS_FILE = fileURLToPath(import.meta.url);
+const THIS_DIR = path.dirname(THIS_FILE);
+const ROOT_DIR = path.resolve(THIS_DIR, "../..");
+const LONG_PHASE_KEY = "PHASE";
+const LONG_PHASE_PLAINTEXT =
+  "IM DOPPELSPALTEXPERIMENT ERZEUGEN EINZELNE ELEKTRONEN EIN INTERFERENZMUSTER UND ZEIGEN DAMIT DASS MATERIE WELLENCHARAKTER BESITZEN KANN";
+const LONG_PHASE_CIPHERTEXT =
+  "XT DGTELLKTPSTWBELRAQTUT WVOLUYIC LIFDTSNW IALKLVDUEF IXU IFXTYFWVTUZEYHAEJ YCK ZWMVLN VEBPT VEHZ MSXTYIW ATSLWRROAJEZAEJ FTZILDTU KSRC";
+const QUANT_KEY = "QUANT";
+const QUANT_PLAINTEXT =
+  "EINSTEIN ERKLAERTE DEN PHOTOEFFEKT DURCH DIE EINFUEHRUNG VON PHOTONEN UND ZEIGTE DASS ERST AB DER GRENZFREQUENZ ELEKTRONEN AUSGELOEST WERDEN";
+
+function compactLetters(text) {
+  return String(text || "")
+    .replace(/[^A-Za-z]/g, "")
+    .toUpperCase();
+}
+
+function createMockElement(tagName = "div") {
+  return {
+    tagName: String(tagName || "div").toUpperCase(),
+    value: "",
+    textContent: "",
+    placeholder: "",
+    innerHTML: "",
+    hidden: false,
+    disabled: false,
+    files: [],
+    children: [],
+    _listeners: new Map(),
+    classList: {
+      add() {},
+      remove() {},
+    },
+    append(child) {
+      this.children.push(child);
+      if (this.tagName === "SELECT" && this.value === "" && child && typeof child.value === "string") {
+        this.value = child.value;
+      }
+    },
+    addEventListener(type, handler) {
+      const list = this._listeners.get(type) || [];
+      list.push(handler);
+      this._listeners.set(type, list);
+    },
+    focus() {},
+    select() {},
+    querySelector() {
+      return null;
+    },
+  };
+}
+
+function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("offline in test"))) {
+  const elements = {
+    dropzone: createMockElement("div"),
+    fileInput: createMockElement("input"),
+    fileStatus: createMockElement("div"),
+    inputText: createMockElement("textarea"),
+    modeSelect: createMockElement("select"),
+    cipherSelect: createMockElement("select"),
+    keyInput: createMockElement("input"),
+    keyHint: createMockElement("div"),
+    crackLengthWrap: createMockElement("div"),
+    crackLengthInput: createMockElement("input"),
+    crackLengthHint: createMockElement("div"),
+    cipherInfoTitle: createMockElement("div"),
+    cipherInfoPurpose: createMockElement("div"),
+    cipherInfoHow: createMockElement("div"),
+    cipherInfoCrack: createMockElement("div"),
+    cipherInfoUse: createMockElement("div"),
+    candidateSection: createMockElement("section"),
+    candidateStatus: createMockElement("div"),
+    candidateList: createMockElement("ul"),
+    runButton: createMockElement("button"),
+    outputText: createMockElement("textarea"),
+    resultInfo: createMockElement("div"),
+    copyButton: createMockElement("button"),
+  };
+  const keyLabel = createMockElement("label");
+  const crackLengthLabel = createMockElement("label");
+  elements.crackLengthWrap.querySelector = (selector) =>
+    selector === 'label[for="crackLengthInput"]' ? crackLengthLabel : null;
+
+  elements.modeSelect.value = "decrypt";
+  elements.keyInput.value = "";
+  elements.crackLengthInput.value = "";
+
+  const idMap = new Map([
+    ["dropzone", elements.dropzone],
+    ["fileInput", elements.fileInput],
+    ["fileStatus", elements.fileStatus],
+    ["inputText", elements.inputText],
+    ["modeSelect", elements.modeSelect],
+    ["cipherSelect", elements.cipherSelect],
+    ["keyInput", elements.keyInput],
+    ["keyHint", elements.keyHint],
+    ["crackLengthWrap", elements.crackLengthWrap],
+    ["crackLengthInput", elements.crackLengthInput],
+    ["crackLengthHint", elements.crackLengthHint],
+    ["cipherInfoTitle", elements.cipherInfoTitle],
+    ["cipherInfoPurpose", elements.cipherInfoPurpose],
+    ["cipherInfoHow", elements.cipherInfoHow],
+    ["cipherInfoCrack", elements.cipherInfoCrack],
+    ["cipherInfoUse", elements.cipherInfoUse],
+    ["candidateSection", elements.candidateSection],
+    ["candidateStatus", elements.candidateStatus],
+    ["candidateList", elements.candidateList],
+    ["runButton", elements.runButton],
+    ["outputText", elements.outputText],
+    ["resultInfo", elements.resultInfo],
+    ["copyButton", elements.copyButton],
+  ]);
+
+  const document = {
+    getElementById(id) {
+      return idMap.get(id) || null;
+    },
+    querySelector(selector) {
+      if (selector === 'label[for="keyInput"]') {
+        return keyLabel;
+      }
+      return null;
+    },
+    createElement(tagName) {
+      return createMockElement(tagName);
+    },
+    execCommand() {
+      return true;
+    },
+  };
+
+  const navigator = {
+    language: "de-DE",
+    languages: ["de-DE", "en-US"],
+    clipboard: {
+      writeText: async () => {},
+    },
+  };
+  const context = {
+    window: {},
+    document,
+    navigator,
+    fetch: fetchImpl,
+    AbortController,
+    setTimeout,
+    clearTimeout,
+    requestAnimationFrame: (callback) => {
+      callback(Date.now());
+      return 1;
+    },
+    console,
+  };
+  context.window.window = context.window;
+  context.window.document = document;
+  context.window.navigator = navigator;
+  context.window.fetch = fetchImpl;
+  context.window.AbortController = AbortController;
+  context.window.setTimeout = setTimeout;
+  context.window.clearTimeout = clearTimeout;
+  context.window.requestAnimationFrame = context.requestAnimationFrame;
+  vm.createContext(context);
+
+  const scripts = [
+    "js/core/cipherRegistry.js",
+    "js/core/fileParsers.js",
+    "js/core/segmentLexiconData.js",
+    "js/core/dictionaryScorer.js",
+    "js/ciphers/vigenereCipher.js",
+    "js/app.js",
+  ];
+  for (const relativePath of scripts) {
+    const absolutePath = path.resolve(ROOT_DIR, relativePath);
+    const source = fs.readFileSync(absolutePath, "utf8");
+    vm.runInContext(source, context, { filename: absolutePath });
+  }
+
+  elements.cipherSelect.value = "vigenere";
+
+  return {
+    window: context.window,
+    elements,
+    async runDecrypt() {
+      const clickHandlers = elements.runButton._listeners.get("click") || [];
+      for (const handler of clickHandlers) {
+        await handler();
+      }
+    },
+  };
+}
 
 function loadRuntime(fetchImpl = () => Promise.reject(new Error("offline in test"))) {
   const window = loadBrowserContext(
@@ -136,6 +330,64 @@ describe("vigenere crack regression", () => {
       60_000
     );
   }
+
+  it("recovers long PHASE ciphertext without keyLength hint", async () => {
+    const { vigenere, scorer } = loadRuntime();
+    const cracked = vigenere.crack(LONG_PHASE_CIPHERTEXT, {
+      optimizations: true,
+    });
+    const ranked = await scorer.rankCandidates(cracked.candidates, {
+      languageHints: ["de", "en"],
+    });
+
+    expect(ranked.bestCandidate.key).toBe(LONG_PHASE_KEY);
+    expect(compactLetters(ranked.bestCandidate.text)).toBe(compactLetters(LONG_PHASE_PLAINTEXT));
+  }, 120_000);
+
+  it("recovers the QUANT regression without keyLength hint when optimizations are enabled", async () => {
+    const { vigenere, scorer } = loadRuntime();
+    const quantCiphertext = vigenere.encrypt(QUANT_PLAINTEXT, QUANT_KEY);
+    const cracked = vigenere.crack(quantCiphertext, {
+      optimizations: true,
+    });
+    const ranked = await scorer.rankCandidates(cracked.candidates, {
+      languageHints: ["de"],
+    });
+
+    // Die Regression sichert explizit den unhinted Pfad ab, in dem Länge 5 zuvor
+    // schon vor der eigentlichen Frequenzanalyse aus der Kandidatenmenge herausfiel.
+    expect(cracked.candidates.some((candidate) => candidate.keyLength === 5)).toBe(true);
+    expect(ranked.bestCandidate.key).toBe(QUANT_KEY);
+    expect(compactLetters(ranked.bestCandidate.text)).toBe(compactLetters(QUANT_PLAINTEXT));
+  }, 120_000);
+
+  it("recovers long PHASE ciphertext with keyLength=5", async () => {
+    const { vigenere, scorer } = loadRuntime();
+    const cracked = vigenere.crack(LONG_PHASE_CIPHERTEXT, {
+      keyLength: 5,
+      optimizations: true,
+    });
+    const ranked = await scorer.rankCandidates(cracked.candidates, {
+      languageHints: ["de", "en"],
+    });
+
+    expect(ranked.bestCandidate.key).toBe(LONG_PHASE_KEY);
+    expect(compactLetters(ranked.bestCandidate.text)).toBe(compactLetters(LONG_PHASE_PLAINTEXT));
+  }, 120_000);
+
+  it("keeps PHASE winner on the app.js crack path without keyLength hint", async () => {
+    const runtime = loadAppRuntimeForVigenere();
+    runtime.elements.modeSelect.value = "decrypt";
+    runtime.elements.cipherSelect.value = "vigenere";
+    runtime.elements.keyInput.value = "";
+    runtime.elements.crackLengthInput.value = "";
+    runtime.elements.inputText.value = LONG_PHASE_CIPHERTEXT;
+
+    await runtime.runDecrypt();
+
+    expect(compactLetters(runtime.elements.outputText.value)).toBe(compactLetters(LONG_PHASE_PLAINTEXT));
+    expect(runtime.elements.resultInfo.textContent.includes("PHASE")).toBe(true);
+  }, 120_000);
 
   it("keeps seeded sample cases deterministic and mostly recoverable", () => {
     const { vigenere } = loadRuntime();

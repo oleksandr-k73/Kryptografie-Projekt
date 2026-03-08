@@ -474,4 +474,35 @@ describe("feature proposals regression checks with markdown references", () => {
     });
     expect(parsed.text).toBe("name alpha beta gamma");
   });
+
+  it("js/core/fileParsers.js: XML strict matching bevorzugt <coded> statt <codedExport>", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.xml",
+      text: async () =>
+        `<root><codedExport>FALSCH</codedExport><coded id=\"a1\">YBSMHOPNKELNFNDKHFKCAY</coded></root>`,
+    });
+    // Strict Tag-Matching verhindert, dass Prefix-Tags wie codedExport den Prioritäts-Tag coded kapern.
+    expect(parsed.text).toBe("YBSMHOPNKELNFNDKHFKCAY");
+  });
+
+  it("js/core/fileParsers.js: XML strict matching greift nicht auf Prefix-Tags zurück", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.xml",
+      text: async () =>
+        `<root><codedExport>FALSCH</codedExport><payload>RICHTIG</payload></root>`,
+    });
+    // Ohne exakten coded-Treffer muss der Parser auf den nächsten Prioritäts-Tag fallen.
+    expect(parsed.text).toBe("RICHTIG");
+  });
+
+  it("js/core/fileParsers.js: XML ohne Prioritäts-Tag fällt auf Tag-Strip zurück", async () => {
+    const parseInputFile = loadFileParser();
+    const parsed = await parseInputFile({
+      name: "payload.xml",
+      text: async () => `<root><meta>A</meta><note>B C</note></root>`,
+    });
+    expect(parsed.text).toBe("A B C");
+  });
 });

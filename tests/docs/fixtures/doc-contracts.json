@@ -56,6 +56,7 @@
       "## Gemeinsamer Cipher-Vertrag",
       "## Cäsar (`js/ciphers/caesarCipher.js`)",
       "## Leetspeak (`js/ciphers/leetCipher.js`)",
+      "## Playfair (`js/ciphers/playfairCipher.js`)",
       "## Vigenère (`js/ciphers/vigenereCipher.js`)",
       "## Pflegehinweis"
     ],

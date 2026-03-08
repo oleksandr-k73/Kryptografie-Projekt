@@ -302,6 +302,39 @@
     }
   }
 
+  async function enrichCrackOptionsWithKeyCandidates(cipher, sourceText, crackOptions) {
+    if (!cipher || cipher.id !== "playfair") {
+      return crackOptions;
+    }
+
+    const scorer = core.dictionaryScorer;
+    if (!scorer || typeof scorer.getKeyCandidates !== "function") {
+      return crackOptions;
+    }
+
+    try {
+      // Der Playfair-Crack bleibt ohne Scorer funktional; optionale Key-Kandidaten
+      // verbessern nur den Suchraum für Phase B und ändern den UI-Fluss nicht.
+      const maybeCandidates = await Promise.resolve(
+        scorer.getKeyCandidates({
+          languageHints: deriveLanguageHints(sourceText),
+          text: sourceText,
+          minLength: 4,
+          maxLength: 12,
+          limit: 260,
+        })
+      );
+
+      if (Array.isArray(maybeCandidates) && maybeCandidates.length > 0) {
+        crackOptions.keyCandidates = maybeCandidates;
+      }
+    } catch (_error) {
+      // Optionales Enrichment darf den regulären Crack-Lauf nie blockieren.
+    }
+
+    return crackOptions;
+  }
+
   async function handleFile(file) {
     try {
       const parsed = await core.parseInputFile(file);
@@ -396,6 +429,15 @@
     }
 
     const crackOptions = parseCrackOptions(cipher);
+    await enrichCrackOptionsWithKeyCandidates(cipher, text, crackOptions);
+    if (
+      cipher.id === "vigenere" &&
+      !Object.prototype.hasOwnProperty.call(crackOptions, "optimizations")
+    ) {
+      // Der UI-Pfad nutzt standardmäßig den robusteren Optimierungsmodus,
+      // damit lange, realistische Texte nicht hinter dem Core-Pfad zurückfallen.
+      crackOptions.optimizations = true;
+    }
     if (cipher.id === "vigenere") {
       setStatus("Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...");
     }
