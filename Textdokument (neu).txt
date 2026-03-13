@@ -428,3 +428,126 @@ Fix nötig, falls Rail-Fence-Decrypt korrigiert wird: tests/vitest/railFence-reg
 Kein Fix nötig: Die gemeldeten Loader-Reihenfolge-Probleme in den betroffenen Vitest-Dateien sind nach aktuellem Stand bereits im Harness abgefangen; tests/vitest/_browserHarness.mjs injiziert segmentLexiconData.js automatisch vor dictionaryScorer.js.
 Wenn du die finale Planung später in einer Session mit funktionierendem Node-Setup wieder aufnehmen willst, brauche ich dort nur die Test-Lauffähigkeit; die verifizierte Befundlage steht.
 
+
+13.03.26:
+Reviewe die Meldungen unten. Falls die dort beschriebenen Probleme tatschächlich vorliegen, plane Fixes dafür.
+Meldungen:
+Verify each finding against the current code and only fix it if needed.
+
+Inline comments:
+In `@js/core/fileParsers.js`:
+- Around line 573-611: The decoder currently drops the leading backslash for
+unknown escapes in decodeYamlDoubleQuoted, corrupting sequences like \u0041 and
+\x41; update decodeYamlDoubleQuoted to (1) explicitly handle \uXXXX (four hex
+digits) and \xXX (two hex digits) by parsing the hex, appending the decoded
+character, and advancing index accordingly, (2) for any other unknown escape
+preserve the raw escape (append "\\" + next) instead of dropping the backslash,
+and (3) ensure bounds-checking so short/invalid sequences fall back to the
+raw-preserve behavior; refer to the function name decodeYamlDoubleQuoted and the
+switch/default branch to locate the change.
+
+In `@tests/vitest/playfair-regression.test.mjs`:
+- Around line 24-28: Die Ladereihenfolge ist inkonsistent: aktualisiere den
+Aufruf von loadFreshRuntime so dass er dieselbe Script-Reihenfolge verwendet wie
+loadBrowserContext; genau die Reihenfolge
+["js/ciphers/playfairCipher.js","js/core/segmentLexiconData.js","js/core/dictionaryScorer.js"]
+in der loadFreshRuntime-Argumentliste verwenden (suche nach der
+Funktion/Callsites loadFreshRuntime und bring die Array-Einträge in dieselbe
+Reihenfolge wie bei loadBrowserContext).
+- Around line 11-15: Die Reihenfolge der geladenen Dateien im Test-setup ist
+falsch: in der Aufrufstelle loadBrowserContext die Core-Module
+segmentLexiconData.js und dictionaryScorer.js vor den Cipher-Modulen laden und
+dabei sicherstellen, dass segmentLexiconData.js vor dictionaryScorer.js steht;
+konkret: in der Argumentliste von loadBrowserContext die Einträge so anordnen,
+dass "js/core/segmentLexiconData.js", "js/core/dictionaryScorer.js" kommen und
+erst danach "js/ciphers/playfairCipher.js" (verwende die vorhandene
+loadBrowserContext-Aufrufstelle und die Dateinamen als Referenz).
+###
+In der Datei `js/core/fileParsers.js` gibt es einen Bug in der Funktion `prepareYamlLines()`.
+Sie ruft `stripYamlInlineComment()` auf jeder Zeile auf, bevor bekannt ist, ob die Zeile
+zu einem YAML-Block-Scalar (`|` oder `>`) gehört. In Block-Scalars ist `#` jedoch
+kein Kommentarzeichen, sondern valider Textinhalt. Dadurch werden Zeilen wie `# TITEL`
+oder `Text mit # Raute` beschädigt, ohne dass der Raw-Text-Fallback greift.
+
+Aufgabe:
+Behebe den Bug in `js/core/fileParsers.js`, indem du folgende Änderungen vornimmst:
+
+1. In `prepareYamlLines()`: Speichere neben dem kommentierten `content` auch das unkontaminierte
+   `rawContent` (die Zeile ohne führende Einrückung, aber MIT allen `#`-Zeichen).
+   Jedes `lines`-Objekt soll also ein zusätzliches Feld `rawContent` erhalten:
+
+   ```js
+   const rawContent = rawLine.slice(indent);
+   // Für Leerzeilen:
+   lines.push({ indent, content: "", rawContent, lineNumber: index + 1 });
+   // Für normale Zeilen:
+   lines.push({ indent, content, rawContent, lineNumber: index + 1 });
+
+    In readYamlBlockScalar(): Ersetze collected.push(line.content) durch
+    collected.push(line.rawContent), damit Block-Scalar-Inhalt unverändert erhalten bleibt.
+
+    // Vorher:
+    collected.push(line.content);
+    // Nachher:
+    collected.push(line.rawContent);
+
+Wichtig:
+
+    Alle anderen Stellen, die line.content nutzen (z. B. parseYamlMapping,
+    parseYamlSequence, parseYamlBlock), sollen weiterhin line.content (das
+    kommentar-bereinigte Feld) verwenden. Nur readYamlBlockScalar soll auf
+    line.rawContent umgestellt werden.
+    Füge einen erklärenden Kommentar im Stil des bestehenden Codes hinzu (auf Deutsch,
+    fokussiert auf das „Warum": Block-Scalars behandeln # als Nutzdaten, nicht als
+    Kommentarmarkierung).
+    Ändere keine anderen Dateien und keine Tests.
+###
+
+---
+
+Duplicate comments:
+In `@tests/vitest/playfair-keyless-e2e-1k.test.mjs`:
+- Around line 68-79: The test precomputes a global shortlist using
+CANDIDATE_LIMIT = 320 and precomputedKeyCandidates = scorer.getKeyCandidates({
+text: "", limit: CANDIDATE_LIMIT, ... }) which diverges from the app path
+(js/app.js) that calls scorer.getKeyCandidates per input with text: sourceText
+and limit: 260; update the test to generate key candidates per-case using
+scorer.getKeyCandidates({ languageHints: [...], text: sourceText, minLength: 4,
+maxLength: 12, limit: 260 }) (remove or stop reusing precomputedKeyCandidates
+and CANDIDATE_LIMIT = 320) so the test exercises the same text-dependent
+candidate pool and limit as the UI path.
+
+In `@tests/vitest/railFence-keyless-e2e-1k.test.mjs`:
+- Around line 8-13: Die Lade-Reihenfolge in loadRuntime ist inkorrekt; ändere
+die Reihenfolge der geladenen Skripte so dass "js/core/segmentLexiconData.js"
+zuerst kommt, dann "js/core/dictionaryScorer.js" und zuletzt
+"js/ciphers/railFenceCipher.js" (aktualisiere die Array-Reihenfolge im
+loadRuntime-Aufruf), damit der Scorer im Test konsistent mit dem
+Produktions-Setup initialisiert wird.
+
+In `@tests/vitest/railFence-regression.test.mjs`:
+- Around line 8-14: The module load order in loadRuntime currently loads
+js/ciphers/railFenceCipher.js before core initializers, which can initialize the
+Rail Fence cipher with an unready scorer; update the array passed to
+loadBrowserContext in loadRuntime to load core modules first
+(js/core/fileParsers.js, then js/core/segmentLexiconData.js, then
+js/core/dictionaryScorer.js) and only after those include cipher modules such as
+js/ciphers/railFenceCipher.js so core data and dictionaryScorer are fully
+initialized before any cipher initialization.
+###
+Der Plan muss am Ende ein Hand-Off  mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert 
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+
+Lese außerdem am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL). 
+
+
+Halte deine Kommentare/deine Nachrichten während des Denkens prägnant, um Tokens zu sparen. Lasse aber auf keinen Fall keine wichtige Details aus. 
+
+Falls du unsicher oder im Zweifen bist, frage immer nach. Rate nie.
+
+
+Gib mir den Plan am Ende nur dann, wenn: 
+1. Alle Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden

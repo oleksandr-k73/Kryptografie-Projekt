@@ -585,6 +585,40 @@
         continue;
       }
 
+      if (next === "u") {
+        const hex = text.slice(index + 2, index + 6);
+        if (hex.length === 4 && /^[0-9A-Fa-f]{4}$/.test(hex)) {
+          output += String.fromCharCode(Number.parseInt(hex, 16));
+          index += 5;
+          continue;
+        }
+        // Bei unvollständigen/ungültigen Sequenzen bleibt der Rohtext erhalten, damit Eingaben nicht still verkürzt werden.
+        if (hex.length < 4) {
+          output += text.slice(index);
+          break;
+        }
+        output += text.slice(index, index + 6);
+        index += 5;
+        continue;
+      }
+
+      if (next === "x") {
+        const hex = text.slice(index + 2, index + 4);
+        if (hex.length === 2 && /^[0-9A-Fa-f]{2}$/.test(hex)) {
+          output += String.fromCharCode(Number.parseInt(hex, 16));
+          index += 3;
+          continue;
+        }
+        // Bei unvollständigen/ungültigen Sequenzen bleibt der Rohtext erhalten, damit Eingaben nicht still verkürzt werden.
+        if (hex.length < 2) {
+          output += text.slice(index);
+          break;
+        }
+        output += text.slice(index, index + 4);
+        index += 3;
+        continue;
+      }
+
       switch (next) {
         case "n":
           output += "\n";
@@ -602,7 +636,7 @@
           output += "\\";
           break;
         default:
-          output += next;
+          output += `\\${next}`;
           break;
       }
       index += 1;
@@ -716,13 +750,14 @@
         throw new Error("yaml_tabs_not_supported");
       }
 
-      const stripped = stripYamlInlineComment(rawLine);
       const indentMatch = rawLine.match(/^ */);
       const indent = indentMatch ? indentMatch[0].length : 0;
+      const rawContent = rawLine.slice(indent);
+      const stripped = stripYamlInlineComment(rawLine);
       const content = stripped.slice(indent);
       if (!stripped.trim()) {
         // Blank-Lines bleiben erhalten, damit Block-Scalars Absatzgrenzen erkennen.
-        lines.push({ indent, content: "", lineNumber: index + 1 });
+        lines.push({ indent, content: "", rawContent, lineNumber: index + 1 });
         continue;
       }
 
@@ -733,6 +768,7 @@
       lines.push({
         indent,
         content,
+        rawContent,
         lineNumber: index + 1,
       });
     }
@@ -788,11 +824,8 @@
         break;
       }
 
-      // `prepareYamlLines` already strips leading indentation into `line.content` and
-      // the loop guarantees `line.indent >= blockIndent`, so the previous
-      // `slice(Math.min(blockIndent, line.indent) - blockIndent)` is a no-op.
-      // Keep `line.content` directly for clarity and performance.
-      collected.push(line.content);
+      // Block-Scalars behandeln # als Nutzdaten; wir nutzen rawContent, damit Kommentar-Strippen nicht eingreift.
+      collected.push(line.rawContent);
       index += 1;
     }
 

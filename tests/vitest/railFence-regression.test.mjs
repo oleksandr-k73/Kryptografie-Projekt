@@ -8,9 +8,9 @@ const { generateRailFenceDataset } = require("./generators/railFenceDataset.js")
 function loadRuntime() {
   const window = loadBrowserContext([
     "js/core/fileParsers.js",
-    "js/ciphers/railFenceCipher.js",
     "js/core/segmentLexiconData.js",
     "js/core/dictionaryScorer.js",
+    "js/ciphers/railFenceCipher.js",
   ]);
   return {
     railFence: window.KryptoCiphers.railFenceCipher,

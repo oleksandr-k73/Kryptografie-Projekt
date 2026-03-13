@@ -65,24 +65,16 @@ describe("playfair keyless e2e 1k", () => {
       let keyHits = 0;
       const startedAt = Date.now();
 
-      // Precompute a single shortlist of key candidates to avoid repeated
-      // scorer calls per input which causes large overhead and reduces
-      // the effective candidate pool. Make the limit configurable here
-      // (restored previous default of 320).
-      const CANDIDATE_LIMIT = 320;
-      const precomputedKeyCandidates = scorer.getKeyCandidates({
-        languageHints: ["de", "en"],
-        text: "",
-        minLength: 4,
-        maxLength: 12,
-        limit: CANDIDATE_LIMIT,
-      });
-
       for (const testCase of dataset) {
         const cipherText = playfair.encrypt(testCase.plaintext, testCase.key);
-        // Reuse the precomputed shortlist for all inputs to keep the
-        // intended search space and avoid 1000x scorer overhead.
-        const keyCandidates = precomputedKeyCandidates;
+        // Der UI-Pfad baut Key-Kandidaten pro Ciphertext auf; so bleiben Tests und UI im selben Suchraum.
+        const keyCandidates = scorer.getKeyCandidates({
+          languageHints: ["de", "en"],
+          text: cipherText,
+          minLength: 4,
+          maxLength: 12,
+          limit: 260,
+        });
         const cracked = playfair.crack(cipherText, {
           keyCandidates,
           languageHints: ["de", "en"],
