@@ -436,23 +436,22 @@
     }
 
     const crackOptions = parseCrackOptions(cipher);
-    await enrichCrackOptionsWithKeyCandidates(cipher, text, crackOptions);
-    if (
-      cipher.id === "vigenere" &&
-      !Object.prototype.hasOwnProperty.call(crackOptions, "optimizations")
-    ) {
-      // Der UI-Pfad nutzt standardmäßig den robusteren Optimierungsmodus,
-      // damit lange, realistische Texte nicht hinter dem Core-Pfad zurückfallen.
-      crackOptions.optimizations = true;
-    }
-    if (cipher.id === "vigenere") {
-      setStatus("Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...");
-    }
-
-    // Die Deaktivierung verhindert Doppelstarts während langer Crack-Läufe;
-    // ohne diesen Guard entstehen leicht konkurrierende Berechnungen und UI-Rennen.
+    // Guard vor dem ersten await, damit schnelle Doppelklicks keine parallelen Crack-Läufe starten.
     elements.runButton.disabled = true;
     try {
+      await enrichCrackOptionsWithKeyCandidates(cipher, text, crackOptions);
+      if (
+        cipher.id === "vigenere" &&
+        !Object.prototype.hasOwnProperty.call(crackOptions, "optimizations")
+      ) {
+        // Der UI-Pfad nutzt standardmäßig den robusteren Optimierungsmodus,
+        // damit lange, realistische Texte nicht hinter dem Core-Pfad zurückfallen.
+        crackOptions.optimizations = true;
+      }
+      if (cipher.id === "vigenere") {
+        setStatus("Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...");
+      }
+
       // Das Rendering muss vor dem CPU-intensiven Crack einmal zurück an den Browser,
       // damit der Wartehinweis sichtbar ist, bevor die Hauptschleife blockiert.
       await new Promise((resolve) => requestAnimationFrame(resolve));

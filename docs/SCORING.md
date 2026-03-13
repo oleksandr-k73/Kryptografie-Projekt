@@ -103,7 +103,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - `score = qualityScore + coverage * 10 + meaningfulTokenRatio * 8 + max(0, 1 - abs(spaceRatio - 0.16) * 4) - (rails / maxRails) * 0.35`
 - Tie-Breaker: kleinere Rail-Anzahl zuerst.
 - Ohne Dictionary-Scorer greift ein lokales Fallback aus häufigen Wörtern, Bigrammen/Trigrammen und Leerzeichen-Bonus.
-- `displayText` darf auch im normalen `decrypt(...)` statt `rawText` ausgegeben werden, wenn `rawText` keine Whitespaces enthält sowie `coverage >= 0.55` und `meaningfulTokenRatio >= 0.55`.
+- `displayText` wird nur im Crack-Pfad als Ausgabe genutzt; `decrypt(...)` liefert Rohtext, auch wenn Segmentierung möglich wäre.
 
 ## 2) Kandidatenfluss in `app.js`
 

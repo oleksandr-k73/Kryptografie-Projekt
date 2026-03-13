@@ -1,6 +1,7 @@
 (function initRailFenceCipher(global) {
   const root = global.KryptoCiphers || (global.KryptoCiphers = {});
 
+  // Fixture-spezifische Fragmente bleiben draußen, damit die lokale Shortlist echte Klartexte nicht wegdrückt.
   const COMMON_WORDS = [
     " der ",
     " die ",
@@ -12,10 +13,8 @@
     " and ",
     " is ",
     " of ",
-    " poten",
     " modell",
     " signal",
-    " quant",
   ];
   const COMMON_BIGRAMS = new Set([
     "er",
@@ -53,8 +52,6 @@
     "ten",
     "ter",
     "ell",
-    "mod",
-    "top",
   ]);
   const ANALYSIS_SHORTLIST_SIZE = 6;
 
@@ -301,11 +298,8 @@
     decrypt(text, key) {
       const rails = this.parseKey(key);
       const rawText = decryptRailFence(text, rails);
-      const maxRails = Math.max(rails, Math.min(12, Math.max(2, rawText.length - 1)));
-
-      // Bekannte Rails sollen dieselbe lesbare Ausgabe liefern wie der Crack-Pfad,
-      // damit das UI nicht je nach Eingabemodus zwischen Rohtext und sinnvoller Segmentierung springt.
-      return analyzeCandidateText(rawText, rails, maxRails).text;
+      // decrypt() bleibt echte Inversion; Segmentierung ist dem Crack-Pfad vorbehalten.
+      return rawText;
     },
 
     crack(text, options) {

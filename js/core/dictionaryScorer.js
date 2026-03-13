@@ -650,14 +650,15 @@
   }
 
   function buildSharedSegmentBaseModel() {
-    const cacheKey = "__shared__";
+    const lexiconData = getSegmentLexiconData();
+    // Cache-Key unterscheidet Fallback vs Vollladung, damit spätere Lexika nicht blockiert werden.
+    const cacheKey = lexiconData ? "__shared__" : "__shared__fallback";
     const cached = segmentModelCache.get(cacheKey);
     if (cached) {
       return cached;
     }
 
     const exactLexicon = new Set();
-    const lexiconData = getSegmentLexiconData();
     if (lexiconData) {
       // Das große Offline-Lexikon wird einmal global geteilt, damit Playfair-Cracks
       // kein pro-Request-Set aufbauen müssen.

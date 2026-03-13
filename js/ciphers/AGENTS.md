@@ -41,7 +41,7 @@ Optionale Metadaten:
 - Unterstützt Schienen-Hint fürs Knacken (`supportsCrackLengthHint: true`).
 - Im UI wird dasselbe Schienen-Feld für Entschlüsselung oder Keyless-Crack verwendet.
 - Ver-/Entschlüsselung laufen über den kompletten Zeichenstrom inklusive Leerzeichen und Satzzeichen.
-- `decrypt(...)` darf dieselbe lesbare Segmentierung wie der Crack-Pfad ausgeben, wenn die Shared-Analyse klare Wortgrenzen stützt.
+- `decrypt(...)` liefert Rohtext; lesbare Segmentierung bleibt dem Crack-Pfad vorbehalten.
 - `crack(...)` testet ohne Hint exakt `2..min(12, text.length - 1)`.
 - Der generische `options.keyLength`-Hint wird als Schienenanzahl verwendet.
 - Mit `dictionaryScorer.analyzeTextQuality(...)` kann der Crack-Pfad lesbare Segmentierung (`displayText`) in `text` ausgeben und `rawText` separat behalten.

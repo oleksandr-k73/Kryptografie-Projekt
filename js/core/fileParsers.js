@@ -537,7 +537,10 @@
       }
 
       if (!inSingleQuotes && !inDoubleQuotes && ch === "#") {
-        break;
+        const prev = line[index - 1];
+        if (index === 0 || /\s/.test(prev)) {
+          break;
+        }
       }
 
       output += ch;
@@ -714,13 +717,14 @@
       }
 
       const stripped = stripYamlInlineComment(rawLine);
-      if (!stripped.trim()) {
-        continue;
-      }
-
-      const indentMatch = stripped.match(/^ */);
+      const indentMatch = rawLine.match(/^ */);
       const indent = indentMatch ? indentMatch[0].length : 0;
       const content = stripped.slice(indent);
+      if (!stripped.trim()) {
+        // Blank-Lines bleiben erhalten, damit Block-Scalars Absatzgrenzen erkennen.
+        lines.push({ indent, content: "", lineNumber: index + 1 });
+        continue;
+      }
 
       if (hasYamlUnsupportedFeature(content)) {
         throw new Error("yaml_advanced_feature");
@@ -766,7 +770,13 @@
 
     while (index < lines.length) {
       const line = lines[index];
-      if (line.indent <= parentIndent) {
+      // Preserve blank lines inside a block scalar: only treat a line as a
+      // block terminator when it is non-blank *and* has indent <= parentIndent.
+      // `prepareYamlLines` may record fully empty lines with indent 0; we do
+      // not want those to prematurely terminate a block scalar. Therefore
+      // only break here when `line.content` is non-empty and the indent is
+      // at or above the parent boundary.
+      if (line.content !== "" && line.indent <= parentIndent) {
         break;
       }
 
@@ -804,19 +814,36 @@
     return target;
   }
 
+  // skipYamlBlankLines: advance the index past YAML lines that have no
+  // meaningful content. Why: normalize YAML parsing by advancing past nodes
+  // whose `.content` is empty so blank YAML lines are not treated as
+  // meaningful nodes and the main parser (e.g. `parseYamlBlock`) can assume
+  // the current line contains actual content. Use this helper before
+  // attempting to interpret a YAML node or block. Assumes `lines` is an
+  // array of objects where each element has a `.content` property (string)
+  // and related metadata like `.indent` and `.lineNumber`.
+  function skipYamlBlankLines(lines, startIndex) {
+    let index = startIndex;
+    while (index < lines.length && !lines[index].content) {
+      index += 1;
+    }
+    return index;
+  }
+
   function parseYamlBlock(lines, startIndex, indent) {
-    if (startIndex >= lines.length) {
+    let index = skipYamlBlankLines(lines, startIndex);
+    if (index >= lines.length) {
       return {
         value: null,
-        nextIndex: startIndex,
+        nextIndex: index,
       };
     }
 
-    const current = lines[startIndex];
+    const current = lines[index];
     if (current.indent < indent) {
       return {
         value: null,
-        nextIndex: startIndex,
+        nextIndex: index,
       };
     }
     if (current.indent !== indent) {
@@ -824,10 +851,10 @@
     }
 
     if (current.content === "-" || current.content.startsWith("- ")) {
-      return parseYamlSequence(lines, startIndex, indent);
+      return parseYamlSequence(lines, index, indent);
     }
 
-    return parseYamlMapping(lines, startIndex, indent);
+    return parseYamlMapping(lines, index, indent);
   }
 
   function parseYamlSequenceItem(lines, startIndex, indent) {
@@ -909,6 +936,15 @@
 
     while (index < lines.length) {
       const line = lines[index];
+      // Skip blank YAML lines: when `line.content` is falsy we intentionally
+      // advance `index` and `continue` so the parser does not emit empty
+      // sequence items or mappings. This preserves parser state and
+      // normalizes input before further parsing — callers can assume the
+      // current `line` has meaningful `.content` after this check.
+      if (!line.content) {
+        index += 1;
+        continue;
+      }
       if (line.indent < indent) {
         break;
       }
@@ -936,6 +972,15 @@
 
     while (index < lines.length) {
       const line = lines[index];
+      // Skip blank YAML lines: when `line.content` is falsy we intentionally
+      // advance `index` and `continue` so the parser does not emit empty
+      // mapping entries. This preserves parser state and normalizes input
+      // before further parsing — after this check callers can assume the
+      // current `line` has meaningful `.content`.
+      if (!line.content) {
+        index += 1;
+        continue;
+      }
       if (line.indent < indent) {
         break;
       }
@@ -981,8 +1026,13 @@
       return null;
     }
 
-    const parsed = parseYamlBlock(lines, 0, lines[0].indent);
-    if (parsed.nextIndex !== lines.length) {
+    const startIndex = skipYamlBlankLines(lines, 0);
+    if (startIndex >= lines.length) {
+      return null;
+    }
+
+    const parsed = parseYamlBlock(lines, startIndex, lines[startIndex].indent);
+    if (skipYamlBlankLines(lines, parsed.nextIndex) !== lines.length) {
       throw new Error("yaml_trailing_content");
     }
 

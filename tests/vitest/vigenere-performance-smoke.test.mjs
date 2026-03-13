@@ -3,7 +3,7 @@ import { loadBrowserContext } from "./_browserHarness.mjs";
 
 function loadRuntime() {
   const window = loadBrowserContext(
-    ["js/ciphers/vigenereCipher.js", "js/core/dictionaryScorer.js"],
+    ["js/ciphers/vigenereCipher.js", "js/core/segmentLexiconData.js", "js/core/dictionaryScorer.js"],
     {
       fetchImpl: typeof fetch === "function" ? fetch : () => Promise.reject(new Error("fetch unavailable")),
     }

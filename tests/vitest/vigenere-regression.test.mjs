@@ -195,7 +195,7 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
 
 function loadRuntime(fetchImpl = () => Promise.reject(new Error("offline in test"))) {
   const window = loadBrowserContext(
-    ["js/ciphers/vigenereCipher.js", "js/core/dictionaryScorer.js"],
+    ["js/ciphers/vigenereCipher.js", "js/core/segmentLexiconData.js", "js/core/dictionaryScorer.js"],
     {
       // Die meisten Regressionen sollen deterministisch lokal laufen; das entkoppelt
       // sie von API-Latenz, während der explizite Online/Offline-Test unten Netzverhalten abdeckt.
@@ -258,7 +258,7 @@ describe("vigenere crack regression", () => {
         const apiReachable = await canReachDictionaryApi();
         // online context (real fetch)
         const online = loadBrowserContext(
-          ["js/ciphers/vigenereCipher.js", "js/core/dictionaryScorer.js"],
+          ["js/ciphers/vigenereCipher.js", "js/core/segmentLexiconData.js", "js/core/dictionaryScorer.js"],
           {
             fetchImpl: typeof fetch === "function"
               ? fetch
@@ -267,7 +267,7 @@ describe("vigenere crack regression", () => {
         );
         // offline context (no API)
         const offline = loadBrowserContext(
-          ["js/ciphers/vigenereCipher.js", "js/core/dictionaryScorer.js"],
+          ["js/ciphers/vigenereCipher.js", "js/core/segmentLexiconData.js", "js/core/dictionaryScorer.js"],
           { fetchImpl: () => Promise.reject(new Error("offline in test")) }
         );
 

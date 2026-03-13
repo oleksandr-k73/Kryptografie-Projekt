@@ -11,7 +11,7 @@ const ROOT_DIR = path.resolve(THIS_DIR, "../..");
 
 function loadRuntime(fetchImpl) {
   const window = loadBrowserContext(
-    ["js/ciphers/vigenereCipher.js", "js/core/dictionaryScorer.js"],
+    ["js/ciphers/vigenereCipher.js", "js/core/segmentLexiconData.js", "js/core/dictionaryScorer.js"],
     { fetchImpl }
   );
   return {

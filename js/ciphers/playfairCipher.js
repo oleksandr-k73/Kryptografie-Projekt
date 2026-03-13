@@ -347,6 +347,12 @@
   function chooseDisplaySegment(rawText, options) {
     const defaultClean = removeDidacticPadding(rawText, false);
     const defaultSegment = segmentDidacticText(defaultClean, options);
+    const allowTerminalXCompare = options && options.allowTerminalXCompare === true;
+    if (!allowTerminalXCompare) {
+      // Standardpfad bleibt single-pass, damit Crack-Scoring je Key nur einmal analysiert.
+      return defaultSegment;
+    }
+
     const keepTerminalX = removeDidacticPadding(rawText, true);
     if (!keepTerminalX || keepTerminalX === defaultClean) {
       return defaultSegment;
@@ -367,8 +373,8 @@
   }
 
   function scoreCandidateText(text, options) {
-    const stripped = removeDidacticPadding(text);
-    const segmented = segmentDidacticText(stripped, options);
+    // Scoring muss dieselbe Segmentierung nutzen wie decrypt()/crack(), sonst driftet Ranking vs Anzeige.
+    const segmented = chooseDisplaySegment(text, options);
     const averageTokenScore = Number.isFinite(segmented.averageTokenScore)
       ? segmented.averageTokenScore
       : 0;
@@ -384,7 +390,7 @@
     const lexiconCoverage = Number.isFinite(segmented.lexiconCoverage) ? segmented.lexiconCoverage : 0;
     const qualityScore = Number.isFinite(segmented.qualityScore)
       ? segmented.qualityScore
-      : segmented.confidence * 12;
+      : (Number(segmented.confidence) || 0) * 12;
     // Playfair nutzt ausschließlich die Shared-Analysemetrik, damit Scoring,
     // Segmentanzeige und dictionaryScorer-Ranking nicht auseinanderdriften.
     const confidence = qualityScore;

@@ -78,7 +78,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
   - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
   - Ambiguitäts-Gate triggert Phase B bei `low_confidence`, `low_delta` oder `low_coverage`
 - Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
-- Rail Fence darf lesbare Segmentierung (`displayText`) sowohl im Crack- als auch im normalen Decrypt-Pfad nach oben reichen, wenn die Shared-Analyse klare Wortgrenzen stützt.
+- Rail Fence darf lesbare Segmentierung (`displayText`) im Crack-Pfad nach oben reichen, wenn die Shared-Analyse klare Wortgrenzen stützt; `decrypt(...)` bleibt Rohtext-Inversion.
 - Im UI-Pfad setzt `app.js` für Vigenère standardmäßig `optimizations: true`.
 - Bei `keyLength`-Hint wird das Fallback-Budget direkt über `maxMsPerLength` begrenzt.
 - Ohne `keyLength`-Hint wird der Fallback zusätzlich über ein adaptives Größen-Gate begrenzt.

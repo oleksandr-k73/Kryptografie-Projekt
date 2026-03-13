@@ -10,6 +10,7 @@ function loadRuntime() {
 
   const window = loadBrowserContext([
     "js/ciphers/playfairCipher.js",
+    "js/core/segmentLexiconData.js",
     "js/core/dictionaryScorer.js",
   ]);
   runtimeCache = {
@@ -22,6 +23,7 @@ function loadRuntime() {
 function loadFreshRuntime() {
   const window = loadBrowserContext([
     "js/ciphers/playfairCipher.js",
+    "js/core/segmentLexiconData.js",
     "js/core/dictionaryScorer.js",
   ]);
   return {

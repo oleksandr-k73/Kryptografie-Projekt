@@ -9,6 +9,7 @@ function loadRuntime() {
   const window = loadBrowserContext([
     "js/core/fileParsers.js",
     "js/ciphers/railFenceCipher.js",
+    "js/core/segmentLexiconData.js",
     "js/core/dictionaryScorer.js",
   ]);
   return {
@@ -61,12 +62,13 @@ describe("rail fence regression", () => {
     expect(cracked.text).toBe(plaintext);
   });
 
-  it("decrypt with known rails promotes the same readable segmentation as crack", () => {
+  it("decrypt with known rails stays the raw inverse", () => {
     const { railFence } = loadRuntime();
 
     const decrypted = railFence.decrypt("PNLFEOETATPMDLTIOOL", 3);
 
-    expect(decrypted).toBe("POTENTIALTOPF MODELL");
+    // decrypt() garantiert Rohtext-Inversion; Segmentierung bleibt im Crack-Pfad.
+    expect(decrypted).toBe("POTENTIALTOPFMODELL");
   });
 
   it("unhinted crack prefers the documented YAML acceptance target", async () => {
