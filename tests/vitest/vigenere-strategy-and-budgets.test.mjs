@@ -3,7 +3,7 @@ import { loadBrowserContext } from "./_browserHarness.mjs";
 
 function loadRuntime(fetchImpl = () => Promise.reject(new Error("offline in test"))) {
   const window = loadBrowserContext(
-    ["js/ciphers/vigenereCipher.js", "js/core/dictionaryScorer.js"],
+    ["js/ciphers/vigenereCipher.js", "js/core/segmentLexiconData.js", "js/core/dictionaryScorer.js"],
     {
       // Deterministische Standardumgebung: Netzwerkstreuung soll Budget-/Strategietests
       // nicht beeinflussen, weil diese fachlich die Suchlogik und nicht API-Latenz prüfen.

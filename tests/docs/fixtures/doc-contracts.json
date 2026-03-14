@@ -56,6 +56,8 @@
       "## Gemeinsamer Cipher-Vertrag",
       "## Cäsar (`js/ciphers/caesarCipher.js`)",
       "## Leetspeak (`js/ciphers/leetCipher.js`)",
+      "## Playfair (`js/ciphers/playfairCipher.js`)",
+      "## Rail Fence (`js/ciphers/railFenceCipher.js`)",
       "## Vigenère (`js/ciphers/vigenereCipher.js`)",
       "## Pflegehinweis"
     ],
@@ -63,7 +65,8 @@
       "`encrypt(text, key?)`",
       "`decrypt(text, key?)`",
       "`crack(text, options?)`",
-      "supportsCrackLengthHint"
+      "supportsCrackLengthHint",
+      "railFenceCipher.js"
     ]
   }
 }

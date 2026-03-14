@@ -149,3 +149,405 @@ Gib mir nur dann den Plan, wenn:
 
 Gib mir exakt diesen Plan als eine Hand-Off-Version für einen anderen Agent, der diesen Plan tatsächlich implementiert. Außerdem brauche ich einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering).
 "Coding Experte" -- Qualitätssteigerung?
+
+07.03.26:
+"CSUSEKTEFKIA" wird beim Playfair-Cipher falsch entschlüsselt:
+Schlüssel: BOTSC | Score: 16.80 | Wörterbuch: 50% | STR C TEXTELH D
+Schlüssel: BOTS | Score: 12.90 | Wörterbuch: 36% | FBRA TEXTELM O
+Schlüssel: GEBE | Score: 2.07 | Wörterbuch: 0% | BUTRCF RADIAY
+Schlüssel: GEMACHT | Score: 2.01 | Wörterbuch: 0% | AUSRWT EWTONG
+Schlüssel: GESEH | Score: 1.93 | Wörterbuch: 0% | DERAGL QHBNAZ
+###
+Plane einen Fix. Gehe dabei so vor:
+1. Überprüfe, ob bestehende Tests für Playfair korrekt und valide sind. Falls sie nicht brauchbar sind, plane auch einen Fix dafür.
+2. Untersuche, warum dieser Fall falsch entschlüsselt wird. Versuche ggf. ihn selst zu dekodieren und baue auf jeden Fall robustere Tests, mit denen du weitere Analyse machen kannst.
+3. Leite aus den Ergebnissen von 2. einen Fix.
+4. Versichere, dass der Fix funktioniert und keine (unerwartete) Fehler aufweist. Untersuche dafür auch, ob und welche Bugs eventuell entstehen können (FAKTENBASIERT! NICHTS ERFINDEN!)
+
+Dabei darfst und sollst du den Fix im Sandbox virtuell implementieren und in dieser Umgebung die Schritte durchführen. 
+
+Gib den Plan nur ab, wenn:
+1. Der Fix fehlerfrei ist und einwandfrei für eine breite Auswahl an Fällen funktioniert.
+2. Die relevante Tests grün sind. Keine Regressionen entstehen/die restliche Funktionalität wird nicht betroffen.
+3. Der Plan funktioniert im Sandbox und ist fehlerfrei bei der tatsächlichen Implementierung.
+
+Abgabeformat:
+- Eine Hand-Out-Version für einen Agent in einer anderen Session, der den Plan auch mit Medium-Reasoning effizient und fehlerfrei ausführen kann. Zusätzlich dafür ein sofort einsetzbarer Prompt (im Einklang mit Context Engineering).
+
+Plane einen Fix für die Frequenzanalyse bei Vigenere. Ziehe dafür Erkenntnisse aus dem neuesten Fall:
+###
+# Das Schlüsselwort QUANT wird nur später erkannt (ohne Hint)
+
+Schlüssel: QTGNTQUANT | Score: 12.12 | Wörterbuch: 13% | EJHSTEIN ERKMUERTE DEN PIITOEFFEKT EORCH DIE EIOZUEHRUNG VPH PHOTONEN VHD ZEIGTE DBMS ERST AB DFL GRENZFREROENZ ELEKTSINEN AUSGEMIEST WERDEO
+Schlüssel: QTANTQUANT | Score: 11.82 | Wörterbuch: 13% | EJNSTEIN ERKMAERTE DEN PIOTOEFFEKT EURCH DIE EIOFUEHRUNG VPN PHOTONEN VND ZEIGTE DBSS ERST AB DFR GRENZFRERUENZ ELEKTSONEN AUSGEMOEST WERDEO
+Schlüssel: QDNNTQUANT | Score: 11.65 | Wörterbuch: 13% | EZASTEIN ERKCNERTE DEN PYBTOEFFEKT UHRCH DIE EIESUEHRUNG VFA PHOTONEN LAD ZEIGTE DRFS ERST AB DVE GRENZFREHHENZ ELEKTIBNEN AUSGECBEST WERDEE
+Schlüssel: QCGNTQUANT | Score: 10.65 | Wörterbuch: 17% | EAHSTEIN ERKDUERTE DEN PZITOEFFEKT VORCH DIE EIFZUEHRUNG VGH PHOTONEN MHD ZEIGTE DSMS ERST AB DWL GRENZFREIOENZ ELEKTJINEN AUSGEDIEST WERDEF
+Schlüssel: QCGNEQUANT | Score: 10.65 | Wörterbuch: 17% | EAHSIEIN ERKDUEGTE DEN PZITDEFFEKT VORRH DIE EIFZUTHRUNG VGH PWOTONEN MHD OEIGTE DSMS TRST AB DWL GGENZFREIOECZ ELEKTJINTN AUSGEDIEHT WERDEF
+###
+# Mit Hint = 5 erkennt das Programm das Wort problemlos
+
+Schlüssel: QUANT | Score: 39.54 | Wörterbuch: 44% | EINSTEIN ERKLAERTE DEN PHOTOEFFEKT DURCH DIE EINFUEHRUNG VON PHOTONEN UND ZEIGTE DASS ERST AB DER GRENZFREQUENZ ELEKTRONEN AUSGELOEST WERDEN
+Schlüssel: QUAND | Score: 21.15 | Wörterbuch: 31% | EINSJEIN EHKLAEHTE DED PHOTEEFFEAT DURSH DIE UINFUUHRUNW VON PXOTONUN UND PEIGTU DASS URST AR DER GHENZFHEQUEDZ ELEATRONUN AUSWELOEIT WERTEN
+Schlüssel: QUAYS | Score: 17.89 | Wörterbuch: 19% | EINHUEIN TSKLATSTE DTO PHOIPEFFTLT DUGDH DIT FINFJFHRUCH VON EIOTOCFN UNS AEIGIF DASH FRST PC DER VSENZUSEQUTOZ ELTLTROCFN AUHHELOTTT WEGEEN
+Schlüssel: QUANP | Score: 16.75 | Wörterbuch: 31% | EINSXEIN EVKLAEVTE DER PHOTSEFFEOT DURGH DIE IINFUIHRUNK VON PLOTONIN UND DEIGTI DASS IRST AF DER GVENZFVEQUERZ ELEOTRONIN AUSKELOEWT WERHEN
+Schlüssel: QUAZT | Score: 16.17 | Wörterbuch: 13% | EINGTEIN SRKLASRTE DSN PHOHOEFFSKT DUFCH DIS EINFIEHRUBG VON DHOTOBEN UNR ZEIGHE DASG ERST OB DER URENZTREQUSNZ ELSKTROBEN AUGGELOSST WEFDEN
+###
+
+Identifiziere den genauen Bug und gib mir am Ende den Plan als ein Hand-Off für einen anderen Agenten, der ihn in einer separaten Session implementiert. Dafür brauche ich außerdem einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering und Best Practices für GPT 5.4)
+
+Gib mir nur dann den Plan, wenn:
+1. Das Problem eindeutig indentifiziert wurde (d. h. die Fehler wurden so eingegrenzt, dass mit Sicherheit andere Bugs keine Auswirkung auf das Problem haben könnten; falls solche noch gibt, untersuche das Problem weiter).
+2. Die vorgeschlagene Implementierungen in Sandbox getestet wurden und sind komplett fehlerfrei (falls die Tests nicht völlig grün sind, überarbeiten).
+3. Der Plan die genaue Beschreibung der Implementierung enthält, am Besten mit vorgefertigen Codestücken (die auch getestet und fehlerfrei integriert werden können).
+4. Der Plan den nötigen Kontext für den anderen Agenten hat (zusammen mit dem Prompt).
+
+Plane einen Update, bei dem Rail-Fence-Cipher implementiert wird. Außerdem muss eine Unterstützung vom YAML-Format hinzugefügt werden (siehe die angehängte Datei für ein Beispiel). 
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Der Plan muss am Ende ein Hand-Off  mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert 
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen.
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans) (wenn du dies automatisch machst, schreibe kurz was).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+
+09.03.26
+Reviewe die Meldungen unten. Falls die dort beschriebenen Probleme tatschächlich vorliegen, plane Fixes dafür.
+Meldungen:
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/app.js` around lines 438 - 458, Disable the run button before any awaits
+that can yield so a fast double-click can't start two runs: move the
+elements.runButton.disabled = true line to immediately after
+parseCrackOptions(cipher) (i.e., before calling
+enrichCrackOptionsWithKeyCandidates(cipher, text, crackOptions) and any other
+await), so the guard is active prior to the first await; keep the existing
+try/finally flow that re-enables the button after the crack completes.
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@tests/vitest/vigenere-regression.test.mjs` around lines 196 - 204, The test
+harness loads dictionaryScorer.js without segmentLexiconData.js causing the
+runtime to use a different segmentation path than the app; update the loader
+calls (the loadRuntime function that calls loadBrowserContext, and the
+equivalent online/offline context loaders around the other test setup) to
+include "js/core/segmentLexiconData.js" before "js/core/dictionaryScorer.js" in
+the array of modules so segmentLexiconData is loaded first and dictionaryScorer
+gets the correct local lexicon data.
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/ciphers/playfairCipher.js` around lines 369 - 390, scoreCandidateText
+currently always calls removeDidacticPadding -> segmentDidacticText without
+considering the keepTerminalX/display-path logic used by decrypt(),
+chooseDisplaySegment(), and crack(), causing mismatched ranking vs displayed
+text; update scoreCandidateText to use the same segmentation flow as
+chooseDisplaySegment by accepting a keepTerminalX/display-mode flag (or
+delegating to chooseDisplaySegment) and base its segmentation/metrics on that
+result so candidates[0].text, ranking and result.text remain consistent; apply
+the same fix to the other segmentation/score calls mentioned around the
+decrypt()/crack() flow (the blocks that compute segmented metrics and
+qualityScore) so all scoring and display use identical segmentation logic.
+###
+js/ciphers/railFenceCipher.js ll. 4-59
+Fixture-spezifische Fragmente bitte aus dem generischen Fallback-Score herausziehen.
+
+Die Einträge poten, quant, mod und top sind keine allgemeinen Sprachsignale, sondern bevorzugen genau die neuen Rail-Fence-Pflichtfälle. Weil buildRailCandidates() nur die lokal vorsortierte Top-Shortlist weiter zur Shared-Analyse schickt, kann dieser Bias echte Klartexte schon vor dem Wörterbuchpfad aus der Suche drängen.
+
+Also applies to: 128-146, 235-246
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/ciphers/railFenceCipher.js` around lines 301 - 308, The decrypt method for
+the railFence cipher currently post-processes rawText with analyzeCandidateText
+(using parseKey, decryptRailFence, and maxRails), which inserts
+segmentation/whitespace and makes decrypt() not a true inverse of encrypt();
+change decrypt(text, key) to simply return the raw decrypted string produced by
+decryptRailFence(parseKey(key)) (i.e., return rawText directly) and remove the
+analyzeCandidateText call (and the now-unused maxRails computation) so known
+keys produce unsegmented plaintext.
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/core/dictionaryScorer.js` around lines 652 - 715, The function
+buildSharedSegmentBaseModel currently stores a single "__shared__" entry in
+segmentModelCache even when getSegmentLexiconData() returns null, causing the
+fallback trigram/lexicon to be permanently reused; change the caching logic so
+the cached key distinguishes whether lexiconData existed (e.g., use different
+cacheKey when lexiconData is null or include a token like "__shared__fallback")
+or avoid caching the fallback result at all—update buildSharedSegmentBaseModel
+to compute lexiconData via getSegmentLexiconData(), pick a cache key that
+encodes presence/absence of lexiconData, and only set/get that specific key on
+segmentModelCache so that when real segmentLexiconData becomes available later
+the full model (with lexiconData.getWordSet() and lexiconData.getTrigramModel())
+can be cached and used.
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/core/fileParsers.js` around lines 501 - 547, stripYamlInlineComment
+currently stops at any unquoted '#' which truncates plain scalars like
+"foo#bar"; update the comment-detection branch in stripYamlInlineComment so a
+'#' only starts a comment when unquoted AND it is at the start or preceded by
+whitespace (e.g., replace the unconditional if (!inSingleQuotes &&
+!inDoubleQuotes && ch === "#") break; with a check that the previous character
+is missing or is whitespace — use line[index-1] and /\s/.test(...) — so '#'
+inside plain scalars (no separating whitespace) is preserved; keep the
+surrounding logic (inSingleQuotes/inDoubleQuotes/escaping) and the final
+trailing-space trim.
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@js/core/fileParsers.js` around lines 706 - 737, prepareYamlLines currently
+drops lines that become empty after stripYamlInlineComment (if
+(!stripped.trim()) continue), which removes blank lines needed by
+foldYamlBlockScalar to detect paragraph breaks; change this behaviour so that
+empty/blank lines are preserved as entries instead of skipped: when stripped is
+empty or only whitespace, still push an object with indent, content set to ""
+(or stripped.slice(indent) resulting in ""), and lineNumber into the lines array
+rather than continuing. Ensure the same fix is applied to the similar block
+around the other occurrence (lines handling 739-760), and keep existing checks
+like hasYamlUnsupportedFeature and tab detection intact so the rest of the
+validation is unchanged while blank YAML block-scalar lines are retained for
+foldYamlBlockScalar to use.
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@tests/vitest/playfair-keyless-e2e-1k.test.mjs` around lines 15 - 18, The
+test's browser context loads "js/core/dictionaryScorer.js" before the segment
+lexicon, causing the runtime to use a different segmentation/Offline setup;
+update the loadBrowserContext call so that "js/core/segmentLexiconData.js" is
+included and appears before "js/core/dictionaryScorer.js" in the module list
+(i.e., ensure the array passed to loadBrowserContext lists
+"js/core/segmentLexiconData.js" prior to "js/core/dictionaryScorer.js" so the
+scorer sees the lexicon data).
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@tests/vitest/playfair-keyless-e2e-1k.test.mjs` around lines 63 - 66, The test
+is building a global, text-less candidate pool by calling
+scorer.getKeyCandidates({languageHints:["de","en"],limit:320}) instead of
+invoking the same per-input call used in production (js/app.js); update the test
+to call scorer.getKeyCandidates for each input text with the same parameters
+used by the UI—include text (the current test case string), minLength,
+maxLength, and limit—so the Playfair shortlist is generated per input (also fix
+the other occurrences around the similar block at the 72–77 region).
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@tests/vitest/railFence-keyless-e2e-1k.test.mjs` around lines 8 - 12, The
+test's loadRuntime uses loadBrowserContext to load "js/core/dictionaryScorer.js"
+but omits "js/core/segmentLexiconData.js", causing a different segmentation
+setup than the app; update the loadRuntime call so the resources array includes
+"js/core/segmentLexiconData.js" before "js/core/dictionaryScorer.js" (i.e.,
+ensure segmentLexiconData is loaded prior to dictionaryScorer in the
+loadBrowserContext invocation).
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@tests/vitest/railFence-regression.test.mjs` around lines 8 - 13, Die
+Test-Runtime in loadRuntime lädt die Dateien in falscher Reihenfolge:
+loadBrowserContext currently includes js/core/dictionaryScorer.js before
+js/core/segmentLexiconData.js, so segmentation and offline scoring differ from
+production; update the array passed to loadBrowserContext inside loadRuntime to
+ensure js/core/segmentLexiconData.js appears before js/core/dictionaryScorer.js
+(keep the same function names: loadRuntime and loadBrowserContext and the file
+entries js/core/segmentLexiconData.js and js/core/dictionaryScorer.js).
+###
+Verify each finding against the current code and only fix it if needed.
+
+In `@tests/vitest/railFence-regression.test.mjs` around lines 64 - 69, The test
+currently asserts a specific readable segmentation from railFence.decrypt which
+locks display spacing into the decrypt path; instead change the assertion to
+verify exact inversion for a known key: call
+railFence.decrypt("PNLFEOETATPMDLTIOOL", 3) and assert it equals the raw
+plaintext (no human segmentation) or compare it to the result of
+railFence.crack(...).rawText (use the crack path's rawText) so decrypt() only
+guarantees correct raw inversion while segmentation/display remains tested via
+crack(). Use the symbols railFence.decrypt, railFence.crack, text and rawText to
+locate the related behavior in the test.
+###
+
+Benutze immer Sandbox, um deine Implementierungen und den Plan virtuell zu testen.
+
+Der Plan muss am Ende ein Hand-Off  mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert 
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans) (wenn du dies automatisch machst, schreibe kurz was).
+
+Halte deine Kommentare/deine Nachrichten während des Denkens kurz und prägnant, um Tokens zu sparen. Lasse aber auf keinen Fall keine wichtige Details aus.
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+
+Plane einen Update, bei dem Scytale-Cipher implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Der Plan muss am Ende ein Hand-Off  mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert 
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen.
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans) (wenn du dies automatisch machst, schreibe kurz was).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Zwischenplan:
+Kein finaler Hand-off-Plan: Die Test-Gates sind in dieser Sandbox aktuell nicht ausführbar, weil weder node, npm, corepack noch pnpm im PATH vorhanden sind. Damit kann ich deine Bedingung „Plan erst bei grünen Tests“ in dieser Session nicht regelkonform erfüllen.
+
+Verifiziert nach aktuellem Code:
+
+Fix nötig: js/app.js deaktiviert den Run-Button erst nach dem ersten await; der Double-Click-Race ist real.
+Fix nötig: js/ciphers/playfairCipher.js scored Kandidaten nicht über denselben chooseDisplaySegment(...)-Pfad wie decrypt()/crack(); Ranking, candidates[0].text und result.text können auseinanderlaufen.
+Fix nötig: js/ciphers/railFenceCipher.js enthält fixture-spezifische Fallback-Signale (poten, quant, mod, top etc.); der Bias ist real und beeinflusst die Shortlist vor der Shared-Analyse.
+Fix nötig: js/ciphers/railFenceCipher.js macht decrypt() durch analyzeCandidateText(...) nicht zur echten Inversen von encrypt().
+Fix nötig: js/core/dictionaryScorer.js cached Fallback- und Lexikon-Modell unter demselben __shared__-Key; der Late-Load-Bug ist real.
+Fix nötig: js/core/fileParsers.js kappt unquoted foo#bar fälschlich als Kommentar.
+Fix nötig: js/core/fileParsers.js verwirft leere YAML-Zeilen; dadurch verliert foldYamlBlockScalar(...) Absatzgrenzen.
+Fix nötig: tests/vitest/playfair-keyless-e2e-1k.test.mjs erzeugt den Playfair-Keypool global und ohne text/minLength/maxLength; das weicht vom UI-Pfad in js/app.js ab.
+Fix nötig, falls Rail-Fence-Decrypt korrigiert wird: tests/vitest/railFence-regression.test.mjs muss dann auf Rohtext-Inversion statt Display-Segmentierung prüfen.
+Kein Fix nötig: Die gemeldeten Loader-Reihenfolge-Probleme in den betroffenen Vitest-Dateien sind nach aktuellem Stand bereits im Harness abgefangen; tests/vitest/_browserHarness.mjs injiziert segmentLexiconData.js automatisch vor dictionaryScorer.js.
+Wenn du die finale Planung später in einer Session mit funktionierendem Node-Setup wieder aufnehmen willst, brauche ich dort nur die Test-Lauffähigkeit; die verifizierte Befundlage steht.
+
+
+13.03.26:
+Reviewe die Meldungen unten. Falls die dort beschriebenen Probleme tatschächlich vorliegen, plane Fixes dafür.
+Meldungen:
+Verify each finding against the current code and only fix it if needed.
+
+Inline comments:
+In `@js/core/fileParsers.js`:
+- Around line 573-611: The decoder currently drops the leading backslash for
+unknown escapes in decodeYamlDoubleQuoted, corrupting sequences like \u0041 and
+\x41; update decodeYamlDoubleQuoted to (1) explicitly handle \uXXXX (four hex
+digits) and \xXX (two hex digits) by parsing the hex, appending the decoded
+character, and advancing index accordingly, (2) for any other unknown escape
+preserve the raw escape (append "\\" + next) instead of dropping the backslash,
+and (3) ensure bounds-checking so short/invalid sequences fall back to the
+raw-preserve behavior; refer to the function name decodeYamlDoubleQuoted and the
+switch/default branch to locate the change.
+
+In `@tests/vitest/playfair-regression.test.mjs`:
+- Around line 24-28: Die Ladereihenfolge ist inkonsistent: aktualisiere den
+Aufruf von loadFreshRuntime so dass er dieselbe Script-Reihenfolge verwendet wie
+loadBrowserContext; genau die Reihenfolge
+["js/ciphers/playfairCipher.js","js/core/segmentLexiconData.js","js/core/dictionaryScorer.js"]
+in der loadFreshRuntime-Argumentliste verwenden (suche nach der
+Funktion/Callsites loadFreshRuntime und bring die Array-Einträge in dieselbe
+Reihenfolge wie bei loadBrowserContext).
+- Around line 11-15: Die Reihenfolge der geladenen Dateien im Test-setup ist
+falsch: in der Aufrufstelle loadBrowserContext die Core-Module
+segmentLexiconData.js und dictionaryScorer.js vor den Cipher-Modulen laden und
+dabei sicherstellen, dass segmentLexiconData.js vor dictionaryScorer.js steht;
+konkret: in der Argumentliste von loadBrowserContext die Einträge so anordnen,
+dass "js/core/segmentLexiconData.js", "js/core/dictionaryScorer.js" kommen und
+erst danach "js/ciphers/playfairCipher.js" (verwende die vorhandene
+loadBrowserContext-Aufrufstelle und die Dateinamen als Referenz).
+###
+In der Datei `js/core/fileParsers.js` gibt es einen Bug in der Funktion `prepareYamlLines()`.
+Sie ruft `stripYamlInlineComment()` auf jeder Zeile auf, bevor bekannt ist, ob die Zeile
+zu einem YAML-Block-Scalar (`|` oder `>`) gehört. In Block-Scalars ist `#` jedoch
+kein Kommentarzeichen, sondern valider Textinhalt. Dadurch werden Zeilen wie `# TITEL`
+oder `Text mit # Raute` beschädigt, ohne dass der Raw-Text-Fallback greift.
+
+Aufgabe:
+Behebe den Bug in `js/core/fileParsers.js`, indem du folgende Änderungen vornimmst:
+
+1. In `prepareYamlLines()`: Speichere neben dem kommentierten `content` auch das unkontaminierte
+   `rawContent` (die Zeile ohne führende Einrückung, aber MIT allen `#`-Zeichen).
+   Jedes `lines`-Objekt soll also ein zusätzliches Feld `rawContent` erhalten:
+
+   ```js
+   const rawContent = rawLine.slice(indent);
+   // Für Leerzeilen:
+   lines.push({ indent, content: "", rawContent, lineNumber: index + 1 });
+   // Für normale Zeilen:
+   lines.push({ indent, content, rawContent, lineNumber: index + 1 });
+
+    In readYamlBlockScalar(): Ersetze collected.push(line.content) durch
+    collected.push(line.rawContent), damit Block-Scalar-Inhalt unverändert erhalten bleibt.
+
+    // Vorher:
+    collected.push(line.content);
+    // Nachher:
+    collected.push(line.rawContent);
+
+Wichtig:
+
+    Alle anderen Stellen, die line.content nutzen (z. B. parseYamlMapping,
+    parseYamlSequence, parseYamlBlock), sollen weiterhin line.content (das
+    kommentar-bereinigte Feld) verwenden. Nur readYamlBlockScalar soll auf
+    line.rawContent umgestellt werden.
+    Füge einen erklärenden Kommentar im Stil des bestehenden Codes hinzu (auf Deutsch,
+    fokussiert auf das „Warum": Block-Scalars behandeln # als Nutzdaten, nicht als
+    Kommentarmarkierung).
+    Ändere keine anderen Dateien und keine Tests.
+###
+
+---
+
+Duplicate comments:
+In `@tests/vitest/playfair-keyless-e2e-1k.test.mjs`:
+- Around line 68-79: The test precomputes a global shortlist using
+CANDIDATE_LIMIT = 320 and precomputedKeyCandidates = scorer.getKeyCandidates({
+text: "", limit: CANDIDATE_LIMIT, ... }) which diverges from the app path
+(js/app.js) that calls scorer.getKeyCandidates per input with text: sourceText
+and limit: 260; update the test to generate key candidates per-case using
+scorer.getKeyCandidates({ languageHints: [...], text: sourceText, minLength: 4,
+maxLength: 12, limit: 260 }) (remove or stop reusing precomputedKeyCandidates
+and CANDIDATE_LIMIT = 320) so the test exercises the same text-dependent
+candidate pool and limit as the UI path.
+
+In `@tests/vitest/railFence-keyless-e2e-1k.test.mjs`:
+- Around line 8-13: Die Lade-Reihenfolge in loadRuntime ist inkorrekt; ändere
+die Reihenfolge der geladenen Skripte so dass "js/core/segmentLexiconData.js"
+zuerst kommt, dann "js/core/dictionaryScorer.js" und zuletzt
+"js/ciphers/railFenceCipher.js" (aktualisiere die Array-Reihenfolge im
+loadRuntime-Aufruf), damit der Scorer im Test konsistent mit dem
+Produktions-Setup initialisiert wird.
+
+In `@tests/vitest/railFence-regression.test.mjs`:
+- Around line 8-14: The module load order in loadRuntime currently loads
+js/ciphers/railFenceCipher.js before core initializers, which can initialize the
+Rail Fence cipher with an unready scorer; update the array passed to
+loadBrowserContext in loadRuntime to load core modules first
+(js/core/fileParsers.js, then js/core/segmentLexiconData.js, then
+js/core/dictionaryScorer.js) and only after those include cipher modules such as
+js/ciphers/railFenceCipher.js so core data and dictionaryScorer are fully
+initialized before any cipher initialization.
+###
+Der Plan muss am Ende ein Hand-Off  mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert 
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+
+Lese außerdem am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL). 
+
+
+Halte deine Kommentare/deine Nachrichten während des Denkens prägnant, um Tokens zu sparen. Lasse aber auf keinen Fall keine wichtige Details aus. 
+
+Falls du unsicher oder im Zweifen bist, frage immer nach. Rate nie.
+
+
+Gib mir den Plan am Ende nur dann, wenn: 
+1. Alle Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden

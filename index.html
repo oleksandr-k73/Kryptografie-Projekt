@@ -18,10 +18,10 @@
           <input
             id="fileInput"
             type="file"
-            accept=".txt,.json,.csv,.log,.md,.js,.mjs,.cjs,text/plain,application/json,text/csv,text/javascript,application/javascript"
+            accept=".txt,.json,.csv,.log,.md,.js,.mjs,.cjs,.xml,.yaml,.yml,text/plain,application/json,text/csv,text/javascript,application/javascript,application/xml,text/xml,text/yaml,application/yaml,application/x-yaml"
           />
           <span>Datei auswählen oder hierher ziehen</span>
-          <small>Unterstützt: TXT, JSON, CSV, LOG, MD, JS</small>
+          <small>Unterstützt: TXT, JSON, CSV, LOG, MD, JS, XML, YAML</small>
         </label>
         <p id="fileStatus" class="status">Noch keine Datei geladen.</p>
 
@@ -95,9 +95,12 @@
 
     <script src="js/core/cipherRegistry.js"></script>
     <script src="js/core/fileParsers.js"></script>
+    <script src="js/core/segmentLexiconData.js"></script>
     <script src="js/core/dictionaryScorer.js"></script>
     <script src="js/ciphers/caesarCipher.js"></script>
     <script src="js/ciphers/leetCipher.js"></script>
+    <script src="js/ciphers/playfairCipher.js"></script>
+    <script src="js/ciphers/railFenceCipher.js"></script>
     <script src="js/ciphers/vigenereCipher.js"></script>
     <script src="js/app.js"></script>
   </body>

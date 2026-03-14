@@ -25,7 +25,12 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 
 3. Dateiparsing (`js/core/fileParsers.js`)
 - Format nach Extension.
-- Unterstützt: `txt`, `log`, `md`, `json`, `csv`, `js`, `mjs`, `cjs`.
+- Unterstützt: `txt`, `log`, `md`, `json`, `csv`, `js`, `mjs`, `cjs`, `xml`, `yaml`, `yml`.
+- XML nutzt priorisierte Strict-Tags (`coded`, `ciphertext`, `cipher`, `text`, `message`, `payload`, `content`, `data`, `body`);
+  Prefix-Tags wie `codedExport` matchen bewusst nicht als `coded`.
+- XML ohne priorisierten Treffer fällt auf Tag-Strip + Whitespace-Normalisierung zurück.
+- YAML parst einen konservativen Browser-Subset (Mappings, Sequenzen, Block-Scalars) und nutzt danach dieselbe String-Extraktion wie JSON.
+- YAML mit nicht getragenen Features (z. B. Anchors/Aliases) fällt defensiv auf den Originaltext zurück.
 - JS-Parser bewertet reine Literal-Fallback-Kandidaten neutral über den Pfad `_literal`,
   damit starke Schlüssel wie `value` nur bei echten Key-Signalen aus Assignment/Property wirken.
 - CSV-Textspaltenwahl nutzt exakte Header-Tokens (Delimiter: `_`, Leerzeichen, `-`) statt Substring-Matching;
@@ -59,12 +64,28 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
   - `requestAnimationFrame` wird einmal abgewartet, damit der Hinweis sichtbar ist
  
 - `cipher.crack(text, options)` liefert besten Kandidaten und optional `candidates`.
+- Bei Playfair ergänzt `app.js` optional `dictionaryScorer.getKeyCandidates(...)` im
+  `options`-Objekt, damit der Cipher eine deterministische Key-Shortlist für Phase B nutzen kann.
+- Rail Fence nutzt im UI dasselbe Schienen-Feld für beides:
+  - leer = knacken
+  - Zahl = direkt entschlüsseln
+- Der generische `options.keyLength`-Hint bleibt intern für API-/Core-Pfade erhalten und testet ohne Hint genau `2..min(12, text.length - 1)`.
+- Playfair nutzt zusätzlich `dictionaryScorer.analyzeTextQuality(...)` für Ausgabe + Score;
+  derselbe Pfad läuft sowohl bei `decrypt(...)` mit bekanntem Schlüssel als auch im Crack-Scoring.
+- `segmentText(...)` bleibt kompatibel und spiegelt intern `displayText`/`displayTokens`.
+- Playfair läuft als Hybrid-Crack:
+  - Phase A: feste Shortlist (inkl. `QUANT`)
+  - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
+  - Ambiguitäts-Gate triggert Phase B bei `low_confidence`, `low_delta` oder `low_coverage`
 - Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
+- Rail Fence darf lesbare Segmentierung (`displayText`) im Crack-Pfad nach oben reichen, wenn die Shared-Analyse klare Wortgrenzen stützt; `decrypt(...)` bleibt Rohtext-Inversion.
+- Im UI-Pfad setzt `app.js` für Vigenère standardmäßig `optimizations: true`.
 - Bei `keyLength`-Hint wird das Fallback-Budget direkt über `maxMsPerLength` begrenzt.
 - Ohne `keyLength`-Hint wird der Fallback zusätzlich über ein adaptives Größen-Gate begrenzt.
 - Die konkrete Gate-/Sense-Logik liegt in `docs/SCORING.md`; hier bleibt nur der Laufzeitpfad dokumentiert.
 - Kandidaten werden normalisiert und nach `confidence` sortiert.
 - Optionales Reranking via `dictionaryScorer.rankCandidates(...)`.
+- `rankCandidates(...)` nutzt dieselbe Shared-Textanalyse wie Playfair-Scoring.
 - Bester Kandidat wird als Ausgabe gesetzt.
 
 8. Status und Hinweise
@@ -102,6 +123,11 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - `bruteforceCombosVisited`
 - `bruteforceElapsedMs`
 - `sense`
+- Playfair-Telemetrie ergänzt:
+  - `phase` (`A` oder `B`)
+  - `fallbackTriggered`
+  - `fallbackReasons`
+  - `gate` (inkl. `minConfidence`, `minDelta`, `minCoverage`)
  
 
 ## Ergebnisgarantie auf UI-Ebene

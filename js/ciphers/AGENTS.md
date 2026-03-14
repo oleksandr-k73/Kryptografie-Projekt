@@ -35,6 +35,18 @@ Optionale Metadaten:
 - Crack nutzt Beam-Search + Sprachbewertung.
 - Liefert primär den besten Kandidaten (ohne Kandidatenliste).
 
+## Rail Fence (`js/ciphers/railFenceCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`), Schlüssel ist die Schienenanzahl als ganze Zahl `>= 2`.
+- Unterstützt Schienen-Hint fürs Knacken (`supportsCrackLengthHint: true`).
+- Im UI wird dasselbe Schienen-Feld für Entschlüsselung oder Keyless-Crack verwendet.
+- Ver-/Entschlüsselung laufen über den kompletten Zeichenstrom inklusive Leerzeichen und Satzzeichen.
+- `decrypt(...)` liefert Rohtext; lesbare Segmentierung bleibt dem Crack-Pfad vorbehalten.
+- `crack(...)` testet ohne Hint exakt `2..min(12, text.length - 1)`.
+- Der generische `options.keyLength`-Hint wird als Schienenanzahl verwendet.
+- Mit `dictionaryScorer.analyzeTextQuality(...)` kann der Crack-Pfad lesbare Segmentierung (`displayText`) in `text` ausgeben und `rawText` separat behalten.
+- Tie-Breaker bei gleichem Score: kleinere Rail-Anzahl zuerst.
+
 ## Vigenère (`js/ciphers/vigenereCipher.js`)
 
 - Schlüsselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.
@@ -67,6 +79,42 @@ Optionale Metadaten:
 - Zusätzliche Suche-Telemetrie in `result.search`:
   - `bruteforceFallbackTriggered`, `bruteforceFallbackReason`, `bruteforceFallbackKeyLength`
   - `bruteforceCombosVisited`, `bruteforceElapsedMs`, `sense`
+
+## Playfair (`js/ciphers/playfairCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`), Schlüsselwort wird auf `A-Z` normalisiert.
+- Didaktische Fixregeln:
+  - `J -> I`
+  - nur `A-Z`
+  - Bigramme
+  - `X` als Filler bei Doppelbuchstaben
+  - `X`-Padding bei ungerader Länge
+- `decrypt(...)` nutzt Entpadding (`A X A` und optionales End-`X`) plus Segmentierung,
+  damit die Ausgabe für Lernfälle lesbar bleibt.
+- Die Segmentierung/Qualitätsanalyse läuft über
+  `KryptoCore.dictionaryScorer.analyzeTextQuality(...)`,
+  damit Decrypt-Ausgabe und Crack-Bewertung denselben Trennpfad verwenden.
+- `segmentText(...)` bleibt kompatibel und spiegelt intern `displayText`.
+- Das Sprachmodell dafür kommt aus `js/core/segmentLexiconData.js`:
+  - normalisierte Exact-Wortbasis aus `de_DE.dic` + `american-english`
+  - kompaktes Trigramm-Modell für OOV-Bewertung
+- Playfair trennt `PHASE_B_LEXICON_KEYS` (Phase-B-Keykorpus) weiterhin strikt von `PLAYFAIR_SEGMENT_WORDS`.
+- `PLAYFAIR_SEGMENT_WORDS` sind nur zusätzliche Domain-Hints.
+- Boundary-Qualität ist zentral:
+  - mehr Tokens sind nicht automatisch besser
+  - zusätzliche Boundaries kosten explizit Score
+  - Bridge-Wörter zählen nur mit starken Nachbarn
+  - bei schwachen Boundaries bleibt die Ausgabe konservativ auf `rawText`
+- `crack(...)` ist hybrid:
+  - Phase A: Shortlist (inkl. `QUANT`)
+  - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
+  - Ambiguitäts-Gate triggert Fallback bei `low_confidence`, `low_delta`, `low_coverage`
+- Default-Grenzen:
+  - `minConfidence = 11.2`
+  - `minDelta = 1.8`
+  - `minCoverage = 0.62`
+- `result.search` enthält u. a.:
+  - `phase`, `fallbackTriggered`, `fallbackReasons`, `gate`
 
 ## Pflegehinweis
 

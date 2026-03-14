@@ -1,5 +1,15 @@
 Plane einen Update, bei dem die didaktisch vereinfachte (Hinweis aus dem anderen App: "Didaktisch vereinfachte Version: Fokus auf das Bigramm-Prinzip statt vollständiger historischer Spezifikation.") Version von Playfair-Cipher implementiert wird. Außerdem muss eine Unterstützung vom XML-Format hinzugefügt werden (siehe die angehängte Datei für ein Beispiel).
 
-Anforderungen für den Plan:
-- Alle Implementierungen müssen fehlerfrei sein
-- 
+Anforderungen an den Plan:
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+- Der Plan muss am Ende eine Hand-Off-Version sein für einen anderen Agent, der in einer anderen Session den Plan implementiert
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering)
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün
+2. Alle Anforderungen wurden getroffen
+3. Zumindest der Fall "YBSMHOPNKELNFNDKHFKCAY" wird korrekt und sinnvoll entschlüsselt
+
+Falls du während des Entwurfs unsicher bist, frage und lese diesen Prompt sowie Dokumentationen (außer unter docs/plans) nach. Gib den Plan AUF KEINEN FALL vorzeitig ab.

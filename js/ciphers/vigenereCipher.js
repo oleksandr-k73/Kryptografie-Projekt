@@ -922,6 +922,7 @@
       const ioc = avgIocForLength(text, len);
       scored.push({
         len,
+        ioc,
         quality: -Math.abs(ioc - 0.066),
       });
     }
@@ -929,10 +930,30 @@
     scored.sort((a, b) => b.quality - a.quality);
     const keepCount = widenRange ? Math.min(8, scored.length) : Math.min(5, scored.length);
     const top = scored.slice(0, keepCount).map((entry) => entry.len);
-    if (!top.includes(1)) {
-      top.push(1);
+    const augmented = new Set(top);
+
+    // Wiederholte Schlüssel ziehen ihre Vielfachen oft näher an den Ziel-IoC; wir
+    // ergänzen darum belastbare Teiler, damit die echte Periodenlänge nicht schon
+    // in der Vorauswahl verloren geht.
+    const byLen = new Map(scored.map((entry) => [entry.len, entry]));
+    for (const len of top) {
+      for (let divisor = 2; divisor < len; divisor += 1) {
+        if (len % divisor !== 0) {
+          continue;
+        }
+        const divisorEntry = byLen.get(divisor);
+        if (!divisorEntry) {
+          continue;
+        }
+        if (divisorEntry.ioc >= 0.055) {
+          augmented.add(divisor);
+        }
+      }
     }
-    return top;
+
+    // Länge 1 bleibt der neutrale Fallback, falls alle periodischen Kandidaten unplausibel sind.
+    augmented.add(1);
+    return Array.from(augmented).sort((a, b) => a - b);
   }
 
   function getTopShiftCount(keyLength, hinted) {

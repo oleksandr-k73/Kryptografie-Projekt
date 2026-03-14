@@ -97,8 +97,9 @@
     }
 
     if (mode === "decrypt") {
-      elements.keyHint.textContent =
-        "Leer lassen, um den Schlüssel automatisch zu knacken.";
+      elements.keyHint.textContent = cipher.reuseKeyForCrackHint
+        ? "Leer lassen, um die Schienen automatisch zu knacken. Mit Zahl wird direkt entschlüsselt."
+        : "Leer lassen, um den Schlüssel automatisch zu knacken.";
     } else {
       elements.keyHint.textContent = "Beim Verschlüsseln ist ein Schlüssel erforderlich.";
     }
@@ -111,6 +112,7 @@
 
     const show =
       Boolean(cipher && cipher.supportsCrackLengthHint) &&
+      !Boolean(cipher && cipher.reuseKeyForCrackHint) &&
       mode === "decrypt" &&
       !hasManualKey;
 
@@ -118,6 +120,11 @@
     elements.crackLengthInput.disabled = !show;
 
     if (!show) {
+      // Versteckte Altwerte dürfen keine unbeabsichtigten Hints in Verfahren einspeisen,
+      // die das Schlüssel-Feld selbst schon als Crack-/Decrypt-Schalter verwenden.
+      if (cipher && cipher.reuseKeyForCrackHint) {
+        elements.crackLengthInput.value = "";
+      }
       return;
     }
 
@@ -302,6 +309,39 @@
     }
   }
 
+  async function enrichCrackOptionsWithKeyCandidates(cipher, sourceText, crackOptions) {
+    if (!cipher || cipher.id !== "playfair") {
+      return crackOptions;
+    }
+
+    const scorer = core.dictionaryScorer;
+    if (!scorer || typeof scorer.getKeyCandidates !== "function") {
+      return crackOptions;
+    }
+
+    try {
+      // Der Playfair-Crack bleibt ohne Scorer funktional; optionale Key-Kandidaten
+      // verbessern nur den Suchraum für Phase B und ändern den UI-Fluss nicht.
+      const maybeCandidates = await Promise.resolve(
+        scorer.getKeyCandidates({
+          languageHints: deriveLanguageHints(sourceText),
+          text: sourceText,
+          minLength: 4,
+          maxLength: 12,
+          limit: 260,
+        })
+      );
+
+      if (Array.isArray(maybeCandidates) && maybeCandidates.length > 0) {
+        crackOptions.keyCandidates = maybeCandidates;
+      }
+    } catch (_error) {
+      // Optionales Enrichment darf den regulären Crack-Lauf nie blockieren.
+    }
+
+    return crackOptions;
+  }
+
   async function handleFile(file) {
     try {
       const parsed = await core.parseInputFile(file);
@@ -339,7 +379,7 @@
   function parseCrackOptions(cipher) {
     const options = {};
 
-    if (!cipher.supportsCrackLengthHint) {
+    if (!cipher.supportsCrackLengthHint || cipher.reuseKeyForCrackHint) {
       return options;
     }
 
@@ -396,14 +436,22 @@
     }
 
     const crackOptions = parseCrackOptions(cipher);
-    if (cipher.id === "vigenere") {
-      setStatus("Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...");
-    }
-
-    // Die Deaktivierung verhindert Doppelstarts während langer Crack-Läufe;
-    // ohne diesen Guard entstehen leicht konkurrierende Berechnungen und UI-Rennen.
+    // Guard vor dem ersten await, damit schnelle Doppelklicks keine parallelen Crack-Läufe starten.
     elements.runButton.disabled = true;
     try {
+      await enrichCrackOptionsWithKeyCandidates(cipher, text, crackOptions);
+      if (
+        cipher.id === "vigenere" &&
+        !Object.prototype.hasOwnProperty.call(crackOptions, "optimizations")
+      ) {
+        // Der UI-Pfad nutzt standardmäßig den robusteren Optimierungsmodus,
+        // damit lange, realistische Texte nicht hinter dem Core-Pfad zurückfallen.
+        crackOptions.optimizations = true;
+      }
+      if (cipher.id === "vigenere") {
+        setStatus("Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...");
+      }
+
       // Das Rendering muss vor dem CPU-intensiven Crack einmal zurück an den Browser,
       // damit der Wartehinweis sichtbar ist, bevor die Hauptschleife blockiert.
       await new Promise((resolve) => requestAnimationFrame(resolve));

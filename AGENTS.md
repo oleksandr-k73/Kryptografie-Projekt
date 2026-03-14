@@ -12,6 +12,7 @@ Der Fokus liegt auf:
 - Derzeit:
   - Laufzeit bleibt browserbasiert ohne Build-Tooling (klassische `<script>`-Einbindung)
   - Node-basierte Qualitäts-/Benchmark-Suite über `pnpm` + `package.json`
+  - repo-internes Offline-Sprachartifact in `js/core/segmentLexiconData.js`, das vor `js/core/dictionaryScorer.js` geladen wird
 - Browser-APIs:
   - `File/file.text()`
   - `fetch`
@@ -33,11 +34,12 @@ Der Fokus liegt auf:
 
 ### Core-Module
 - `js/core/cipherRegistry.js`: Registry und Cipher-Basisvalidierung
-- `js/core/fileParsers.js`: Dateityp-Erkennung und Textextraktion
-- `js/core/dictionaryScorer.js`: Kandidaten-Reranking mit API-/Offline-Fallback
+- `js/core/fileParsers.js`: Dateityp-Erkennung und Textextraktion (inkl. XML-Strict-Matching und YAML-Subset-Fallback (ohne Browser-Runtime-Dependency))
+- `js/core/segmentLexiconData.js`: deterministisches Offline-Sprachartifact (normalisierte Exact-Wörter + Trigramm-Modell)
+- `js/core/dictionaryScorer.js`: Kandidaten-Reranking mit API-/Offline-Fallback, optionalen Key-Kandidaten und Shared-Textsegmentierung für Crack-Pfade
   
 ### Cipher-Module
-- alle Cipher-Dateien liegen in `js/ciphers/` (z. B. `caesarCipher.js`)
+- alle Cipher-Dateien liegen in `js/ciphers/` (z. B. `caesarCipher.js`, `playfairCipher.js`, `railFenceCipher.js`)
 - Cipher-spezifische Details: `js/ciphers/AGENTS.md`
 
 ### Orchestrierung
@@ -48,6 +50,7 @@ Der Fokus liegt auf:
 ### Hinweise
 - Startmodus: Browser lädt `index.html` mit klassischen `<script src="...">`-Einbindungen (kein `type="module"`).
 - Empfohlene Script-Reihenfolge: Core-Module, Cipher-Module, dann `js/app.js`.
+  - Für Segmentierung gilt konkret: `js/core/segmentLexiconData.js` vor `js/core/dictionaryScorer.js`.
 - Bei Anzeigetexten immer Umlaute verwenden (`Verschlüsselung` statt `Verschluesselung`).
 - Nach umfangreichen Codeänderungen Markdown-Dokumentationen aktualisieren (`AGENTS.md`, `docs/DATENFLUSS.md`, `docs/SCORING.md`; keine Skills).
 - Bei Unsicherheit: zuerst dieses `AGENTS.md` lesen, dann nachfragen (nichts annehmen).
