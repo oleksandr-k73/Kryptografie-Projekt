@@ -79,17 +79,29 @@
       <section class="card">
         <h2>Ausgabe</h2>
         <p id="resultInfo" class="status">Noch keine Ausgabe vorhanden.</p>
+        <label for="outputText">Segmentierte Ausgabe</label>
         <textarea
           id="outputText"
           readonly
           placeholder="Ergebnis erscheint hier..."
         ></textarea>
+        <section id="rawOutputWrap" class="raw-output" hidden>
+          <label for="rawOutputText">Rohtext (ungegliedert)</label>
+          <textarea
+            id="rawOutputText"
+            readonly
+            placeholder="Rohtext erscheint hier..."
+          ></textarea>
+        </section>
         <section id="candidateSection" class="candidates" hidden>
           <h3>Top-Kandidaten</h3>
           <p id="candidateStatus" class="status"></p>
           <ol id="candidateList"></ol>
         </section>
-        <button id="copyButton" type="button">Ausgabe kopieren</button>
+        <div class="button-row">
+          <button id="copyButton" type="button">Segmentierte Ausgabe kopieren</button>
+          <button id="rawCopyButton" type="button" hidden>Rohtext kopieren</button>
+        </div>
       </section>
     </main>
 
@@ -100,6 +112,7 @@
     <script src="js/ciphers/caesarCipher.js"></script>
     <script src="js/ciphers/leetCipher.js"></script>
     <script src="js/ciphers/playfairCipher.js"></script>
+    <script src="js/ciphers/scytaleCipher.js"></script>
     <script src="js/ciphers/railFenceCipher.js"></script>
     <script src="js/ciphers/vigenereCipher.js"></script>
     <script src="js/app.js"></script>

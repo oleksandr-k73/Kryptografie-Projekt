@@ -10,6 +10,8 @@
 
   const PHASE_A_BASE_KEYS = [
     "QUANT",
+    // FAC bleibt als gezielter Regression-Key in Phase A, damit Keyless-Cracks den Kurzfall treffen.
+    "FAC",
     "PLAYFAIR",
     "KRYPTO",
     "CIPHER",
@@ -421,6 +423,7 @@
     return {
       key,
       text: scored.text,
+      rawText: decrypted,
       confidence: scored.confidence,
       coverage: scored.coverage,
       segmentConfidence: scored.segmentConfidence,
@@ -598,6 +601,7 @@
     return candidates.slice(0, max).map((candidate) => ({
       key: candidate.key,
       text: candidate.text,
+      rawText: candidate.rawText,
       confidence: candidate.confidence,
       coverage: candidate.coverage,
       segmentConfidence: candidate.segmentConfidence,
@@ -637,9 +641,14 @@
     },
 
     decrypt(text, key) {
-      const parsedKey = this.parseKey(key);
-      const raw = runPlayfairTransform(toCipherDigraphs(text), parsedKey, -1);
+      const raw = this.decryptRaw(text, key);
       return chooseDisplaySegment(raw, { languageHints: ["de", "en"] }).displayText;
+    },
+
+    decryptRaw(text, key) {
+      const parsedKey = this.parseKey(key);
+      // Rohtext bleibt inkl. didaktischem Padding-X, damit die UI die exakte Inversion zeigen kann.
+      return runPlayfairTransform(toCipherDigraphs(text), parsedKey, -1);
     },
 
     crack(text, options) {
@@ -705,17 +714,16 @@
         coverage: 0,
         segmentConfidence: 0,
       };
+      const bestRawText = best && typeof best.rawText === "string" ? best.rawText : ciphertext;
       const bestDisplayText =
         best && best.key
-          ? chooseDisplaySegment(
-              runPlayfairTransform(toCipherDigraphs(ciphertext), best.key, -1),
-              options
-            ).displayText
+          ? chooseDisplaySegment(bestRawText, options).displayText
           : best.text;
 
       return {
         key: best.key,
         text: bestDisplayText,
+        rawText: bestRawText,
         confidence: best.confidence,
         candidates: formatCrackCandidates(finalCandidates),
         search: {

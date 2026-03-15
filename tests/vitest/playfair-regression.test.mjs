@@ -149,6 +149,26 @@ describe("playfair regression", () => {
     expect(cracked.search.fallbackTriggered).toBe(false);
   });
 
+  it("cracks the FAC keyless regression case in phase A", () => {
+    const { playfair, scorer } = loadRuntime();
+    const ciphertext = "FBPBKLMFVBBGTAOYQIDQPHYOPOKGQGHBGNQTRXGKQISW";
+    const keyCandidates = scorer.getKeyCandidates({
+      languageHints: ["de", "en"],
+      text: ciphertext,
+      minLength: 3,
+      maxLength: 8,
+      limit: 260,
+    });
+
+    const cracked = playfair.crack(ciphertext, { keyCandidates });
+    const expected = playfair.decrypt(ciphertext, "FAC");
+
+    // Der Regressionstest stellt sicher, dass FAC im Keyless-Pfad erreichbar bleibt.
+    expect(cracked.key).toBe("FAC");
+    expect(cracked.text).toBe(expected);
+    expect(cracked.search.phase).toBe("A");
+  });
+
   it("segments hybrid OOV and lexicon cases correctly", () => {
     const { scorer } = loadRuntime();
 
@@ -158,6 +178,18 @@ describe("playfair regression", () => {
     expect(scorer.segmentText("FOTONENFELD").text).toBe("FOTONENFELD");
     expect(scorer.segmentText("FOTONENSIGNAL").text).toBe("FOTONEN SIGNAL");
     expect(scorer.segmentText("KOHARENZFELD").text).toBe("KOHARENZ FELD");
+  });
+
+  it("segments new skytale-related compounds correctly", () => {
+    const { scorer } = loadRuntime();
+
+    // Die Segmentierung darf nur Leerzeichen ergänzen, ohne den Wortlaut zu verändern.
+    expect(scorer.segmentText("PHOTOEFFEKTDATEN").text).toBe("PHOTOEFFEKT DATEN");
+    expect(scorer.segmentText("MESSREIHEMITFEHLER").text).toBe("MESSREIHE MIT FEHLER");
+    expect(scorer.segmentText("UNSCHAERFEIMORT").text).toBe("UNSCHAERFE IM ORT");
+    expect(scorer.segmentText("DCODEPLAYFAIRBITTEFUNKTIONIEREICHMUSSWEITER").text).toBe(
+      "DCODE PLAYFAIR BITTE FUNKTIONIERE ICH MUSS WEITER"
+    );
   });
 
   it("keeps weak-boundary compounds unsplit", () => {

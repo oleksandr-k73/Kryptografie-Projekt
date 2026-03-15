@@ -47,6 +47,18 @@ Optionale Metadaten:
 - Mit `dictionaryScorer.analyzeTextQuality(...)` kann der Crack-Pfad lesbare Segmentierung (`displayText`) in `text` ausgeben und `rawText` separat behalten.
 - Tie-Breaker bei gleichem Score: kleinere Rail-Anzahl zuerst.
 
+## Skytale (`js/ciphers/scytaleCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`), Schlüssel ist der Umfang (Spaltenanzahl) als ganze Zahl `>= 2`.
+- Unterstützt Umfang-Hint fürs Knacken (`supportsCrackLengthHint: true`).
+- Im UI wird dasselbe Umfang-Feld für Entschlüsselung oder Keyless-Crack verwendet (`reuseKeyForCrackHint: true`).
+- Normalisierung auf `A-Z` (inkl. Umlaut-Transliteration), Padding mit `X` bis Vielfaches des Umfangs.
+- Verschlüsselung: Spalten füllen, Zeilen lesen. Entschlüsselung: Zeilen füllen, Spalten lesen.
+- `decrypt(...)` liefert Rohtext inklusive Padding; Segmentierung bleibt dem Crack-Pfad vorbehalten.
+- `crack(...)` testet ohne Hint exakt `2..min(12, letters.length)`, mit Hint genau diese Zahl.
+- Crack-Scoring läuft über `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt der gepaddete Rohtext.
+- Das Scoring trimmt End-`X`, penalisiert interne `X`-Häufungen und nutzt Domain-Wort-Boni für kurze Klartexte.
+
 ## Vigenère (`js/ciphers/vigenereCipher.js`)
 
 - Schlüsselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.
@@ -91,6 +103,7 @@ Optionale Metadaten:
   - `X`-Padding bei ungerader Länge
 - `decrypt(...)` nutzt Entpadding (`A X A` und optionales End-`X`) plus Segmentierung,
   damit die Ausgabe für Lernfälle lesbar bleibt.
+- `decryptRaw(...)` liefert die Rohinversion inklusive didaktischem Padding-`X`.
 - Die Segmentierung/Qualitätsanalyse läuft über
   `KryptoCore.dictionaryScorer.analyzeTextQuality(...)`,
   damit Decrypt-Ausgabe und Crack-Bewertung denselben Trennpfad verwenden.
@@ -106,9 +119,10 @@ Optionale Metadaten:
   - Bridge-Wörter zählen nur mit starken Nachbarn
   - bei schwachen Boundaries bleibt die Ausgabe konservativ auf `rawText`
 - `crack(...)` ist hybrid:
-  - Phase A: Shortlist (inkl. `QUANT`)
+  - Phase A: Shortlist (inkl. `QUANT`, `FAC`)
   - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
   - Ambiguitäts-Gate triggert Fallback bei `low_confidence`, `low_delta`, `low_coverage`
+- Crack-Kandidaten enthalten zusätzlich `rawText` für die UI-Ausgabe.
 - Default-Grenzen:
   - `minConfidence = 11.2`
   - `minDelta = 1.8`

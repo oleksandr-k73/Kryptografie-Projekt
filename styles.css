@@ -95,6 +95,11 @@ textarea {
   min-height: 140px;
 }
 
+.raw-output {
+  /* Zusätzlicher Abstand, damit Roh- und Segment-Ausgabe visuell getrennt bleiben. */
+  margin-top: 0.9rem;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -117,6 +122,13 @@ button {
 button:hover {
   transform: translateY(-1px);
   filter: brightness(1.08);
+}
+
+.button-row {
+  /* Kopierbuttons sollen auf kleineren Screens sauber umbrechen. */
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
 }
 
 .status,

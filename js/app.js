@@ -31,8 +31,11 @@
     candidateList: document.getElementById("candidateList"),
     runButton: document.getElementById("runButton"),
     outputText: document.getElementById("outputText"),
+    rawOutputWrap: document.getElementById("rawOutputWrap"),
+    rawOutputText: document.getElementById("rawOutputText"),
     resultInfo: document.getElementById("resultInfo"),
     copyButton: document.getElementById("copyButton"),
+    rawCopyButton: document.getElementById("rawCopyButton"),
   };
 
   function hasCipherShape(value) {
@@ -97,8 +100,9 @@
     }
 
     if (mode === "decrypt") {
+      // Der Hinweis muss generisch bleiben, da mehrere Verfahren das Key-Feld fürs Knacken wiederverwenden.
       elements.keyHint.textContent = cipher.reuseKeyForCrackHint
-        ? "Leer lassen, um die Schienen automatisch zu knacken. Mit Zahl wird direkt entschlüsselt."
+        ? `Leer lassen, um ${label.toLowerCase()} automatisch zu knacken. Mit Zahl wird direkt entschlüsselt.`
         : "Leer lassen, um den Schlüssel automatisch zu knacken.";
     } else {
       elements.keyHint.textContent = "Beim Verschlüsseln ist ein Schlüssel erforderlich.";
@@ -166,6 +170,60 @@
     elements.candidateList.innerHTML = "";
   }
 
+  function setRawOutput(rawText) {
+    if (rawText == null) {
+      // Rohtext bleibt verborgen, wenn keine klare Rohvariante existiert.
+      elements.rawOutputWrap.hidden = true;
+      elements.rawOutputText.value = "";
+      elements.rawCopyButton.hidden = true;
+      return;
+    }
+
+    elements.rawOutputWrap.hidden = false;
+    elements.rawOutputText.value = rawText;
+    elements.rawCopyButton.hidden = false;
+  }
+
+  function setOutputTexts(displayText, rawText) {
+    // Segmentierter Text bleibt die Hauptausgabe; Rohtext wird separat angezeigt.
+    elements.outputText.value = displayText;
+    setRawOutput(rawText);
+  }
+
+  function segmentRawText(rawText, sourceText, options) {
+    const opts = options && typeof options === "object" ? options : {};
+    const trimmedRaw =
+      opts.trimTrailingX === true ? String(rawText || "").replace(/X+$/g, "") : rawText;
+    const scorer = core.dictionaryScorer;
+    if (!scorer || typeof scorer.analyzeTextQuality !== "function") {
+      return {
+        displayText: trimmedRaw,
+        rawText: rawText,
+      };
+    }
+
+    try {
+      const analysis = scorer.analyzeTextQuality(trimmedRaw, {
+        languageHints: deriveLanguageHints(sourceText || trimmedRaw),
+        maxWordLength: 40,
+      });
+      const displayText =
+        analysis && typeof analysis.displayText === "string"
+          ? analysis.displayText.trim()
+          : trimmedRaw;
+      return {
+        displayText: displayText || trimmedRaw,
+        rawText: rawText,
+      };
+    } catch (_error) {
+      // Segmentierungsfehler sollen die Roh-Ausgabe nie blockieren.
+      return {
+        displayText: trimmedRaw,
+        rawText: rawText,
+      };
+    }
+  }
+
   function formatScore(value) {
     if (!Number.isFinite(value)) {
       return "-";
@@ -174,24 +232,27 @@
   }
 
   function normalizeCrackCandidates(cracked) {
+    // Rohtext wird durch den Ranking-Pfad gereicht, damit die finale Auswahl sichtbar bleibt.
     const list = Array.isArray(cracked.candidates)
       ? cracked.candidates
       : [
           {
             key: cracked.key,
             text: cracked.text,
+            rawText: cracked.rawText,
             confidence: cracked.confidence,
           },
         ];
 
+    // Reihenfolge der Kandidaten bleibt erhalten, damit Ties im Ranking deterministisch bleiben.
     return list
       .filter((candidate) => candidate && typeof candidate.text === "string")
       .map((candidate) => ({
         key: candidate.key,
         text: candidate.text,
+        rawText: candidate.rawText,
         confidence: Number(candidate.confidence) || 0,
-      }))
-      .sort((a, b) => b.confidence - a.confidence);
+      }));
   }
 
   function renderCandidates(candidates, apiAvailable, context) {
@@ -417,7 +478,7 @@
       }
 
       const encrypted = cipher.encrypt(text, key);
-      elements.outputText.value = encrypted;
+      setOutputTexts(encrypted, null);
       hideCandidates();
       setStatus(
         cipher.supportsKey
@@ -428,8 +489,22 @@
     }
 
     if (cipher.supportsKey && key != null) {
-      const decrypted = cipher.decrypt(text, key);
-      elements.outputText.value = decrypted;
+      const rawOnlyCiphers = new Set(["rail-fence", "scytale"]);
+      let decrypted = cipher.decrypt(text, key);
+      let rawText = null;
+
+      if (cipher.id === "playfair" && typeof cipher.decryptRaw === "function") {
+        // Playfair liefert die segmentierte Anzeige, aber die UI braucht zusätzlich den Rohtext.
+        rawText = cipher.decryptRaw(text, key);
+      } else if (rawOnlyCiphers.has(cipher.id)) {
+        // Rail Fence/Skytale geben Rohtext zurück; Segmentierung passiert bewusst im UI-Pfad.
+        rawText = decrypted;
+        decrypted = segmentRawText(rawText, text, {
+          trimTrailingX: cipher.id === "scytale",
+        }).displayText;
+      }
+
+      setOutputTexts(decrypted, rawText);
       hideCandidates();
       setStatus(`${cipher.name}: Text entschlüsselt (Schlüssel: ${key}).`);
       return;
@@ -466,7 +541,28 @@
       const bestCandidate =
         ranked.bestCandidate || rankedCandidates[0] || cracked;
 
-      elements.outputText.value = bestCandidate.text;
+      const showRawForCipher = new Set(["rail-fence", "scytale", "playfair"]);
+      let displayText = bestCandidate.text;
+      let rawText = null;
+
+      if (showRawForCipher.has(cipher.id)) {
+        rawText =
+          bestCandidate.rawText ||
+          cracked.rawText ||
+          (cracked.candidates && cracked.candidates[0] && cracked.candidates[0].rawText) ||
+          null;
+        if (rawText) {
+          const segmented = segmentRawText(rawText, text, {
+            trimTrailingX: cipher.id === "scytale",
+          }).displayText;
+          if (cipher.id === "scytale" || !displayText || displayText === rawText) {
+            // Skytale-Padding soll in der segmentierten Anzeige stets entfernt werden.
+            displayText = segmented;
+          }
+        }
+      }
+
+      setOutputTexts(displayText, rawText);
       const shortVigenereWarning =
         cipher.id === "vigenere" &&
         !crackOptions.keyLength &&
@@ -506,8 +602,8 @@
     }
   }
 
-  async function copyOutput() {
-    const text = elements.outputText.value;
+  async function copyOutput(targetText, successMessage) {
+    const text = targetText;
     if (!text) {
       setStatus("Keine Ausgabe zum Kopieren vorhanden.");
       return;
@@ -515,14 +611,15 @@
 
     try {
       await navigator.clipboard.writeText(text);
-      setStatus("Ausgabe wurde in die Zwischenablage kopiert.");
+      setStatus(successMessage || "Ausgabe wurde in die Zwischenablage kopiert.");
     } catch (_error) {
+      // Fallback nutzt weiterhin das Hauptfeld als Fokusanker, damit Copy per Tastatur klappt.
       elements.outputText.focus();
       elements.outputText.select();
       const success = document.execCommand("copy");
       setStatus(
         success
-          ? "Ausgabe wurde in die Zwischenablage kopiert."
+          ? successMessage || "Ausgabe wurde in die Zwischenablage kopiert."
           : "Kopieren fehlgeschlagen. Bitte manuell kopieren."
       );
     }
@@ -575,7 +672,12 @@
         setStatus(error.message);
       }
     });
-    elements.copyButton.addEventListener("click", copyOutput);
+    elements.copyButton.addEventListener("click", () =>
+      copyOutput(elements.outputText.value, "Segmentierte Ausgabe wurde kopiert.")
+    );
+    elements.rawCopyButton.addEventListener("click", () =>
+      copyOutput(elements.rawOutputText.value, "Rohtext wurde kopiert.")
+    );
   }
 
   function init() {

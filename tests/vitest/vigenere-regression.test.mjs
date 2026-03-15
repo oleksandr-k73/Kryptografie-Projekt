@@ -81,8 +81,12 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
     candidateList: createMockElement("ul"),
     runButton: createMockElement("button"),
     outputText: createMockElement("textarea"),
+    // Roh-Ausgabe-Elemente verhindern, dass app.js im Testlauf beim Wiring abbricht.
+    rawOutputWrap: createMockElement("section"),
+    rawOutputText: createMockElement("textarea"),
     resultInfo: createMockElement("div"),
     copyButton: createMockElement("button"),
+    rawCopyButton: createMockElement("button"),
   };
   const keyLabel = createMockElement("label");
   const crackLengthLabel = createMockElement("label");
@@ -115,8 +119,11 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
     ["candidateList", elements.candidateList],
     ["runButton", elements.runButton],
     ["outputText", elements.outputText],
+    ["rawOutputWrap", elements.rawOutputWrap],
+    ["rawOutputText", elements.rawOutputText],
     ["resultInfo", elements.resultInfo],
     ["copyButton", elements.copyButton],
+    ["rawCopyButton", elements.rawCopyButton],
   ]);
 
   const document = {

@@ -72,7 +72,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - Dafür wird vor `dictionaryScorer.js` das Offline-Sprachartifact `segmentLexiconData.js` geladen
   - `PLAYFAIR_SEGMENT_WORDS` bleiben getrennt vom Phase-B-Keykorpus und dienen nur als zusätzliche Domain-Hints
 - Hybrid-Crack:
-  - Phase A: deterministische Key-Shortlist (inkl. `QUANT`)
+  - Phase A: deterministische Key-Shortlist (inkl. `QUANT`, `FAC`)
   - Phase B: erweitertes Key-Corpus aus Lexikonbegriffen + Präfix-/Stem-Varianten
 - Candidate-Scoring gewichtet primär robuste Segmentierungsmetriken:
   - `qualityScore` aus der Shared-Analyse als primärer Kandidatenscore
@@ -86,6 +86,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - `top1.confidence < minConfidence`
   - `(top1.confidence - top2.confidence) < minDelta`
   - `coverage(top1) < minCoverage`
+- Für die UI wird zusätzlich der Rohtext inklusive Padding-`X` bereitgestellt.
 
 4. Leetspeak (`leetCipher.js`)
 - Beam-Search für Rückübersetzungen.
@@ -104,6 +105,16 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Tie-Breaker: kleinere Rail-Anzahl zuerst.
 - Ohne Dictionary-Scorer greift ein lokales Fallback aus häufigen Wörtern, Bigrammen/Trigrammen und Leerzeichen-Bonus.
 - `displayText` wird nur im Crack-Pfad als Ausgabe genutzt; `decrypt(...)` liefert Rohtext, auch wenn Segmentierung möglich wäre.
+- Im UI wird beim Entschlüsseln der Rohtext segmentiert angezeigt; der Rohtext bleibt separat sichtbar.
+
+6. Skytale (`scytaleCipher.js`)
+- Normalisiert auf `A-Z`, padde mit `X` bis Vielfaches des Umfangs.
+- Crack testet ohne Hint `2..min(12, letters.length)`, mit Hint nur diese Zahl.
+- Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)`:
+  - `qualityScore` als primärer Kandidatenscore
+  - `displayText` als Ausgabe für lesbare Segmentierung
+  - `rawText` bleibt der gepaddete Rohtext
+- Scoring trimmt End-`X`, bewertet bei geringer Coverage `displayText` erneut und penalisiert interne `X`-Häufungen; Domain-Wörter erhalten einen Bonus.
 
 ## 2) Kandidatenfluss in `app.js`
 
