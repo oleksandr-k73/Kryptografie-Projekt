@@ -604,19 +604,44 @@
 
   async function copyOutput(targetText, successMessage) {
     const text = targetText;
-    if (!text) {
+    const outputFallback = elements.outputText.value;
+    const fallbackToOutput = !text || text === outputFallback;
+    const textToCopy = text || outputFallback;
+    if (!textToCopy) {
       setStatus("Keine Ausgabe zum Kopieren vorhanden.");
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(textToCopy);
       setStatus(successMessage || "Ausgabe wurde in die Zwischenablage kopiert.");
     } catch (_error) {
-      // Fallback nutzt weiterhin das Hauptfeld als Fokusanker, damit Copy per Tastatur klappt.
-      elements.outputText.focus();
-      elements.outputText.select();
-      const success = document.execCommand("copy");
+      const previousFocus = document.activeElement;
+      let success = false;
+
+      if (fallbackToOutput) {
+        // Wenn targetText leer/gleich ist, bleibt das Hauptfeld der sicherste Fokusanker für Copy-Fallbacks.
+        elements.outputText.focus();
+        elements.outputText.select();
+        success = document.execCommand("copy");
+      } else {
+        // targetText muss auch im Fallback kopiert werden, damit Rohtext-Ausgaben korrekt bleiben.
+        const tempTextarea = document.createElement("textarea");
+        tempTextarea.value = textToCopy;
+        tempTextarea.setAttribute("readonly", "true");
+        tempTextarea.style.position = "fixed";
+        tempTextarea.style.top = "-1000px";
+        document.body.appendChild(tempTextarea);
+        tempTextarea.focus();
+        tempTextarea.select();
+        success = document.execCommand("copy");
+        tempTextarea.remove();
+      }
+
+      if (previousFocus && typeof previousFocus.focus === "function") {
+        // Fokus wird wiederhergestellt, damit Tastatur-Workflow nach dem Kopieren stabil bleibt.
+        previousFocus.focus();
+      }
       setStatus(
         success
           ? successMessage || "Ausgabe wurde in die Zwischenablage kopiert."

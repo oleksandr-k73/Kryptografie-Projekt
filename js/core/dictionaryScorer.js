@@ -2728,5 +2728,10 @@
         apiAvailable,
       };
     },
+
+    // Test-Hook bleibt explizit außerhalb der Public-API, damit Unit-Tests interne Token-Merges prüfen können.
+    __testHooks: {
+      mergeDomainDisplayTokenTexts,
+    },
   };
 })(window);

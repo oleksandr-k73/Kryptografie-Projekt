@@ -76,6 +76,7 @@ describe("scytale keyless e2e 1k", () => {
       expect(hintedSuccessRate).toBe(1);
       expect(elapsedMs).toBeLessThan(3 * 60 * 1000);
     },
-    180_000
+    // Timeout > 3 Minuten, damit die Laufzeit-Assertion realistisch erreicht werden kann.
+    210_000
   );
 });

@@ -345,7 +345,6 @@
 
     crack(text, options) {
       const source = toSkytaleAZ(text);
-      const maxKey = Math.min(12, Math.max(2, source.length));
 
       if (source.length <= 1) {
         return {
@@ -364,6 +363,8 @@
         };
       }
 
+      // maxKey erst nach dem Early-Return berechnen, damit der Kurzpfad keine unnötige Arbeit macht.
+      const maxKey = Math.min(12, Math.max(2, source.length));
       let keysToTest = [];
       if (Number.isFinite(options && options.keyLength)) {
         const hinted = Math.max(2, Math.min(maxKey, Math.floor(options.keyLength)));

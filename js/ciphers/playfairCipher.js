@@ -654,9 +654,11 @@
     crack(text, options) {
       const ciphertext = toPlayfairAZ(text);
       if (!ciphertext) {
+        // Leerer Input muss dieselben Felder liefern, damit UI/Tests eine stabile Crack-API behalten.
         return {
           key: "QUANT",
           text: "",
+          rawText: "",
           confidence: 0,
           candidates: [],
           search: {

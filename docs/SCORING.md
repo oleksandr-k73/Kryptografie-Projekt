@@ -108,12 +108,12 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Im UI wird beim Entschlüsseln der Rohtext segmentiert angezeigt; der Rohtext bleibt separat sichtbar.
 
 6. Skytale (`scytaleCipher.js`)
-- Normalisiert auf `A-Z`, padde mit `X` bis Vielfaches des Umfangs.
-- Crack testet ohne Hint `2..min(12, letters.length)`, mit Hint nur diese Zahl.
-- Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)`:
-  - `qualityScore` als primärer Kandidatenscore
-  - `displayText` als Ausgabe für lesbare Segmentierung
-  - `rawText` bleibt der gepaddete Rohtext
+- Normalisiert auf `A-Z`, padde mit `X` bis zum nächsten Vielfachen des Umfangs.
+- Crack-Range: ohne Hint `2..min(12, letters.length)`, mit Hint exakt diese Zahl.
+- Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)` und liefert:
+  - `qualityScore` als primären Kandidatenscore
+  - `displayText` für die lesbare Segmentierung
+  - `rawText` als gepaddeten Rohtext
 - Scoring trimmt End-`X`, bewertet bei geringer Coverage `displayText` erneut und penalisiert interne `X`-Häufungen; Domain-Wörter erhalten einen Bonus.
 
 ## 2) Kandidatenfluss in `app.js`
