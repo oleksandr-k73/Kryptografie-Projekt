@@ -54,7 +54,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 
 6. Entschlüsseln mit bekanntem Schlüssel
 - `cipher.decrypt(text, key)` wird aufgerufen.
-- Ergebnis landet in `outputText`.
+- Ergebnis landet segmentiert in `outputText`; bei Rail Fence, Skytale und Playfair wird zusätzlich der Rohtext (ungegliedert) angezeigt.
 - Kandidatenbereich wird ausgeblendet.
 
 7. Entschlüsseln ohne Schlüssel (Knacken)
@@ -69,16 +69,18 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Rail Fence nutzt im UI dasselbe Schienen-Feld für beides:
   - leer = knacken
   - Zahl = direkt entschlüsseln
-- Der generische `options.keyLength`-Hint bleibt intern für API-/Core-Pfade erhalten und testet ohne Hint genau `2..min(12, text.length - 1)`.
+- Skytale nutzt im UI dasselbe Umfang-Feld für beides:
+  - leer = knacken
+  - Zahl = direkt entschlüsseln
 - Playfair nutzt zusätzlich `dictionaryScorer.analyzeTextQuality(...)` für Ausgabe + Score;
   derselbe Pfad läuft sowohl bei `decrypt(...)` mit bekanntem Schlüssel als auch im Crack-Scoring.
-- `segmentText(...)` bleibt kompatibel und spiegelt intern `displayText`/`displayTokens`.
 - Playfair läuft als Hybrid-Crack:
-  - Phase A: feste Shortlist (inkl. `QUANT`)
+  - Phase A: feste Shortlist (inkl. `QUANT`, `FAC`)
   - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
   - Ambiguitäts-Gate triggert Phase B bei `low_confidence`, `low_delta` oder `low_coverage`
 - Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
 - Rail Fence darf lesbare Segmentierung (`displayText`) im Crack-Pfad nach oben reichen, wenn die Shared-Analyse klare Wortgrenzen stützt; `decrypt(...)` bleibt Rohtext-Inversion.
+- Skytale bewertet Crack-Kandidaten via `dictionaryScorer.analyzeTextQuality(...)`, gibt `displayText` aus und behält den gepaddeten `rawText`.
 - Im UI-Pfad setzt `app.js` für Vigenère standardmäßig `optimizations: true`.
 - Bei `keyLength`-Hint wird das Fallback-Budget direkt über `maxMsPerLength` begrenzt.
 - Ohne `keyLength`-Hint wird der Fallback zusätzlich über ein adaptives Größen-Gate begrenzt.
@@ -87,6 +89,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Optionales Reranking via `dictionaryScorer.rankCandidates(...)`.
 - `rankCandidates(...)` nutzt dieselbe Shared-Textanalyse wie Playfair-Scoring.
 - Bester Kandidat wird als Ausgabe gesetzt.
+- Für Rail Fence, Skytale und Playfair wird zusätzlich der Rohtext aus `rawText` angezeigt.
 
 8. Status und Hinweise
 - Bei geringer Wörterbuchabdeckung zeigt die UI Hinweise.

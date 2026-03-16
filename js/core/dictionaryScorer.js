@@ -311,6 +311,8 @@
     "teilchen",
     "verschraenkte",
     "quanten",
+    "feld",
+    "modell",
     "krypto",
     "analyse",
     "struktur",
@@ -329,7 +331,22 @@
     "hinweis",
     "schluessel",
     "klassisch",
+    "photoeffekt",
+    "messreihe",
+    "unschaerfe",
+    "fehler",
+    "daten",
+    "laser",
+    "trifft",
+    "gitter",
+    "dcode",
+    "funktioniere",
+    "bitte",
+    "muss",
+    "weiter",
   ];
+  // Kurze Exact-Wörter sind erlaubt, aber bewusst selten, damit nicht jedes 3-Zeichen-Fragment splitten darf.
+  const SHORT_EXACT_SEGMENT_WORDS = new Set(["ich", "ort"]);
   const segmentModelCache = new Map();
   const unknownSegmentWordCache = new Map();
   const MAX_UNKNOWN_SEGMENT_WORD_CACHE_SIZE = 20000;
@@ -382,6 +399,8 @@
     "er",
     "ihr",
     "im",
+    // "mit" als Brücke hält klare Fachkomposita trennbar, ohne neue Vollwörter zu erzwingen.
+    "mit",
     "in",
     "is",
     "it",
@@ -612,6 +631,22 @@
       .replace(/[^a-z]/g, "");
   }
 
+  let normalizedDomainWordsCache = null;
+  function getNormalizedDomainWords() {
+    if (normalizedDomainWordsCache) {
+      return normalizedDomainWordsCache;
+    }
+    const normalized = new Set();
+    for (const word of SEGMENT_DOMAIN_WORDS) {
+      const normalizedWord = normalizeSegmentWord(word);
+      if (normalizedWord.length >= 2) {
+        normalized.add(normalizedWord);
+      }
+    }
+    normalizedDomainWordsCache = normalized;
+    return normalizedDomainWordsCache;
+  }
+
   function normalizeSegmentSource(text) {
     return String(text || "")
       .replace(/Ä/g, "AE")
@@ -659,6 +694,7 @@
     }
 
     const exactLexicon = new Set();
+    const domainWords = new Set();
     if (lexiconData) {
       // Das große Offline-Lexikon wird einmal global geteilt, damit Playfair-Cracks
       // kein pro-Request-Set aufbauen müssen.
@@ -701,6 +737,7 @@
       const normalized = normalizeSegmentWord(seed);
       if (normalized.length >= 2) {
         exactLexicon.add(normalized);
+        domainWords.add(normalized);
       }
     }
 
@@ -710,6 +747,7 @@
       hintLexicon: new Set(),
       bridgeWords: BRIDGE_SEGMENT_WORDS,
       trigramModel: lexiconData ? lexiconData.getTrigramModel() : getFallbackSegmentTrigramModel(),
+      domainWords,
     };
     segmentModelCache.set(cacheKey, model);
     return model;
@@ -751,6 +789,7 @@
       hintLexicon,
       bridgeWords: baseModel.bridgeWords,
       trigramModel: baseModel.trigramModel,
+      domainWords: baseModel.domainWords,
     };
     segmentModelCache.set(cacheKey, model);
     return model;
@@ -897,6 +936,7 @@
       meaningfulWeight: Number.isFinite(opts.meaningfulWeight) ? opts.meaningfulWeight : 0,
       dpStrength: Number.isFinite(opts.dpStrength) ? opts.dpStrength : 0,
       isBridge: Boolean(opts.isBridge),
+      isShortExact: Boolean(opts.isShortExact),
     };
   }
 
@@ -906,21 +946,29 @@
     }
 
     const isBridge = model.bridgeWords.has(word);
+    // Kurze Exact-Wörter dürfen nur über eine Whitelist laufen, damit Split-Noise klein bleibt.
+    const isShortExact = !isBridge && word.length === 3 && SHORT_EXACT_SEGMENT_WORDS.has(word);
     const isPrimaryExact = !isBridge && word.length >= 4;
     if (model.exactLexicon.has(word)) {
-      if (!isBridge && !isPrimaryExact) {
+      if (!isBridge && !isPrimaryExact && !isShortExact) {
         return null;
       }
+      const exactQuality = isBridge ? 0.36 : isShortExact ? 0.62 : 1;
+      const rewardMultiplier = isBridge ? 0.48 : isShortExact ? 1.65 : 2.95;
+      const reward =
+        upperWord.length * rewardMultiplier +
+        (!isBridge && !isShortExact && upperWord.length >= 6 ? 1.2 : 0);
       return createSegmentToken(
         isBridge ? "bridge" : "exact",
         upperWord,
-        isBridge ? 0.36 : 1,
-        upperWord.length * (isBridge ? 0.48 : 2.95) + (upperWord.length >= 6 ? 1.2 : 0),
+        exactQuality,
+        reward,
         {
-          coverageWeight: isBridge ? 0.18 : 1,
-          meaningfulWeight: isBridge ? 0.06 : 1,
-          dpStrength: isBridge ? 0 : upperWord.length,
+          coverageWeight: isBridge ? 0.18 : isShortExact ? 0.55 : 1,
+          meaningfulWeight: isBridge ? 0.06 : isShortExact ? 0.58 : 1,
+          dpStrength: isBridge ? 0 : isShortExact ? upperWord.length * 0.55 : upperWord.length,
           isBridge,
+          isShortExact,
         }
       );
     }
@@ -1037,6 +1085,10 @@
   function getSegmentSupportStrength(token) {
     if (!token || token.kind === "raw_unknown") {
       return 0;
+    }
+    if (token.isShortExact) {
+      // Short-Exact-Wörter stützen Brücken sonst zu schwach; die Whitelist begrenzt den Effekt.
+      return clampNumber(token.quality * 1.15, 0, 1);
     }
     if (token.kind === "unknown_word") {
       const lengthFactor = token.text.length >= 8 ? 1 : token.text.length >= 6 ? 0.88 : 0.74;
@@ -1336,6 +1388,15 @@
     if (text.length < 8) {
       return null;
     }
+    if (
+      token.kind === "exact" &&
+      model &&
+      model.domainWords &&
+      model.domainWords.has(text.toLowerCase())
+    ) {
+      // Domain-Exact-Wörter sollen nicht weiter aufgebrochen werden, damit Fachbegriffe stabil bleiben.
+      return null;
+    }
 
     const baselineToken =
       token && token.kind === "raw_unknown" ? createRawRunToken(text, model) : token || createRawRunToken(text, model);
@@ -1425,12 +1486,31 @@
 
     for (let index = 0; index < refined.length - 1; index += 1) {
       const combinedText = refined[index].text + refined[index + 1].text;
-      const combinedToken = classifySegmentUnit(
+      const domainWords =
+        model && model.domainWords ? model.domainWords : getNormalizedDomainWords();
+      const isDomainCompound =
+        combinedText.length >= 8 &&
+        domainWords &&
+        domainWords.has(combinedText.toLowerCase());
+      let combinedToken = classifySegmentUnit(
         combinedText.toLowerCase(),
         combinedText,
         model,
         false
       );
+      if ((!combinedToken || combinedToken.isBridge) && isDomainCompound) {
+        combinedToken = createSegmentToken(
+          "exact",
+          combinedText,
+          1,
+          combinedText.length * 2.95 + (combinedText.length >= 6 ? 1.2 : 0),
+          {
+            coverageWeight: 1,
+            meaningfulWeight: 1,
+            dpStrength: combinedText.length,
+          }
+        );
+      }
       if (!combinedToken || combinedToken.isBridge) {
         continue;
       }
@@ -1446,7 +1526,11 @@
         (Number.isFinite(refined[index].reward) ? refined[index].reward : 0) +
         (Number.isFinite(refined[index + 1].reward) ? refined[index + 1].reward : 0);
       const candidateScore = (Number.isFinite(combinedToken.reward) ? combinedToken.reward : 0) + 1.2;
-      if (candidateScore > currentScore + 0.6) {
+      const isExactDomainCompound =
+        combinedToken.kind === "exact" && isDomainCompound;
+      // Lange exakte Komposita sollen schneller zusammengezogen werden, damit klare Fachwörter stabil bleiben.
+      const minGain = combinedToken.kind === "exact" && combinedText.length >= 8 ? 0.15 : 0.6;
+      if (candidateScore > currentScore + minGain || isExactDomainCompound) {
         refined.splice(index, 2, combinedToken);
         index = Math.max(-1, index - 2);
       }
@@ -1485,13 +1569,18 @@
               rightToken &&
               rightToken.isBridge &&
               hasBridgeContext(refined, index - 1, index + 1);
+            const leftSupport = getSegmentSupportStrength(refined[index - 1]);
+            const rightSupport = rightToken ? getSegmentSupportStrength(rightToken) : 0;
+            // Bridge-Splits dürfen greifen, wenn beide Seiten stark genug sind, auch falls der Alt-Kontext schwach war.
+            const strongNeighborPair =
+              leftSupport >= BRIDGE_SUPPORT_THRESHOLD && rightSupport >= BRIDGE_SUPPORT_THRESHOLD;
             if (
               bridgeToken &&
               bridgeToken.isBridge &&
               rightToken &&
-              (getSegmentSupportStrength(rightToken) >= BRIDGE_SUPPORT_THRESHOLD ||
-                bridgeChainSupported) &&
-              hasBridgeContext(refined, index - 1, rightToken.isBridge ? index + 1 : index)
+              (rightSupport >= BRIDGE_SUPPORT_THRESHOLD || bridgeChainSupported) &&
+              (hasBridgeContext(refined, index - 1, rightToken.isBridge ? index + 1 : index) ||
+                strongNeighborPair)
             ) {
               const candidateScore =
                 (Number.isFinite(bridgeToken.reward) ? bridgeToken.reward : 0) +
@@ -1514,13 +1603,18 @@
               leftToken &&
               leftToken.isBridge &&
               hasBridgeContext(refined, index - 1, index + 1);
+            const leftSupport = leftToken ? getSegmentSupportStrength(leftToken) : 0;
+            const rightSupport = getSegmentSupportStrength(refined[index + 1]);
+            // Bridge-Splits dürfen greifen, wenn beide Seiten stark genug sind, auch falls der Alt-Kontext schwach war.
+            const strongNeighborPair =
+              leftSupport >= BRIDGE_SUPPORT_THRESHOLD && rightSupport >= BRIDGE_SUPPORT_THRESHOLD;
             if (
               leftToken &&
               bridgeToken &&
               bridgeToken.isBridge &&
-              (getSegmentSupportStrength(leftToken) >= BRIDGE_SUPPORT_THRESHOLD ||
-                bridgeChainSupported) &&
-              hasBridgeContext(refined, leftToken.isBridge ? index - 1 : index, index + 1)
+              (leftSupport >= BRIDGE_SUPPORT_THRESHOLD || bridgeChainSupported) &&
+              (hasBridgeContext(refined, leftToken.isBridge ? index - 1 : index, index + 1) ||
+                strongNeighborPair)
             ) {
               const candidateScore =
                 (Number.isFinite(leftToken.reward) ? leftToken.reward : 0) +
@@ -1618,6 +1712,8 @@
       refineExactCompoundJoins(refineSingleTokenBridgeSplits(tokens, model), model),
       model
     );
+    const domainWords =
+      model && model.domainWords ? model.domainWords : getNormalizedDomainWords();
     let changed = true;
     let guard = 0;
 
@@ -1629,6 +1725,19 @@
         for (let index = 0; index <= refined.length - windowSize; index += 1) {
           const windowTokens = refined.slice(index, index + windowSize);
           if (!shouldRefineSegmentWindow(windowTokens)) {
+            continue;
+          }
+          if (
+            domainWords &&
+            windowTokens.some(
+              (token) =>
+                token &&
+                token.kind === "exact" &&
+                token.text.length >= 8 &&
+                domainWords.has(token.text.toLowerCase())
+            )
+          ) {
+            // Domain-Exact-Wörter sollen bei der Fenster-Nachsplit-Phase stabil bleiben.
             continue;
           }
 
@@ -1934,6 +2043,112 @@
     };
   }
 
+  function mergeDomainDisplayTokenTexts(tokenTexts, model) {
+    if (!Array.isArray(tokenTexts) || tokenTexts.length === 0) {
+      return tokenTexts;
+    }
+    const domainWords = model && model.domainWords ? model.domainWords : getNormalizedDomainWords();
+    if (!domainWords || domainWords.size === 0) {
+      return tokenTexts;
+    }
+
+    let working = tokenTexts.slice();
+    for (let guard = 0; guard < 4; guard += 1) {
+      let changed = false;
+      const nextTokens = [];
+      for (const token of working) {
+        const current = String(token || "");
+        const lowerCurrent = current.toLowerCase();
+        let splitApplied = false;
+
+        for (const bridgeWord of SHORT_BRIDGE_SEGMENT_WORDS) {
+          const bridgeIndex = lowerCurrent.indexOf(bridgeWord);
+          if (bridgeIndex <= 0 || bridgeIndex >= lowerCurrent.length - bridgeWord.length) {
+            continue;
+          }
+          const prefix = lowerCurrent.slice(0, bridgeIndex);
+          const suffix = lowerCurrent.slice(bridgeIndex + bridgeWord.length);
+          if (prefix.length >= 4 && domainWords.has(prefix)) {
+            // Domain-Präfix + Brücke darf sichtbar getrennt werden; der Rest wird erneut geprüft.
+            nextTokens.push(current.slice(0, bridgeIndex));
+            nextTokens.push(bridgeWord.toUpperCase());
+            nextTokens.push(current.slice(bridgeIndex + bridgeWord.length));
+            splitApplied = true;
+            break;
+          }
+        }
+
+        if (!splitApplied) {
+          for (const shortExact of SHORT_EXACT_SEGMENT_WORDS) {
+            for (const bridgeWord of SHORT_BRIDGE_SEGMENT_WORDS) {
+              const bridgeSuffix = `${bridgeWord}${shortExact}`;
+              if (!lowerCurrent.endsWith(bridgeSuffix)) {
+                continue;
+              }
+              const prefix = lowerCurrent.slice(0, -bridgeSuffix.length);
+              if (prefix.length < 4 || !domainWords.has(prefix)) {
+                continue;
+              }
+              // Domain-Präfix + Brücke + Short-Exact dürfen als Anzeige gesplittet werden.
+              nextTokens.push(current.slice(0, prefix.length));
+              nextTokens.push(bridgeWord.toUpperCase());
+              nextTokens.push(shortExact.toUpperCase());
+              splitApplied = true;
+              break;
+            }
+            if (splitApplied) {
+              break;
+            }
+          }
+        }
+
+        if (!splitApplied) {
+          for (let splitIndex = lowerCurrent.length - 3; splitIndex >= 3; splitIndex -= 1) {
+            const prefix = lowerCurrent.slice(0, splitIndex);
+            const suffix = lowerCurrent.slice(splitIndex);
+            if (prefix.length < 4 || suffix.length < 4) {
+              continue;
+            }
+            if (domainWords.has(prefix) && domainWords.has(suffix)) {
+              // Zwei Domain-Wörter dürfen als Anzeige getrennt werden.
+              nextTokens.push(current.slice(0, splitIndex));
+              nextTokens.push(current.slice(splitIndex));
+              splitApplied = true;
+              break;
+            }
+          }
+        }
+
+        if (!splitApplied) {
+          nextTokens.push(current);
+        } else {
+          changed = true;
+        }
+      }
+      working = nextTokens;
+      if (!changed) {
+        break;
+      }
+    }
+
+    const merged = [];
+    let index = 0;
+    while (index < working.length) {
+      const current = working[index];
+      const next = working[index + 1];
+      if (next && domainWords.has(`${current}${next}`.toLowerCase())) {
+        // Anzeige darf Domain-Komposita zusammenziehen, auch wenn der Score-Token-Path feiner bleibt.
+        merged.push(`${current}${next}`);
+        index += 2;
+        continue;
+      }
+      merged.push(current);
+      index += 1;
+    }
+
+    return merged;
+  }
+
   function createEmptyTextAnalysis() {
     return {
       rawText: "",
@@ -1989,11 +2204,25 @@
 
     const aggregated = buildAggregatedMetricsFromRuns(runMetrics, lettersTotal);
 
+    let displayTokenTexts = displayTokens.map((token) => token.text);
+    const scoreTokenTexts = scoreTokens.map((token) => token.text);
+    if (
+      displayTokenTexts.length === 1 &&
+      scoreTokens.length > 1 &&
+      scoreTokens.every(
+        (token) => token.kind !== "raw_unknown" && token.kind !== "unknown_word"
+      )
+    ) {
+      // Wenn nur bekannte Wörter gefunden wurden, darf die Anzeige dem Score-Token-Pfad folgen.
+      displayTokenTexts = scoreTokenTexts;
+    }
+    const mergedDisplayTokenTexts = mergeDomainDisplayTokenTexts(displayTokenTexts, model);
+
     return {
       rawText,
-      displayText: displayTokens.map((token) => token.text).join(" ").trim(),
-      displayTokens: displayTokens.map((token) => token.text),
-      scoreTokens: scoreTokens.map((token) => token.text),
+      displayText: mergedDisplayTokenTexts.join(" ").trim(),
+      displayTokens: mergedDisplayTokenTexts,
+      scoreTokens: scoreTokenTexts,
       ...aggregated,
     };
   }
@@ -2498,6 +2727,11 @@
         bestCandidate: merged[0] || null,
         apiAvailable,
       };
+    },
+
+    // Test-Hook bleibt explizit außerhalb der Public-API, damit Unit-Tests interne Token-Merges prüfen können.
+    __testHooks: {
+      mergeDomainDisplayTokenTexts,
     },
   };
 })(window);

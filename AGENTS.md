@@ -39,7 +39,7 @@ Der Fokus liegt auf:
 - `js/core/dictionaryScorer.js`: Kandidaten-Reranking mit API-/Offline-Fallback, optionalen Key-Kandidaten und Shared-Textsegmentierung für Crack-Pfade
   
 ### Cipher-Module
-- alle Cipher-Dateien liegen in `js/ciphers/` (z. B. `caesarCipher.js`, `playfairCipher.js`, `railFenceCipher.js`)
+- alle Cipher-Dateien liegen in `js/ciphers/` (z. B. `caesarCipher.js`, `playfairCipher.js`, `railFenceCipher.js`, `scytaleCipher.js`)
 - Cipher-spezifische Details: `js/ciphers/AGENTS.md`
 
 ### Orchestrierung

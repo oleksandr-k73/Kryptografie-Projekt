@@ -91,6 +91,20 @@ meta:
     expect(cracked.rawText).toBe("POTENTIALTOPFMODELL");
   });
 
+  it("segments new compound cases in crack output", () => {
+    const { railFence } = loadRuntime();
+
+    // Die neuen Segment-Wörter dürfen das Rail-Fence-Crack lesbarer machen,
+    // ohne das Rohtext-Verhalten von decrypt() anzutasten.
+    const ortCase = railFence.crack("UHFONCAREMRSEIT");
+    const fehlerCase = railFence.crack("MREFEESEHMTELRSIIH");
+
+    expect(ortCase.text).toBe("UNSCHAERFE IM ORT");
+    expect(ortCase.rawText).toBe("UNSCHAERFEIMORT");
+    expect(fehlerCase.text).toBe("MESSREIHE MIT FEHLER");
+    expect(fehlerCase.rawText).toBe("MESSREIHEMITFEHLER");
+  });
+
   it("keeps mandatory seeded cases stable", () => {
     const { railFence } = loadRuntime();
     const dataset = generateRailFenceDataset(40, 42);
