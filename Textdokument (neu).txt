@@ -625,3 +625,14 @@ Gib mir den Plan nur dann, wenn:
 1. Alle Tests sind grün (jetzt keine Tests)
 2. Alle Anforderungen wurden getroffen.
 3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Codex hat einen neuen Cipher implementiert (alle Infos findest du in Markdowns; unter docs/plans lese nur docs\plans\columnTanspose\PLAN.md, nichts anderes). Umlaute sind jetzt kaputt und das Verfahren funktoniert nicht. Plane einen Fix.
+Benutze immer Sandbox, um deine Implementierungen und den Plan virtuell zu testen.
+
+Der Plan muss am Ende ein Hand-Off-Markdown  mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan und Fixes implementiert 
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün (nur gezielte, keine lange Vigenere-Tests o. Ä.).
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
