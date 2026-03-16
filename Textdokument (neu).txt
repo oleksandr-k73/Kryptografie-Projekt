@@ -581,3 +581,23 @@ VIGENERE FIXEN!!! -- GWQWVSLR GFNPCSUXG RHR RVRXQSIJGYW HWFFL FWH IKBIYGVUYPU YS
     gewünschte Ausgabe: "MESSREIHE MIT FEHLER"
     tatschächliche Ausgabe: "MESSREIHEMITFEHLER"
 2. Sichtbar inwiefern? Natürlich müssen die Texte richtig segmentiert sein und dies wird visuell wiedergegeben, aber der (richtige) Wortlaut soll sich nicht verändern (klar, wenn du merkst, dass es Probleme mit der Entschlüsselung selbst gibt, sollst du sie dokumentieren und im Plan miteinbeziehen). Überprüfe dann evtl. noch, ob die Texte für 1k-Gates und andere Tests richtige Segmentierung aufweisen.
+
+
+Plane einen Update, bei dem Columnar-Transposition-Cipher implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Der Plan muss am Ende ein Hand-Off (im Format eines Markdowns!) mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen.
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün (Bezogen auf den Plan; bitte noch keine repo-weite Tests wie /*test)
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
