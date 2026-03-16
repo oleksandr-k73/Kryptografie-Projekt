@@ -595,9 +595,33 @@ Anforderungen an den Plan:
 
 Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen.
 
+Es wird auch eine Datei mit Beispieltext angehängt (als Hint wird die Spaltenreihenfolge 3-1-4-2 gegeben; Lösung ist (selbst extern gefunden: POTENTIALTOPFMODELLX; gewünscht und gebraucht: POTENTIALTOPF MODELL))
+
 Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
 
 Gib mir den Plan nur dann, wenn:
 1. Alle Tests sind grün (Bezogen auf den Plan; bitte noch keine repo-weite Tests wie /*test)
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+16.03.26:
+Plane einen Update, bei dem allgemeine Transpositionschiffre (Hint aus der App: Arbeite blockweise mit Permutation 2-4-1-3 und invertiere pro Block) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen.
+
+Es wird auch eine Datei mit Beispieltext angehängt (als Hint wird die Permutation 2-4-1-3 gegeben; Lösung ist (selbst extern gefunden: EINHEITENPRUEFEN (normale Transposition: HNIEETIEURPNNEFE); gewünscht und gebraucht: EINHEITEN PRUEFEN))
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün (jetzt keine Tests)
 2. Alle Anforderungen wurden getroffen.
 3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.

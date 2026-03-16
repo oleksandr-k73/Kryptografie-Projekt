@@ -1,4 +1,4 @@
-(function initApp(global) {
+﻿(function initApp(global) {
   const core = global.KryptoCore || {};
   const ciphers = global.KryptoCiphers || {};
 
@@ -84,28 +84,28 @@
     }
 
     const supportsKey = Boolean(cipher.supportsKey);
-    const label = cipher.keyLabel || "Schlüssel";
+    const label = cipher.keyLabel || "SchlÃ¼ssel";
     const placeholder = cipher.keyPlaceholder || "z. B. 3";
 
     const suffix = mode === "encrypt" ? " (erforderlich)" : " (optional)";
-    elements.keyLabel.textContent = supportsKey ? `${label}${suffix}` : "Schlüssel";
+    elements.keyLabel.textContent = supportsKey ? `${label}${suffix}` : "SchlÃ¼ssel";
     elements.keyInput.placeholder = placeholder;
     elements.keyInput.disabled = !supportsKey;
 
     if (!supportsKey) {
       elements.keyInput.value = "";
       elements.keyHint.textContent =
-        "Dieses Verfahren nutzt keinen Schlüssel. Beim Entschlüsseln wird automatisch geknackt.";
+        "Dieses Verfahren nutzt keinen SchlÃ¼ssel. Beim EntschlÃ¼sseln wird automatisch geknackt.";
       return;
     }
 
     if (mode === "decrypt") {
-      // Der Hinweis muss generisch bleiben, da mehrere Verfahren das Key-Feld fürs Knacken wiederverwenden.
+      // Der Hinweis muss generisch bleiben, da mehrere Verfahren das Key-Feld fÃ¼rs Knacken wiederverwenden.
       elements.keyHint.textContent = cipher.reuseKeyForCrackHint
-        ? `Leer lassen, um ${label.toLowerCase()} automatisch zu knacken. Mit Zahl wird direkt entschlüsselt.`
-        : "Leer lassen, um den Schlüssel automatisch zu knacken.";
+        ? `Leer lassen, um ${label.toLowerCase()} automatisch zu knacken. Mit Zahl wird direkt entschlÃ¼sselt.`
+        : "Leer lassen, um den SchlÃ¼ssel automatisch zu knacken.";
     } else {
-      elements.keyHint.textContent = "Beim Verschlüsseln ist ein Schlüssel erforderlich.";
+      elements.keyHint.textContent = "Beim VerschlÃ¼sseln ist ein SchlÃ¼ssel erforderlich.";
     }
   }
 
@@ -124,19 +124,19 @@
     elements.crackLengthInput.disabled = !show;
 
     if (!show) {
-      // Versteckte Altwerte dürfen keine unbeabsichtigten Hints in Verfahren einspeisen,
-      // die das Schlüssel-Feld selbst schon als Crack-/Decrypt-Schalter verwenden.
+      // Versteckte Altwerte dÃ¼rfen keine unbeabsichtigten Hints in Verfahren einspeisen,
+      // die das SchlÃ¼ssel-Feld selbst schon als Crack-/Decrypt-Schalter verwenden.
       if (cipher && cipher.reuseKeyForCrackHint) {
         elements.crackLengthInput.value = "";
       }
       return;
     }
 
-    const label = cipher.crackLengthLabel || "Schlüssellänge";
+    const label = cipher.crackLengthLabel || "SchlÃ¼ssellÃ¤nge";
     const placeholder = cipher.crackLengthPlaceholder || "z. B. 6";
     elements.crackLengthWrap
       .querySelector('label[for="crackLengthInput"]')
-      .textContent = `${label} fürs Knacken (optional)`;
+      .textContent = `${label} fÃ¼rs Knacken (optional)`;
     elements.crackLengthInput.placeholder = placeholder;
     elements.crackLengthHint.textContent =
       "Wenn bekannt, beschleunigt und verbessert das Knacken.";
@@ -268,9 +268,9 @@
     for (const candidate of top) {
       const item = document.createElement("li");
       const keyPart =
-        candidate.key != null ? `Schlüssel: ${candidate.key} | ` : "";
+        candidate.key != null ? `SchlÃ¼ssel: ${candidate.key} | ` : "";
       const dictPart = candidate.dictionary
-        ? ` | Wörterbuch: ${(candidate.dictionary.coverage * 100).toFixed(0)}%`
+        ? ` | WÃ¶rterbuch: ${(candidate.dictionary.coverage * 100).toFixed(0)}%`
         : "";
       item.textContent = `${keyPart}Score: ${formatScore(
         candidate.confidence
@@ -286,17 +286,17 @@
     if (bestCoverage === 0) {
       const hintText =
         context && context.keyLengthHint
-          ? " Prüfe, ob die Schlüssellänge korrekt ist."
-          : " Gib wenn möglich eine Schlüssellänge an.";
+          ? " PrÃ¼fe, ob die SchlÃ¼ssellÃ¤nge korrekt ist."
+          : " Gib wenn mÃ¶glich eine SchlÃ¼ssellÃ¤nge an.";
       elements.candidateStatus.textContent = apiAvailable
-        ? `Kein Kandidat enthält erkannte Wörterbuchwörter.${hintText}`
-        : `Kein Kandidat enthält erkannte Wörterbuchwörter (API nicht verfügbar, lokales Wörterbuch aktiv).${hintText}`;
+        ? `Kein Kandidat enthÃ¤lt erkannte WÃ¶rterbuchwÃ¶rter.${hintText}`
+        : `Kein Kandidat enthÃ¤lt erkannte WÃ¶rterbuchwÃ¶rter (API nicht verfÃ¼gbar, lokales WÃ¶rterbuch aktiv).${hintText}`;
       return;
     }
 
     elements.candidateStatus.textContent = apiAvailable
-      ? "Kandidaten wurden mit Wörterbuch-API nachbewertet."
-      : "Kandidaten basieren auf lokalem Sprach-Scoring (API nicht verfügbar).";
+      ? "Kandidaten wurden mit WÃ¶rterbuch-API nachbewertet."
+      : "Kandidaten basieren auf lokalem Sprach-Scoring (API nicht verfÃ¼gbar).";
   }
 
   function normalizeLanguageTag(rawLanguage) {
@@ -322,7 +322,7 @@
     };
 
     const lower = String(text || "").toLowerCase();
-    if (/[äöüß]/i.test(lower) || /\b(der|die|und|nicht|ist|ein)\b/.test(lower)) {
+    if (/[Ã¤Ã¶Ã¼ÃŸ]/i.test(lower) || /\b(der|die|und|nicht|ist|ein)\b/.test(lower)) {
       pushHint("de");
     }
     if (/\b(the|and|you|not|is|to)\b/.test(lower)) {
@@ -382,7 +382,7 @@
 
     try {
       // Der Playfair-Crack bleibt ohne Scorer funktional; optionale Key-Kandidaten
-      // verbessern nur den Suchraum für Phase B und ändern den UI-Fluss nicht.
+      // verbessern nur den Suchraum fÃ¼r Phase B und Ã¤ndern den UI-Fluss nicht.
       const maybeCandidates = await Promise.resolve(
         scorer.getKeyCandidates({
           languageHints: deriveLanguageHints(sourceText),
@@ -397,7 +397,7 @@
         crackOptions.keyCandidates = maybeCandidates;
       }
     } catch (_error) {
-      // Optionales Enrichment darf den regulären Crack-Lauf nie blockieren.
+      // Optionales Enrichment darf den regulÃ¤ren Crack-Lauf nie blockieren.
     }
 
     return crackOptions;
@@ -410,7 +410,7 @@
 
       if (parsed.fallback) {
         setFileStatus(
-          `Datei geladen (${file.name}). Unbekanntes Format, als Klartext übernommen.`
+          `Datei geladen (${file.name}). Unbekanntes Format, als Klartext Ã¼bernommen.`
         );
       } else {
         setFileStatus(`Datei geladen (${file.name}, Format: ${parsed.format}).`);
@@ -451,7 +451,7 @@
 
     const keyLength = Number.parseInt(rawLength, 10);
     if (Number.isNaN(keyLength) || keyLength <= 0) {
-      throw new Error("Schlüssellänge muss eine positive ganze Zahl sein.");
+      throw new Error("SchlÃ¼ssellÃ¤nge muss eine positive ganze Zahl sein.");
     }
 
     options.keyLength = keyLength;
@@ -467,14 +467,14 @@
     const mode = elements.modeSelect.value;
     const cipher = getSelectedCipher();
     if (!cipher) {
-      throw new Error("Keine gültige Verschlüsselung ausgewählt.");
+      throw new Error("Keine gÃ¼ltige VerschlÃ¼sselung ausgewÃ¤hlt.");
     }
 
     const key = parseOptionalKey(cipher);
 
     if (mode === "encrypt") {
       if (cipher.supportsKey && key == null) {
-        throw new Error("Beim Verschlüsseln wird ein Schlüssel benötigt.");
+        throw new Error("Beim VerschlÃ¼sseln wird ein SchlÃ¼ssel benÃ¶tigt.");
       }
 
       const encrypted = cipher.encrypt(text, key);
@@ -482,36 +482,36 @@
       hideCandidates();
       setStatus(
         cipher.supportsKey
-          ? `${cipher.name}: Text verschlüsselt (Schlüssel: ${key}).`
-          : `${cipher.name}: Text verschlüsselt.`
+          ? `${cipher.name}: Text verschlÃ¼sselt (SchlÃ¼ssel: ${key}).`
+          : `${cipher.name}: Text verschlÃ¼sselt.`
       );
       return;
     }
 
     if (cipher.supportsKey && key != null) {
-      const rawOnlyCiphers = new Set(["rail-fence", "scytale"]);
+      const rawOnlyCiphers = new Set(["rail-fence", "scytale", "columnar-transposition"]);
       let decrypted = cipher.decrypt(text, key);
       let rawText = null;
 
       if (cipher.id === "playfair" && typeof cipher.decryptRaw === "function") {
-        // Playfair liefert die segmentierte Anzeige, aber die UI braucht zusätzlich den Rohtext.
+        // Playfair liefert die segmentierte Anzeige, aber die UI braucht zusÃ¤tzlich den Rohtext.
         rawText = cipher.decryptRaw(text, key);
       } else if (rawOnlyCiphers.has(cipher.id)) {
-        // Rail Fence/Skytale geben Rohtext zurück; Segmentierung passiert bewusst im UI-Pfad.
+        // Rail Fence/Skytale/Columnar geben Rohtext zurÃ¼ck; Segmentierung passiert bewusst im UI-Pfad.
         rawText = decrypted;
         decrypted = segmentRawText(rawText, text, {
-          trimTrailingX: cipher.id === "scytale",
+          trimTrailingX: cipher.id === "scytale" || cipher.id === "columnar-transposition",
         }).displayText;
       }
 
       setOutputTexts(decrypted, rawText);
       hideCandidates();
-      setStatus(`${cipher.name}: Text entschlüsselt (Schlüssel: ${key}).`);
+      setStatus(`${cipher.name}: Text entschlÃ¼sselt (SchlÃ¼ssel: ${key}).`);
       return;
     }
 
     const crackOptions = parseCrackOptions(cipher);
-    // Guard vor dem ersten await, damit schnelle Doppelklicks keine parallelen Crack-Läufe starten.
+    // Guard vor dem ersten await, damit schnelle Doppelklicks keine parallelen Crack-LÃ¤ufe starten.
     elements.runButton.disabled = true;
     try {
       await enrichCrackOptionsWithKeyCandidates(cipher, text, crackOptions);
@@ -519,15 +519,15 @@
         cipher.id === "vigenere" &&
         !Object.prototype.hasOwnProperty.call(crackOptions, "optimizations")
       ) {
-        // Der UI-Pfad nutzt standardmäßig den robusteren Optimierungsmodus,
-        // damit lange, realistische Texte nicht hinter dem Core-Pfad zurückfallen.
+        // Der UI-Pfad nutzt standardmÃ¤ÃŸig den robusteren Optimierungsmodus,
+        // damit lange, realistische Texte nicht hinter dem Core-Pfad zurÃ¼ckfallen.
         crackOptions.optimizations = true;
       }
       if (cipher.id === "vigenere") {
-        setStatus("Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...");
+        setStatus("VigenÃ¨re: Bruteforce-PrÃ¼fung lÃ¤uft gegebenenfalls, bitte warten ...");
       }
 
-      // Das Rendering muss vor dem CPU-intensiven Crack einmal zurück an den Browser,
+      // Das Rendering muss vor dem CPU-intensiven Crack einmal zurÃ¼ck an den Browser,
       // damit der Wartehinweis sichtbar ist, bevor die Hauptschleife blockiert.
       await new Promise((resolve) => requestAnimationFrame(resolve));
 
@@ -541,7 +541,7 @@
       const bestCandidate =
         ranked.bestCandidate || rankedCandidates[0] || cracked;
 
-      const showRawForCipher = new Set(["rail-fence", "scytale", "playfair"]);
+      const showRawForCipher = new Set(["rail-fence", "scytale", "columnar-transposition", "playfair"]);
       let displayText = bestCandidate.text;
       let rawText = null;
 
@@ -553,10 +553,10 @@
           null;
         if (rawText) {
           const segmented = segmentRawText(rawText, text, {
-            trimTrailingX: cipher.id === "scytale",
+            trimTrailingX: cipher.id === "scytale" || cipher.id === "columnar-transposition",
           }).displayText;
-          if (cipher.id === "scytale" || !displayText || displayText === rawText) {
-            // Skytale-Padding soll in der segmentierten Anzeige stets entfernt werden.
+          if (cipher.id === "scytale" || cipher.id === "columnar-transposition" || !displayText || displayText === rawText) {
+            // Skytale-/Columnar-Padding soll in der segmentierten Anzeige stets entfernt werden.
             displayText = segmented;
           }
         }
@@ -584,18 +584,18 @@
         : 0;
       const fallbackSuffix =
         search && search.bruteforceFallbackTriggered
-          ? ` Bruteforce-Fallback aktiv (Länge ${fallbackKeyLength == null ? "unbekannt" : fallbackKeyLength}, ${fallbackCombosVisited} Kombinationen, ${fallbackElapsedMs} ms).`
+          ? ` Bruteforce-Fallback aktiv (LÃ¤nge ${fallbackKeyLength == null ? "unbekannt" : fallbackKeyLength}, ${fallbackCombosVisited} Kombinationen, ${fallbackElapsedMs} ms).`
           : "";
 
       if (bestCandidate.key != null) {
         const suffix = shortVigenereWarning
-          ? " Hinweis: Sehr kurzer Text, Ergebnis kann unzuverlässig sein."
+          ? " Hinweis: Sehr kurzer Text, Ergebnis kann unzuverlÃ¤ssig sein."
           : "";
         setStatus(
-          `${cipher.name}: Schlüssel geknackt (${bestCandidate.key}), Text entschlüsselt.${suffix}${fallbackSuffix}`
+          `${cipher.name}: SchlÃ¼ssel geknackt (${bestCandidate.key}), Text entschlÃ¼sselt.${suffix}${fallbackSuffix}`
         );
       } else {
-        setStatus(`${cipher.name}: Text automatisch geknackt und entschlüsselt.${fallbackSuffix}`);
+        setStatus(`${cipher.name}: Text automatisch geknackt und entschlÃ¼sselt.${fallbackSuffix}`);
       }
     } finally {
       elements.runButton.disabled = false;
@@ -620,7 +620,7 @@
       let success = false;
 
       if (fallbackToOutput) {
-        // Wenn targetText leer/gleich ist, bleibt das Hauptfeld der sicherste Fokusanker für Copy-Fallbacks.
+        // Wenn targetText leer/gleich ist, bleibt das Hauptfeld der sicherste Fokusanker fÃ¼r Copy-Fallbacks.
         elements.outputText.focus();
         elements.outputText.select();
         success = document.execCommand("copy");
@@ -717,3 +717,6 @@
 
   init();
 })(window);
+
+
+
