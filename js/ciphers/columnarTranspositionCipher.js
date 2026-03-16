@@ -77,17 +77,14 @@
   const ANALYSIS_SHORTLIST_SIZE = 6;
 
   function normalizeBase(input) {
-    return String(input || "")
-      .replace(/Ä/g, "AE")
-      .replace(/Ö/g, "OE")
-      .replace(/Ü/g, "UE")
-      .replace(/ä/g, "AE")
-      .replace(/ö/g, "OE")
-      .replace(/ü/g, "UE")
-      .replace(/ß/g, "SS")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toUpperCase();
+    let normalized = String(input || "").normalize("NFD");
+    // NFD-first stellt sicher, dass Umlaut-Digraphe zuverlässig gesetzt werden, bevor Combining-Marks entfernt werden.
+    normalized = normalized
+      .replace(/A\u0308|Ä/gi, "AE")
+      .replace(/O\u0308|Ö/gi, "OE")
+      .replace(/U\u0308|Ü/gi, "UE")
+      .replace(/[ßẞ]/g, "SS");
+    return normalized.replace(/[\u0300-\u036f]/g, "").toUpperCase();
   }
 
   function toColumnarAZ(text) {

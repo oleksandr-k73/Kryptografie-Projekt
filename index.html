@@ -10,9 +10,8 @@
     <main class="app-shell">
       <section class="card">
         <h1>Krypto Werkbank</h1>
-        <p class="subtitle">
-          Datei laden, VerschlÃ¼sselung auswÃ¤hlen, Text verarbeiten.
-        </p>
+        <!-- Umlaute werden bewusst als echte UTF-8-Zeichen gepflegt, damit die UI korrekt und konsistent bleibt. -->
+        <p class="subtitle">Datei laden, Verschlüsselung auswählen, Text verarbeiten.</p>
 
         <label id="dropzone" class="dropzone" for="fileInput">
           <input
@@ -20,8 +19,8 @@
             type="file"
             accept=".txt,.json,.csv,.log,.md,.js,.mjs,.cjs,.xml,.yaml,.yml,text/plain,application/json,text/csv,text/javascript,application/javascript,application/xml,text/xml,text/yaml,application/yaml,application/x-yaml"
           />
-          <span>Datei auswÃ¤hlen oder hierher ziehen</span>
-          <small>UnterstÃ¼tzt: TXT, JSON, CSV, LOG, MD, JS, XML, YAML</small>
+          <span>Datei auswählen oder hierher ziehen</span>
+          <small>Unterstützt: TXT, JSON, CSV, LOG, MD, JS, XML, YAML</small>
         </label>
         <p id="fileStatus" class="status">Noch keine Datei geladen.</p>
 
@@ -35,23 +34,23 @@
           <div>
             <label for="modeSelect">Modus</label>
             <select id="modeSelect">
-              <option value="encrypt">VerschlÃ¼sseln</option>
-              <option value="decrypt">EntschlÃ¼sseln</option>
+              <option value="encrypt">Verschlüsseln</option>
+              <option value="decrypt">Entschlüsseln</option>
             </select>
           </div>
           <div>
-            <label for="cipherSelect">VerschlÃ¼sselung</label>
+            <label for="cipherSelect">Verschlüsselung</label>
             <select id="cipherSelect"></select>
           </div>
           <div>
-            <label for="keyInput">SchlÃ¼ssel (optional)</label>
+            <label for="keyInput">Schlüssel (optional)</label>
             <input id="keyInput" type="text" placeholder="z. B. 3" />
             <small id="keyHint" class="hint"
-              >Beim EntschlÃ¼sseln ohne SchlÃ¼ssel wird geknackt.</small
+              >Beim Entschlüsseln ohne Schlüssel wird geknackt.</small
             >
           </div>
           <div id="crackLengthWrap" hidden>
-            <label for="crackLengthInput">SchlÃ¼ssellÃ¤nge fÃ¼rs Knacken (optional)</label>
+            <label for="crackLengthInput">Schlüssellänge fürs Knacken (optional)</label>
             <input
               id="crackLengthInput"
               type="number"
@@ -73,7 +72,7 @@
           <p id="cipherInfoUse"></p>
         </section>
 
-        <button id="runButton" type="button">AusfÃ¼hren</button>
+        <button id="runButton" type="button">Ausführen</button>
       </section>
 
       <section class="card">

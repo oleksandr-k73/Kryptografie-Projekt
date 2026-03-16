@@ -1,4 +1,4 @@
-﻿# AGENTS.md fÃ¼r `js/ciphers/`
+﻿# AGENTS.md für `js/ciphers/`
 
 ## Zweck
 
@@ -6,7 +6,7 @@ Diese Datei beschreibt den Vertrag und die Besonderheiten der vorhandenen Cipher
 
 ## Gemeinsamer Cipher-Vertrag
 
-Jeder Cipher erfÃ¼llt mindestens:
+Jeder Cipher erfüllt mindestens:
 - `id: string`
 - `name: string`
 - `encrypt(text, key?)`
@@ -20,27 +20,27 @@ Optionale Metadaten:
 - `crackLengthLabel`, `crackLengthPlaceholder`
 - `info` (purpose/process/crack/useCase)
 
-## CÃ¤sar (`js/ciphers/caesarCipher.js`)
+## Cäsar (`js/ciphers/caesarCipher.js`)
 
-- SchlÃ¼sselbasiert (`supportsKey: true`), SchlÃ¼ssel als ganze Zahl.
-- Ver-/EntschlÃ¼sselung per Verschiebung modulo 26.
-- `crack(...)` testet alle 26 SchlÃ¼ssel.
+- Schlüsselbasiert (`supportsKey: true`), Schlüssel als ganze Zahl.
+- Ver-/Entschlüsselung per Verschiebung modulo 26.
+- `crack(...)` testet alle 26 Schlüssel.
 - Liefert bestes Ergebnis plus `candidates` (Top-Auswahl).
 
 ## Leetspeak (`js/ciphers/leetCipher.js`)
 
-- Kein SchlÃ¼ssel (`supportsKey: false`).
-- VerschlÃ¼sselung per fester Substitutionstabelle.
-- EntschlÃ¼sselung delegiert auf Crack-Logik.
+- Kein Schlüssel (`supportsKey: false`).
+- Verschlüsselung per fester Substitutionstabelle.
+- Entschlüsselung delegiert auf Crack-Logik.
 - Crack nutzt Beam-Search + Sprachbewertung.
-- Liefert primÃ¤r den besten Kandidaten (ohne Kandidatenliste).
+- Liefert primär den besten Kandidaten (ohne Kandidatenliste).
 
 ## Rail Fence (`js/ciphers/railFenceCipher.js`)
 
-- SchlÃ¼sselbasiert (`supportsKey: true`), SchlÃ¼ssel ist die Schienenanzahl als ganze Zahl `>= 2`.
-- UnterstÃ¼tzt Schienen-Hint fÃ¼rs Knacken (`supportsCrackLengthHint: true`).
-- Im UI wird dasselbe Schienen-Feld fÃ¼r EntschlÃ¼sselung oder Keyless-Crack verwendet.
-- Ver-/EntschlÃ¼sselung laufen Ã¼ber den kompletten Zeichenstrom inklusive Leerzeichen und Satzzeichen.
+- Schlüsselbasiert (`supportsKey: true`), Schlüssel ist die Schienenanzahl als ganze Zahl `>= 2`.
+- Unterstützt Schienen-Hint fürs Knacken (`supportsCrackLengthHint: true`).
+- Im UI wird dasselbe Schienen-Feld für Entschlüsselung oder Keyless-Crack verwendet.
+- Ver-/Entschlüsselung laufen über den kompletten Zeichenstrom inklusive Leerzeichen und Satzzeichen.
 - `decrypt(...)` liefert Rohtext; lesbare Segmentierung bleibt dem Crack-Pfad vorbehalten.
 - `crack(...)` testet ohne Hint exakt `2..min(12, text.length - 1)`.
 - Der generische `options.keyLength`-Hint wird als Schienenanzahl verwendet.
@@ -49,15 +49,15 @@ Optionale Metadaten:
 
 ## Skytale (`js/ciphers/scytaleCipher.js`)
 
-- SchlÃ¼sselbasiert (`supportsKey: true`), SchlÃ¼ssel ist der Umfang (Spaltenanzahl) als ganze Zahl `>= 2`.
-- UnterstÃ¼tzt Umfang-Hint fÃ¼rs Knacken (`supportsCrackLengthHint: true`).
-- Im UI wird dasselbe Umfang-Feld fÃ¼r EntschlÃ¼sselung oder Keyless-Crack verwendet (`reuseKeyForCrackHint: true`).
+- Schlüsselbasiert (`supportsKey: true`), Schlüssel ist der Umfang (Spaltenanzahl) als ganze Zahl `>= 2`.
+- Unterstützt Umfang-Hint fürs Knacken (`supportsCrackLengthHint: true`).
+- Im UI wird dasselbe Umfang-Feld für Entschlüsselung oder Keyless-Crack verwendet (`reuseKeyForCrackHint: true`).
 - Normalisierung auf `A-Z` (inkl. Umlaut-Transliteration), Padding mit `X` bis Vielfaches des Umfangs.
-- VerschlÃ¼sselung: Spalten fÃ¼llen, Zeilen lesen. EntschlÃ¼sselung: Zeilen fÃ¼llen, Spalten lesen.
+- Verschlüsselung: Spalten füllen, Zeilen lesen. Entschlüsselung: Zeilen füllen, Spalten lesen.
 - `decrypt(...)` liefert Rohtext inklusive Padding; Segmentierung bleibt dem Crack-Pfad vorbehalten.
 - `crack(...)` testet ohne Hint exakt `2..min(12, letters.length)`, mit Hint genau diese Zahl.
-- Crack-Scoring lÃ¤uft Ã¼ber `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt der gepaddete Rohtext.
-- Das Scoring trimmt End-`X`, penalisiert interne `X`-HÃ¤ufungen und nutzt Domain-Wort-Boni fÃ¼r kurze Klartexte.
+- Crack-Scoring läuft über `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt der gepaddete Rohtext.
+- Das Scoring trimmt End-`X`, penalisiert interne `X`-Häufungen und nutzt Domain-Wort-Boni für kurze Klartexte.
 
 ## Columnar Transposition (`js/ciphers/columnarTranspositionCipher.js`)
 
@@ -69,20 +69,20 @@ Optionale Metadaten:
 - `decrypt(...)` liefert Rohtext inkl. Padding; Segmentierung bleibt dem UI-/Crack-Pfad vorbehalten.
 - `crack(...)` testet ohne Hint Permutationen für Spaltenanzahlen `2..min(6, letters.length)`, mit `options.keyLength` genau diese Länge.
 - Crack nutzt Fallback-Score + Shortlist-Rescoring über `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt gepaddet.
-## VigenÃ¨re (`js/ciphers/vigenereCipher.js`)
+## Vigenère (`js/ciphers/vigenereCipher.js`)
 
-- SchlÃ¼sselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.
-- UnterstÃ¼tzt SchlÃ¼ssellÃ¤ngen-Hinweis fÃ¼rs Knacken (`supportsCrackLengthHint: true`).
+- Schlüsselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.
+- Unterstützt Schlüssellängen-Hinweis fürs Knacken (`supportsCrackLengthHint: true`).
 - Crack kombiniert:
-  - IoC-basierte SchlÃ¼ssellÃ¤ngen-Auswahl
+  - IoC-basierte Schlüssellängen-Auswahl
   - spaltenweise Shift-Rangfolge (Chi-Quadrat)
   - budgetierte Suche (`candidateBudget`, `stateBudget`, `evaluationBudget`)
-  - Kurztext-Rettungsmodus bei bekannter SchlÃ¼ssellÃ¤nge
+  - Kurztext-Rettungsmodus bei bekannter Schlüssellänge
   - lokale Suchverfeinerung
   - Sprach-Scoring und Kandidaten-Ranking
 - Liefert bestes Ergebnis plus Kandidatenliste.
 
-### Ã„nderungen / Hinweise (aktuell)
+### Änderungen / Hinweise (aktuell)
 
 - Optimierungsvertrag bleibt unter `options.optimizations`.
   - `false`/unset = Legacy, `true` = Defaults, Objekt = Overrides.
@@ -92,57 +92,57 @@ Optionale Metadaten:
   - `enabled`, `maxKeyLength` (hart `<=6`), `shortTextMaxLetters`
   - `maxTotalMs`, `maxMsPerLength`, `stageWidths` (Default `[12,18,26]`)
 - Fallback ist strikt gate-gebunden; die genaue Gate-/Scoringlogik ist in `docs/SCORING.md` dokumentiert.
-- Mit `keyLength`-Hint gilt fÃ¼r den Fallback direkt: `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`.
-- Ohne `keyLength`-Hint bleibt ein adaptives GrÃ¶ÃŸen-Gate aktiv, um teure KurztextfÃ¤lle zu begrenzen.
-- `keyLength`-Hint-Normalisierung (Clamp auf testbare BuchstabenlÃ¤nge) und die konsistente
-  Nutzung in SchlÃ¼ssellÃ¤ngen-Auswahl, Divisor-Erweiterung und Fallback-Gates sind zentral in
+- Mit `keyLength`-Hint gilt für den Fallback direkt: `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`.
+- Ohne `keyLength`-Hint bleibt ein adaptives Größen-Gate aktiv, um teure Kurztextfälle zu begrenzen.
+- `keyLength`-Hint-Normalisierung (Clamp auf testbare Buchstabenlänge) und die konsistente
+  Nutzung in Schlüssellängen-Auswahl, Divisor-Erweiterung und Fallback-Gates sind zentral in
   `docs/SCORING.md` dokumentiert.
 - Der Chi-Memo-Cache ist auf `MAX_CHI_MEMO_CACHE_SIZE` begrenzt und wird zu Beginn/Ende jeder Crack-Session geleert.
-- ZusÃ¤tzliche Suche-Telemetrie in `result.search`:
+- Zusätzliche Suche-Telemetrie in `result.search`:
   - `bruteforceFallbackTriggered`, `bruteforceFallbackReason`, `bruteforceFallbackKeyLength`
   - `bruteforceCombosVisited`, `bruteforceElapsedMs`, `sense`
 
 ## Playfair (`js/ciphers/playfairCipher.js`)
 
-- SchlÃ¼sselbasiert (`supportsKey: true`), SchlÃ¼sselwort wird auf `A-Z` normalisiert.
+- Schlüsselbasiert (`supportsKey: true`), Schlüsselwort wird auf `A-Z` normalisiert.
 - Didaktische Fixregeln:
   - `J -> I`
   - nur `A-Z`
   - Bigramme
   - `X` als Filler bei Doppelbuchstaben
-  - `X`-Padding bei ungerader LÃ¤nge
+  - `X`-Padding bei ungerader Länge
 - `decrypt(...)` nutzt Entpadding (`A X A` und optionales End-`X`) plus Segmentierung,
-  damit die Ausgabe fÃ¼r LernfÃ¤lle lesbar bleibt.
+  damit die Ausgabe für Lernfälle lesbar bleibt.
 - `decryptRaw(...)` liefert die Rohinversion inklusive didaktischem Padding-`X`.
-- Die Segmentierung/QualitÃ¤tsanalyse lÃ¤uft Ã¼ber
+- Die Segmentierung/Qualitätsanalyse läuft über
   `KryptoCore.dictionaryScorer.analyzeTextQuality(...)`,
   damit Decrypt-Ausgabe und Crack-Bewertung denselben Trennpfad verwenden.
 - `segmentText(...)` bleibt kompatibel und spiegelt intern `displayText`.
-- Das Sprachmodell dafÃ¼r kommt aus `js/core/segmentLexiconData.js`:
+- Das Sprachmodell dafür kommt aus `js/core/segmentLexiconData.js`:
   - normalisierte Exact-Wortbasis aus `de_DE.dic` + `american-english`
-  - kompaktes Trigramm-Modell fÃ¼r OOV-Bewertung
+  - kompaktes Trigramm-Modell für OOV-Bewertung
 - Playfair trennt `PHASE_B_LEXICON_KEYS` (Phase-B-Keykorpus) weiterhin strikt von `PLAYFAIR_SEGMENT_WORDS`.
-- `PLAYFAIR_SEGMENT_WORDS` sind nur zusÃ¤tzliche Domain-Hints.
-- Boundary-QualitÃ¤t ist zentral:
+- `PLAYFAIR_SEGMENT_WORDS` sind nur zusätzliche Domain-Hints.
+- Boundary-Qualität ist zentral:
   - mehr Tokens sind nicht automatisch besser
-  - zusÃ¤tzliche Boundaries kosten explizit Score
-  - Bridge-WÃ¶rter zÃ¤hlen nur mit starken Nachbarn
+  - zusätzliche Boundaries kosten explizit Score
+  - Bridge-Wörter zählen nur mit starken Nachbarn
   - bei schwachen Boundaries bleibt die Ausgabe konservativ auf `rawText`
 - `crack(...)` ist hybrid:
   - Phase A: Shortlist (inkl. `QUANT`, `FAC`)
-  - Phase B: erweitertes Key-Corpus (Lexikon + PrÃ¤fix-/Stem-Varianten)
-  - AmbiguitÃ¤ts-Gate triggert Fallback bei `low_confidence`, `low_delta`, `low_coverage`
-- Crack-Kandidaten enthalten zusÃ¤tzlich `rawText` fÃ¼r die UI-Ausgabe.
+  - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
+  - Ambiguitäts-Gate triggert Fallback bei `low_confidence`, `low_delta`, `low_coverage`
+- Crack-Kandidaten enthalten zusätzlich `rawText` für die UI-Ausgabe.
 - Default-Grenzen:
   - `minConfidence = 11.2`
   - `minDelta = 1.8`
   - `minCoverage = 0.62`
-- `result.search` enthÃ¤lt u. a.:
+- `result.search` enthält u. a.:
   - `phase`, `fallbackTriggered`, `fallbackReasons`, `gate`
 
 ## Pflegehinweis
 
-- Bei Ã„nderungen an Cipher-Verhalten diese Datei und `docs/SCORING.md` synchron aktualisieren.
-- Doppelte ErklÃ¤rungen vermeiden: algorithmische Details primÃ¤r in `docs/SCORING.md`.
+- Bei Änderungen an Cipher-Verhalten diese Datei und `docs/SCORING.md` synchron aktualisieren.
+- Doppelte Erklärungen vermeiden: algorithmische Details primär in `docs/SCORING.md`.
 
 
