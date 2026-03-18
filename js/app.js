@@ -15,9 +15,14 @@
     inputText: document.getElementById("inputText"),
     modeSelect: document.getElementById("modeSelect"),
     cipherSelect: document.getElementById("cipherSelect"),
+    keyInputWrap: document.getElementById("keyInputWrap"),
     keyLabel: document.querySelector('label[for="keyInput"]'),
     keyInput: document.getElementById("keyInput"),
     keyHint: document.getElementById("keyHint"),
+    matrixKeyWrap: document.getElementById("matrixKeyWrap"),
+    matrixSizeInput: document.getElementById("matrixSizeInput"),
+    matrixGrid: document.getElementById("matrixGrid"),
+    matrixHint: document.getElementById("matrixHint"),
     alphabetWrap: document.getElementById("alphabetWrap"),
     alphabetInput: document.getElementById("alphabetInput"),
     alphabetHint: document.getElementById("alphabetHint"),
@@ -86,15 +91,38 @@
       return;
     }
 
+    const supportsMatrixKey = Boolean(cipher.supportsMatrixKey);
     const supportsKey = Boolean(cipher.supportsKey);
     // UI-Texte werden als echte UTF-8-Zeichen gepflegt, damit Umlaute korrekt angezeigt werden.
     const label = cipher.keyLabel || "Schlüssel";
     const placeholder = cipher.keyPlaceholder || "z. B. 3";
 
+    if (elements.keyInputWrap) {
+      // Hill nutzt ein eigenes Matrixfeld, damit das Standard-Key-Input nicht irrtümlich befüllt wird.
+      elements.keyInputWrap.hidden = supportsMatrixKey;
+    }
+
+    if (elements.matrixKeyWrap) {
+      // Matrix-Input bleibt nur bei passenden Ciphers sichtbar, damit die UI schlank bleibt.
+      elements.matrixKeyWrap.hidden = !supportsMatrixKey;
+    }
+
     const suffix = mode === "encrypt" ? " (erforderlich)" : " (optional)";
     elements.keyLabel.textContent = supportsKey ? `${label}${suffix}` : "Schlüssel";
     elements.keyInput.placeholder = placeholder;
     elements.keyInput.disabled = !supportsKey;
+
+    if (supportsMatrixKey && elements.matrixHint) {
+      elements.matrixHint.textContent =
+        mode === "encrypt"
+          ? "Matrix vollständig ausfüllen; Werte werden modulo 26 ausgewertet."
+          : "Matrix leer lassen, um 2×2 zu knacken. Werte werden modulo 26 ausgewertet.";
+    }
+
+    if (supportsMatrixKey) {
+      // Grid wird beim Wechsel auf Hill dynamisch gerendert, damit die Größe sofort sichtbar ist.
+      safeRenderMatrixGrid();
+    }
 
     if (!supportsKey) {
       elements.keyInput.value = "";
@@ -113,10 +141,124 @@
     }
   }
 
+  function readMatrixSize() {
+    if (!elements.matrixSizeInput) {
+      return 2;
+    }
+
+    const raw = String(elements.matrixSizeInput.value || "").trim();
+    const size = Number.parseInt(raw, 10);
+    if (!Number.isFinite(size) || size < 2) {
+      throw new Error("Matrixgröße muss eine ganze Zahl ab 2 sein.");
+    }
+
+    return size;
+  }
+
+  function renderMatrixGrid(size) {
+    if (!elements.matrixGrid) {
+      return;
+    }
+
+    const existing = new Map();
+    const inputs = elements.matrixGrid.querySelectorAll("input");
+    for (const input of inputs) {
+      const row = Number.parseInt(input.dataset.row, 10);
+      const col = Number.parseInt(input.dataset.col, 10);
+      if (!Number.isNaN(row) && !Number.isNaN(col)) {
+        existing.set(`${row},${col}`, input.value);
+      }
+    }
+
+    elements.matrixGrid.innerHTML = "";
+    elements.matrixGrid.style.setProperty("--matrix-size", size);
+
+    for (let row = 0; row < size; row += 1) {
+      for (let col = 0; col < size; col += 1) {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = "1";
+        input.inputMode = "numeric";
+        input.className = "matrix-cell";
+        input.placeholder = "0";
+        input.dataset.row = String(row);
+        input.dataset.col = String(col);
+        input.setAttribute("aria-label", `Matrix ${row + 1},${col + 1}`);
+        // Die Eingaben bleiben beim Resize erhalten, damit Nutzer nicht neu tippen müssen.
+        input.value = existing.get(`${row},${col}`) || "";
+        elements.matrixGrid.appendChild(input);
+      }
+    }
+  }
+
+  function safeRenderMatrixGrid() {
+    if (!elements.matrixKeyWrap || elements.matrixKeyWrap.hidden) {
+      return;
+    }
+
+    try {
+      const size = readMatrixSize();
+      renderMatrixGrid(size);
+    } catch (_error) {
+      // Ungültige Größen sollen die UI nicht blockieren; Validierung passiert beim Ausführen.
+    }
+  }
+
+  function readMatrixKey() {
+    if (!elements.matrixGrid || !elements.matrixSizeInput) {
+      return null;
+    }
+
+    const size = readMatrixSize();
+    const matrix = Array.from({ length: size }, () => Array(size).fill(null));
+    const inputs = elements.matrixGrid.querySelectorAll("input");
+    let hasValue = false;
+    let hasMissing = false;
+
+    for (const input of inputs) {
+      const raw = String(input.value || "").trim();
+      const row = Number.parseInt(input.dataset.row, 10);
+      const col = Number.parseInt(input.dataset.col, 10);
+      if (Number.isNaN(row) || Number.isNaN(col)) {
+        continue;
+      }
+
+      if (raw === "") {
+        hasMissing = true;
+        continue;
+      }
+
+      const value = Number(raw);
+      if (!Number.isFinite(value) || !Number.isInteger(value)) {
+        throw new Error("Matrixeinträge müssen ganze Zahlen sein.");
+      }
+
+      hasValue = true;
+      matrix[row][col] = value;
+    }
+
+    if (!hasValue) {
+      return null;
+    }
+
+    if (hasMissing || matrix.some((row) => row.some((value) => value == null))) {
+      throw new Error("Matrix ist unvollständig ausgefüllt.");
+    }
+
+    return { matrix, size };
+  }
+
   function refreshCrackLengthUI() {
     const mode = elements.modeSelect.value;
     const cipher = getSelectedCipher();
     const hasManualKey = elements.keyInput.value.trim() !== "";
+
+    if (cipher && cipher.supportsMatrixKey) {
+      // Matrix-Verfahren nutzen ein eigenes Größenfeld, damit kein zweites Hint-Feld erscheint.
+      elements.crackLengthWrap.hidden = true;
+      elements.crackLengthInput.disabled = true;
+      return;
+    }
 
     const show =
       Boolean(cipher && cipher.supportsCrackLengthHint) &&
@@ -488,6 +630,14 @@
       return null;
     }
 
+    if (cipher.supportsMatrixKey) {
+      const rawMatrix = readMatrixKey();
+      if (rawMatrix == null) {
+        return null;
+      }
+      return typeof cipher.parseKey === "function" ? cipher.parseKey(rawMatrix) : rawMatrix;
+    }
+
     const raw = elements.keyInput.value.trim();
     if (raw === "") {
       return null;
@@ -505,6 +655,11 @@
 
     if (cipher.supportsAlphabet) {
       options.alphabet = alphabet;
+    }
+
+    if (cipher.supportsMatrixKey) {
+      options.matrixSize = readMatrixSize();
+      return options;
     }
 
     if (!cipher.supportsCrackLengthHint || cipher.reuseKeyForCrackHint) {
@@ -561,18 +716,26 @@
     }
 
     if (cipher.supportsKey && key != null) {
-      const rawOnlyCiphers = new Set(["rail-fence", "scytale", "columnar-transposition"]);
+      const rawOnlyCiphers = new Set([
+        "rail-fence",
+        "scytale",
+        "columnar-transposition",
+        "hill",
+      ]);
       let decrypted = cipher.decrypt(text, key);
       let rawText = null;
 
       if (cipher.id === "playfair" && typeof cipher.decryptRaw === "function") {
         // Playfair liefert die segmentierte Anzeige, aber die UI braucht zusätzlich den Rohtext.
-      rawText = cipher.decryptRaw(text, key);
-    } else if (rawOnlyCiphers.has(cipher.id)) {
-        // Rail Fence/Skytale/Columnar geben Rohtext zurück; Segmentierung passiert bewusst im UI-Pfad.
+        rawText = cipher.decryptRaw(text, key);
+      } else if (rawOnlyCiphers.has(cipher.id)) {
+        // Rail Fence/Skytale/Columnar/Hill geben Rohtext zurück; Segmentierung passiert bewusst im UI-Pfad.
         rawText = decrypted;
         decrypted = segmentRawText(rawText, text, {
-          trimTrailingX: cipher.id === "scytale" || cipher.id === "columnar-transposition",
+          trimTrailingX:
+            cipher.id === "scytale" ||
+            cipher.id === "columnar-transposition" ||
+            cipher.id === "hill",
         }).displayText;
       }
 
@@ -613,7 +776,13 @@
       const bestCandidate =
         ranked.bestCandidate || rankedCandidates[0] || cracked;
 
-      const showRawForCipher = new Set(["rail-fence", "scytale", "columnar-transposition", "playfair"]);
+      const showRawForCipher = new Set([
+        "rail-fence",
+        "scytale",
+        "columnar-transposition",
+        "playfair",
+        "hill",
+      ]);
       let displayText = bestCandidate.text;
       let rawText = null;
 
@@ -625,10 +794,19 @@
           null;
         if (rawText) {
           const segmented = segmentRawText(rawText, text, {
-            trimTrailingX: cipher.id === "scytale" || cipher.id === "columnar-transposition",
+            trimTrailingX:
+              cipher.id === "scytale" ||
+              cipher.id === "columnar-transposition" ||
+              cipher.id === "hill",
           }).displayText;
-          if (cipher.id === "scytale" || cipher.id === "columnar-transposition" || !displayText || displayText === rawText) {
-            // Skytale-/Columnar-Padding soll in der segmentierten Anzeige stets entfernt werden.
+          if (
+            cipher.id === "scytale" ||
+            cipher.id === "columnar-transposition" ||
+            cipher.id === "hill" ||
+            !displayText ||
+            displayText === rawText
+          ) {
+            // Skytale-/Columnar-/Hill-Padding soll in der segmentierten Anzeige stets entfernt werden.
             displayText = segmented;
           }
         }
@@ -759,6 +937,10 @@
     elements.modeSelect.addEventListener("change", refreshKeyUI);
     elements.modeSelect.addEventListener("change", refreshCrackLengthUI);
     elements.keyInput.addEventListener("input", refreshCrackLengthUI);
+    if (elements.matrixSizeInput) {
+      elements.matrixSizeInput.addEventListener("input", safeRenderMatrixGrid);
+      elements.matrixSizeInput.addEventListener("change", safeRenderMatrixGrid);
+    }
     elements.cipherSelect.addEventListener("change", () => {
       refreshKeyUI();
       refreshCrackLengthUI();
@@ -789,6 +971,7 @@
     refreshCrackLengthUI();
     refreshAlphabetUI();
     refreshCipherInfo();
+    safeRenderMatrixGrid();
   }
 
   init();

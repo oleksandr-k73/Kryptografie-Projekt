@@ -638,7 +638,7 @@ Gib mir den Plan nur dann, wenn:
 3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
 
 17.03.26
-
+(Angeben, dass fürs selbstständige Lösen dCode und andere Webseiten benutzt wurden!!!)
 Plane einen Update, bei dem Affine Cipher implementiert wird.
 
 Anforderungen an den Plan: 
@@ -658,6 +658,35 @@ Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dok
 
 Gib mir den Plan nur dann, wenn:
 1. Alle relevante Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben
+
+18.03.26
+(NULXIRVLRRAINVZ, [[6,24,1],[13,16,10],[20,17,15]], CODEUND CHIFFRE -- beheben)
+Plane einen Update, bei dem Hill-Cipher implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung (roh): LICHTIMPULSX; (gewünscht): LICHT IMPULS; Lösungsmatrix: [[3,3],[2,5]]). Für Fälle mit einem verfügbaren Schlüssel sollten n*n Matrizen entschlüsselbar sein, zusätzlich ist bis einer mathematisch/logsich gefundenen Zahl ist Bruteforce möglich 
+    - der Bereich/das Feld sieht folgendermaßen: standartmäßig gibt es Subfelder für Werte einer 2*2 Matrix. Daneben ist ein Feld, in dem man die Dimensionen der Matrix eingeben kann (sie soll ja quadratisch sein (soweit ich weiß), deshalb reicht ein Feld für "n"). Wenn man die Zahl ändert (n != 0), soll sich das Matrixfeld auch entsprechend verändern
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Tests sind grün.
 2. Alle Anforderungen wurden getroffen.
 3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
 
