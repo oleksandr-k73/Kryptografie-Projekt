@@ -693,4 +693,6 @@ Gib mir den Plan nur dann, wenn:
 Abgabeformat:
 - Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
     - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
-    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben#
+
+OTP ist identisch mit Vigenere; sollte bitweises XOR/Stromchiffre sein
