@@ -42,11 +42,19 @@
             <label for="cipherSelect">Verschlüsselung</label>
             <select id="cipherSelect"></select>
           </div>
-          <div>
+          <div id="keyInputWrap">
             <label for="keyInput">Schlüssel (optional)</label>
             <input id="keyInput" type="text" placeholder="z. B. 3" />
             <small id="keyHint" class="hint"
               >Beim Entschlüsseln ohne Schlüssel wird geknackt.</small
+            >
+          </div>
+          <div id="matrixKeyWrap" class="matrix-key" hidden>
+            <label for="matrixSizeInput">Matrixgröße n</label>
+            <input id="matrixSizeInput" type="number" min="2" step="1" value="2" />
+            <div id="matrixGrid" class="matrix-grid" aria-label="Schlüsselmatrix"></div>
+            <small id="matrixHint" class="hint"
+              >Matrix vollständig ausfüllen; Werte werden modulo 26 ausgewertet.</small
             >
           </div>
           <div id="alphabetWrap" hidden>
@@ -127,6 +135,7 @@
     <script src="js/ciphers/columnarTranspositionCipher.js"></script>
     <script src="js/ciphers/railFenceCipher.js"></script>
     <script src="js/ciphers/vigenereCipher.js"></script>
+    <script src="js/ciphers/hillCipher.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

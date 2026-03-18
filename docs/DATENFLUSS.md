@@ -57,7 +57,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 
 6. Entschlüsseln mit bekanntem Schlüssel
 - `cipher.decrypt(text, key)` wird aufgerufen.
-- Ergebnis landet segmentiert in `outputText`; bei Rail Fence, Skytale, Columnar Transposition und Playfair wird zusätzlich der Rohtext (ungegliedert) angezeigt.
+- Ergebnis landet segmentiert in `outputText`; bei Rail Fence, Skytale, Columnar Transposition, Hill und Playfair wird zusätzlich der Rohtext (ungegliedert) angezeigt.
 - Kandidatenbereich wird ausgeblendet.
 
 7. Entschlüsseln ohne Schlüssel (Knacken)
@@ -85,6 +85,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Rail Fence darf lesbare Segmentierung (`displayText`) im Crack-Pfad nach oben reichen, wenn die Shared-Analyse klare Wortgrenzen stützt; `decrypt(...)` bleibt Rohtext-Inversion.
 - Skytale bewertet Crack-Kandidaten via ``dictionaryScorer.analyzeTextQuality(...)``, gibt `displayText` aus und behält den gepaddeten `rawText`.
 - Columnar Transposition testet Permutationen bis Länge 6 und bewertet eine Shortlist per `dictionaryScorer.analyzeTextQuality(...)`.
+- Hill nutzt im UI ein Matrixfeld; keyless Crack ist nur für 2×2 aktiv und bewertet Kandidaten via `dictionaryScorer.analyzeTextQuality(...)`.
 - Im UI-Pfad setzt `app.js` für Vigenère standardmäßig `optimizations: true`.
 - Bei `keyLength`-Hint wird das Fallback-Budget direkt über `maxMsPerLength` begrenzt.
 - Ohne `keyLength`-Hint wird der Fallback zusätzlich über ein adaptives Größen-Gate begrenzt.
@@ -93,7 +94,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Optionales Reranking via `dictionaryScorer.rankCandidates(...)`.
 - `rankCandidates(...)` nutzt dieselbe Shared-Textanalyse wie Playfair-Scoring.
 - Bester Kandidat wird als Ausgabe gesetzt.
-- Für Rail Fence, Skytale, Columnar Transposition und Playfair wird zusätzlich der Rohtext aus `rawText` angezeigt.
+- Für Rail Fence, Skytale, Columnar Transposition, Hill und Playfair wird zusätzlich der Rohtext aus `rawText` angezeigt.
 
 8. Status und Hinweise
 - Bei geringer Wörterbuchabdeckung zeigt die UI Hinweise.

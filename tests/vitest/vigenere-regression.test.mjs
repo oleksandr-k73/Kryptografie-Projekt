@@ -34,6 +34,9 @@ function createMockElement(tagName = "div") {
     disabled: false,
     files: [],
     children: [],
+    style: {
+      setProperty() {},
+    },
     _listeners: new Map(),
     classList: {
       add() {},
@@ -66,8 +69,13 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
     inputText: createMockElement("textarea"),
     modeSelect: createMockElement("select"),
     cipherSelect: createMockElement("select"),
+    keyInputWrap: createMockElement("div"),
     keyInput: createMockElement("input"),
     keyHint: createMockElement("div"),
+    matrixKeyWrap: createMockElement("div"),
+    matrixSizeInput: createMockElement("input"),
+    matrixGrid: createMockElement("div"),
+    matrixHint: createMockElement("div"),
     // Alphabet-Elemente verhindern Nullzugriffe, seit die UI editierbare Alphabete unterstützt.
     alphabetWrap: createMockElement("div"),
     alphabetInput: createMockElement("input"),
@@ -103,6 +111,8 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
   elements.modeSelect.value = "decrypt";
   elements.keyInput.value = "";
   elements.crackLengthInput.value = "";
+  elements.matrixKeyWrap.hidden = true;
+  elements.matrixSizeInput.value = "2";
 
   const idMap = new Map([
     ["dropzone", elements.dropzone],
@@ -111,8 +121,13 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
     ["inputText", elements.inputText],
     ["modeSelect", elements.modeSelect],
     ["cipherSelect", elements.cipherSelect],
+    ["keyInputWrap", elements.keyInputWrap],
     ["keyInput", elements.keyInput],
     ["keyHint", elements.keyHint],
+    ["matrixKeyWrap", elements.matrixKeyWrap],
+    ["matrixSizeInput", elements.matrixSizeInput],
+    ["matrixGrid", elements.matrixGrid],
+    ["matrixHint", elements.matrixHint],
     ["alphabetWrap", elements.alphabetWrap],
     ["alphabetInput", elements.alphabetInput],
     ["alphabetHint", elements.alphabetHint],

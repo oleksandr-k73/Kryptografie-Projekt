@@ -77,6 +77,15 @@ Optionale Metadaten:
 - `decrypt(...)` liefert Rohtext inkl. Padding; Segmentierung bleibt dem UI-/Crack-Pfad vorbehalten.
 - `crack(...)` testet ohne Hint Permutationen für Spaltenanzahlen `2..min(6, letters.length)`, mit `options.keyLength` genau diese Länge.
 - Shortlist-Rescoring läuft über `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt gepaddet.
+
+## Hill (`js/ciphers/hillCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`), Schlüssel ist eine n×n‑Matrix (Ganzzahlen), modulo 26 normalisiert.
+- `supportsMatrixKey: true` aktiviert das Matrix-UI; Standard-Key-Input wird ausgeblendet.
+- Normalisierung auf `A-Z` mit Umlaut-Transliteration; Padding mit `X` bis zur Blockgröße.
+- `decrypt(...)` liefert Rohtext inklusive Padding; Segmentierung erfolgt im UI‑Pfad.
+- Keyless‑Crack ist ausschließlich für 2×2‑Matrizen aktiv; Bruteforce prüft Werte `0..25` und nur invertierbare Matrizen.
+- Crack-Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)`, liefert `displayText` + `rawText` plus Key-String `[[a,b],[c,d]]`.
 ## Vigenère (`js/ciphers/vigenereCipher.js`)
 
 - Schlüsselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.
