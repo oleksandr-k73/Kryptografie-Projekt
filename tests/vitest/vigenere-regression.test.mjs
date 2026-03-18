@@ -68,6 +68,10 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
     cipherSelect: createMockElement("select"),
     keyInput: createMockElement("input"),
     keyHint: createMockElement("div"),
+    // Alphabet-Elemente verhindern Nullzugriffe, seit die UI editierbare Alphabete unterstützt.
+    alphabetWrap: createMockElement("div"),
+    alphabetInput: createMockElement("input"),
+    alphabetHint: createMockElement("div"),
     crackLengthWrap: createMockElement("div"),
     crackLengthInput: createMockElement("input"),
     crackLengthHint: createMockElement("div"),
@@ -89,7 +93,10 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
     rawCopyButton: createMockElement("button"),
   };
   const keyLabel = createMockElement("label");
+  const alphabetLabel = createMockElement("label");
   const crackLengthLabel = createMockElement("label");
+  elements.alphabetWrap.querySelector = (selector) =>
+    selector === 'label[for="alphabetInput"]' ? alphabetLabel : null;
   elements.crackLengthWrap.querySelector = (selector) =>
     selector === 'label[for="crackLengthInput"]' ? crackLengthLabel : null;
 
@@ -106,6 +113,9 @@ function loadAppRuntimeForVigenere(fetchImpl = () => Promise.reject(new Error("o
     ["cipherSelect", elements.cipherSelect],
     ["keyInput", elements.keyInput],
     ["keyHint", elements.keyHint],
+    ["alphabetWrap", elements.alphabetWrap],
+    ["alphabetInput", elements.alphabetInput],
+    ["alphabetHint", elements.alphabetHint],
     ["crackLengthWrap", elements.crackLengthWrap],
     ["crackLengthInput", elements.crackLengthInput],
     ["crackLengthHint", elements.crackLengthHint],

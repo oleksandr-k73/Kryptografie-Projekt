@@ -1,4 +1,4 @@
-﻿---
+---
 name: datenfluss
 description: Laufzeit-Datenfluss von Eingabe bis Ausgabe inklusive Fallbacks und Kandidaten-Ranking.
 ---
@@ -45,6 +45,9 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Validiert, ob Text vorhanden ist.
 - Liest Modus (`encrypt`/`decrypt`) und gewählten Cipher.
 - Optional: Schlüssel-Parsing und Crack-Optionen.
+- Für Ciphers mit `supportsAlphabet` wird ein editierbares Alphabet gelesen,
+  an `parseKey(...)` sowie `crackOptions.alphabet` übergeben und bei Abweichung vom Standard
+  ein Warnhinweis im Status angezeigt.
  
 
 5. Verschlüsseln

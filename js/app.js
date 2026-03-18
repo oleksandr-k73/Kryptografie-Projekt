@@ -18,6 +18,9 @@
     keyLabel: document.querySelector('label[for="keyInput"]'),
     keyInput: document.getElementById("keyInput"),
     keyHint: document.getElementById("keyHint"),
+    alphabetWrap: document.getElementById("alphabetWrap"),
+    alphabetInput: document.getElementById("alphabetInput"),
+    alphabetHint: document.getElementById("alphabetHint"),
     crackLengthWrap: document.getElementById("crackLengthWrap"),
     crackLengthInput: document.getElementById("crackLengthInput"),
     crackLengthHint: document.getElementById("crackLengthHint"),
@@ -141,6 +144,34 @@
     elements.crackLengthInput.placeholder = placeholder;
     elements.crackLengthHint.textContent =
       "Wenn bekannt, beschleunigt und verbessert das Knacken.";
+  }
+
+  function refreshAlphabetUI() {
+    const cipher = getSelectedCipher();
+
+    if (!cipher) {
+      return;
+    }
+
+    const show = Boolean(cipher.supportsAlphabet);
+    elements.alphabetWrap.hidden = !show;
+    elements.alphabetInput.disabled = !show;
+
+    if (!show) {
+      return;
+    }
+
+    const label = cipher.alphabetLabel || "Alphabet";
+    const placeholder = cipher.alphabetPlaceholder || cipher.defaultAlphabet || "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    elements.alphabetWrap.querySelector('label[for="alphabetInput"]').textContent = label;
+    elements.alphabetInput.placeholder = placeholder;
+    elements.alphabetHint.textContent = "Alphabet bestimmt Modulo m = Länge.";
+
+    if (!elements.alphabetInput.value.trim()) {
+      // Default bleibt vorbefüllt, damit der Modulo-Kontext direkt sichtbar ist.
+      elements.alphabetInput.value = cipher.defaultAlphabet || "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    }
   }
 
   function refreshCipherInfo() {
@@ -348,6 +379,37 @@
     return hints.slice(0, 3);
   }
 
+  function getCipherAlphabet(cipher) {
+    if (!cipher || !cipher.supportsAlphabet) {
+      return null;
+    }
+
+    const rawAlphabet = elements.alphabetInput.value;
+    const fallback = cipher.defaultAlphabet || "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const chosen = rawAlphabet.trim() === "" ? fallback : rawAlphabet;
+
+    if (typeof cipher.normalizeAlphabet === "function") {
+      // Cipher-spezifische Regeln (z. B. Case-Insensitivity) müssen zentral angewendet werden.
+      return cipher.normalizeAlphabet(chosen);
+    }
+
+    return String(chosen || fallback).replace(/[\r\n]/g, "");
+  }
+
+  function isCustomAlphabet(cipher, alphabet) {
+    if (!cipher || !cipher.supportsAlphabet) {
+      return false;
+    }
+
+    const fallback = cipher.defaultAlphabet || "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const normalizedDefault =
+      typeof cipher.normalizeAlphabet === "function"
+        ? cipher.normalizeAlphabet(fallback)
+        : String(fallback || "").replace(/[\r\n]/g, "");
+
+    return String(alphabet) !== String(normalizedDefault);
+  }
+
   async function rankCandidatesWithDictionary(candidates, sourceText) {
     const scorer = core.dictionaryScorer;
     if (!scorer || typeof scorer.rankCandidates !== "function") {
@@ -421,7 +483,7 @@
     }
   }
 
-  function parseOptionalKey(cipher) {
+  function parseOptionalKey(cipher, alphabet) {
     if (!cipher.supportsKey) {
       return null;
     }
@@ -432,14 +494,18 @@
     }
 
     if (typeof cipher.parseKey === "function") {
-      return cipher.parseKey(raw);
+      return cipher.supportsAlphabet ? cipher.parseKey(raw, { alphabet }) : cipher.parseKey(raw);
     }
 
     return raw;
   }
 
-  function parseCrackOptions(cipher) {
+  function parseCrackOptions(cipher, alphabet) {
     const options = {};
+
+    if (cipher.supportsAlphabet) {
+      options.alphabet = alphabet;
+    }
 
     if (!cipher.supportsCrackLengthHint || cipher.reuseKeyForCrackHint) {
       return options;
@@ -471,7 +537,12 @@
       throw new Error("Keine gültige Verschlüsselung ausgewählt.");
     }
 
-    const key = parseOptionalKey(cipher);
+    const alphabet = getCipherAlphabet(cipher);
+    // Hinweis wird zentral vorbereitet, damit Encrypt/Decrypt/Crack konsistent warnen.
+    const customAlphabetWarning = isCustomAlphabet(cipher, alphabet)
+      ? " Hinweis: Benutzerdefiniertes Alphabet – Sprach-Scoring kann unzuverlässig sein."
+      : "";
+    const key = parseOptionalKey(cipher, alphabet);
 
     if (mode === "encrypt") {
       if (cipher.supportsKey && key == null) {
@@ -483,8 +554,8 @@
       hideCandidates();
       setStatus(
         cipher.supportsKey
-          ? `${cipher.name}: Text verschlüsselt (Schlüssel: ${key}).`
-          : `${cipher.name}: Text verschlüsselt.`
+          ? `${cipher.name}: Text verschlüsselt (Schlüssel: ${key}).${customAlphabetWarning}`
+          : `${cipher.name}: Text verschlüsselt.${customAlphabetWarning}`
       );
       return;
     }
@@ -507,11 +578,11 @@
 
       setOutputTexts(decrypted, rawText);
       hideCandidates();
-      setStatus(`${cipher.name}: Text entschlüsselt (Schlüssel: ${key}).`);
+      setStatus(`${cipher.name}: Text entschlüsselt (Schlüssel: ${key}).${customAlphabetWarning}`);
       return;
     }
 
-    const crackOptions = parseCrackOptions(cipher);
+    const crackOptions = parseCrackOptions(cipher, alphabet);
     // Guard vor dem ersten await, damit schnelle Doppelklicks keine parallelen Crack-Läufe starten.
     elements.runButton.disabled = true;
     try {
@@ -593,10 +664,12 @@
           ? " Hinweis: Sehr kurzer Text, Ergebnis kann unzuverlässig sein."
           : "";
         setStatus(
-          `${cipher.name}: Schlüssel geknackt (${bestCandidate.key}), Text entschlüsselt.${suffix}${fallbackSuffix}`
+          `${cipher.name}: Schlüssel geknackt (${bestCandidate.key}), Text entschlüsselt.${suffix}${fallbackSuffix}${customAlphabetWarning}`
         );
       } else {
-        setStatus(`${cipher.name}: Text automatisch geknackt und entschlüsselt.${fallbackSuffix}`);
+        setStatus(
+          `${cipher.name}: Text automatisch geknackt und entschlüsselt.${fallbackSuffix}${customAlphabetWarning}`
+        );
       }
     } finally {
       elements.runButton.disabled = false;
@@ -689,6 +762,7 @@
     elements.cipherSelect.addEventListener("change", () => {
       refreshKeyUI();
       refreshCrackLengthUI();
+      refreshAlphabetUI();
       refreshCipherInfo();
     });
     elements.runButton.addEventListener("click", async () => {
@@ -713,6 +787,7 @@
     setupDragAndDrop();
     refreshKeyUI();
     refreshCrackLengthUI();
+    refreshAlphabetUI();
     refreshCipherInfo();
   }
 

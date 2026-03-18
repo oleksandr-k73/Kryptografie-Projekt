@@ -27,6 +27,16 @@ Optionale Metadaten:
 - `crack(...)` testet alle 26 Schlüssel.
 - Liefert bestes Ergebnis plus `candidates` (Top-Auswahl).
 
+## Affine (`js/ciphers/affineCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`) mit `(a,b)`-Paar.
+- Unterstützt editierbares Alphabet (`supportsAlphabet: true`), Standard `ABCDEFGHIJKLMNOPQRSTUVWXYZ`.
+- Alphabet muss eindeutige Zeichen enthalten; Buchstaben sind case-insensitiv eindeutig.
+- Case-Preserving ist immer aktiv (Groß-/Kleinschreibung bleibt erhalten).
+- `parseKey(rawKey, { alphabet })` validiert `gcd(a, m) === 1` mit `m = alphabet.length`.
+- `crack(...)` testet alle `a` mit `gcd(a,m)=1` und alle `b` in `0..m-1`.
+- Crack-Scoring ist identisch zum Cäsar-Verfahren.
+
 ## Leetspeak (`js/ciphers/leetCipher.js`)
 
 - Kein Schlüssel (`supportsKey: false`).
@@ -41,11 +51,10 @@ Optionale Metadaten:
 - Unterstützt Schienen-Hint fürs Knacken (`supportsCrackLengthHint: true`).
 - Im UI wird dasselbe Schienen-Feld für Entschlüsselung oder Keyless-Crack verwendet.
 - Ver-/Entschlüsselung laufen über den kompletten Zeichenstrom inklusive Leerzeichen und Satzzeichen.
-- `decrypt(...)` liefert Rohtext; lesbare Segmentierung bleibt dem Crack-Pfad vorbehalten.
-- `crack(...)` testet ohne Hint exakt `2..min(12, text.length - 1)`.
-- Der generische `options.keyLength`-Hint wird als Schienenanzahl verwendet.
-- Mit `dictionaryScorer.analyzeTextQuality(...)` kann der Crack-Pfad lesbare Segmentierung (`displayText`) in `text` ausgeben und `rawText` separat behalten.
-- Tie-Breaker bei gleichem Score: kleinere Rail-Anzahl zuerst.
+- `decrypt(...)` liefert Rohtext; Segmentierung bleibt dem Crack-Pfad vorbehalten.
+- `crack(...)` testet ohne Hint `2..min(12, text.length - 1)` und nutzt `options.keyLength` als Schienenanzahl.
+- Crack kann `displayText` liefern; `rawText` bleibt separat, damit UI-Rohtext und Segmentierung getrennt bleiben.
+- Tie-Breaker: kleinere Rail-Anzahl zuerst.
 
 ## Skytale (`js/ciphers/scytaleCipher.js`)
 
@@ -55,9 +64,8 @@ Optionale Metadaten:
 - Normalisierung auf `A-Z` (inkl. Umlaut-Transliteration), Padding mit `X` bis Vielfaches des Umfangs.
 - Verschlüsselung: Spalten füllen, Zeilen lesen. Entschlüsselung: Zeilen füllen, Spalten lesen.
 - `decrypt(...)` liefert Rohtext inklusive Padding; Segmentierung bleibt dem Crack-Pfad vorbehalten.
-- `crack(...)` testet ohne Hint exakt `2..min(12, letters.length)`, mit Hint genau diese Zahl.
-- Crack-Scoring läuft über `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt der gepaddete Rohtext.
-- Das Scoring trimmt End-`X`, penalisiert interne `X`-Häufungen und nutzt Domain-Wort-Boni für kurze Klartexte.
+- `crack(...)` testet ohne Hint `2..min(12, letters.length)`, mit Hint genau diese Zahl.
+- Crack-Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt gepaddet.
 
 ## Columnar Transposition (`js/ciphers/columnarTranspositionCipher.js`)
 
@@ -68,39 +76,14 @@ Optionale Metadaten:
 - Entschlüsselung: Spalten in Schlüsselreihenfolge füllen, Zeilen lesen.
 - `decrypt(...)` liefert Rohtext inkl. Padding; Segmentierung bleibt dem UI-/Crack-Pfad vorbehalten.
 - `crack(...)` testet ohne Hint Permutationen für Spaltenanzahlen `2..min(6, letters.length)`, mit `options.keyLength` genau diese Länge.
-- Crack nutzt Fallback-Score + Shortlist-Rescoring über `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt gepaddet.
+- Shortlist-Rescoring läuft über `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt gepaddet.
 ## Vigenère (`js/ciphers/vigenereCipher.js`)
 
 - Schlüsselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.
 - Unterstützt Schlüssellängen-Hinweis fürs Knacken (`supportsCrackLengthHint: true`).
-- Crack kombiniert:
-  - IoC-basierte Schlüssellängen-Auswahl
-  - spaltenweise Shift-Rangfolge (Chi-Quadrat)
-  - budgetierte Suche (`candidateBudget`, `stateBudget`, `evaluationBudget`)
-  - Kurztext-Rettungsmodus bei bekannter Schlüssellänge
-  - lokale Suchverfeinerung
-  - Sprach-Scoring und Kandidaten-Ranking
-- Liefert bestes Ergebnis plus Kandidatenliste.
-
-### Änderungen / Hinweise (aktuell)
-
-- Optimierungsvertrag bleibt unter `options.optimizations`.
-  - `false`/unset = Legacy, `true` = Defaults, Objekt = Overrides.
-  - Flags: `memoChi`, `incrementalScoring`, `localSearchK`, `progressiveWidening`, `collectStats`.
-  - `collectStats` schreibt Telemetrie nach `result.search.telemetry`.
-- Bruteforce-Fallback unter `options.bruteforceFallback`:
-  - `enabled`, `maxKeyLength` (hart `<=6`), `shortTextMaxLetters`
-  - `maxTotalMs`, `maxMsPerLength`, `stageWidths` (Default `[12,18,26]`)
-- Fallback ist strikt gate-gebunden; die genaue Gate-/Scoringlogik ist in `docs/SCORING.md` dokumentiert.
-- Mit `keyLength`-Hint gilt für den Fallback direkt: `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`.
-- Ohne `keyLength`-Hint bleibt ein adaptives Größen-Gate aktiv, um teure Kurztextfälle zu begrenzen.
-- `keyLength`-Hint-Normalisierung (Clamp auf testbare Buchstabenlänge) und die konsistente
-  Nutzung in Schlüssellängen-Auswahl, Divisor-Erweiterung und Fallback-Gates sind zentral in
-  `docs/SCORING.md` dokumentiert.
-- Der Chi-Memo-Cache ist auf `MAX_CHI_MEMO_CACHE_SIZE` begrenzt und wird zu Beginn/Ende jeder Crack-Session geleert.
-- Zusätzliche Suche-Telemetrie in `result.search`:
-  - `bruteforceFallbackTriggered`, `bruteforceFallbackReason`, `bruteforceFallbackKeyLength`
-  - `bruteforceCombosVisited`, `bruteforceElapsedMs`, `sense`
+- Crack kombiniert IoC-Längenwahl, Chi-Rangfolge und budgetierte Suche; Kurztext-Fallback möglich.
+- `options.optimizations` und `options.bruteforceFallback` steuern Optimierungs-/Fallbackpfade (Details in `docs/SCORING.md`).
+- Liefert bestes Ergebnis plus Kandidatenliste; Telemetrie liegt in `result.search`.
 
 ## Playfair (`js/ciphers/playfairCipher.js`)
 
@@ -111,34 +94,9 @@ Optionale Metadaten:
   - Bigramme
   - `X` als Filler bei Doppelbuchstaben
   - `X`-Padding bei ungerader Länge
-- `decrypt(...)` nutzt Entpadding (`A X A` und optionales End-`X`) plus Segmentierung,
-  damit die Ausgabe für Lernfälle lesbar bleibt.
-- `decryptRaw(...)` liefert die Rohinversion inklusive didaktischem Padding-`X`.
-- Die Segmentierung/Qualitätsanalyse läuft über
-  `KryptoCore.dictionaryScorer.analyzeTextQuality(...)`,
-  damit Decrypt-Ausgabe und Crack-Bewertung denselben Trennpfad verwenden.
-- `segmentText(...)` bleibt kompatibel und spiegelt intern `displayText`.
-- Das Sprachmodell dafür kommt aus `js/core/segmentLexiconData.js`:
-  - normalisierte Exact-Wortbasis aus `de_DE.dic` + `american-english`
-  - kompaktes Trigramm-Modell für OOV-Bewertung
-- Playfair trennt `PHASE_B_LEXICON_KEYS` (Phase-B-Keykorpus) weiterhin strikt von `PLAYFAIR_SEGMENT_WORDS`.
-- `PLAYFAIR_SEGMENT_WORDS` sind nur zusätzliche Domain-Hints.
-- Boundary-Qualität ist zentral:
-  - mehr Tokens sind nicht automatisch besser
-  - zusätzliche Boundaries kosten explizit Score
-  - Bridge-Wörter zählen nur mit starken Nachbarn
-  - bei schwachen Boundaries bleibt die Ausgabe konservativ auf `rawText`
-- `crack(...)` ist hybrid:
-  - Phase A: Shortlist (inkl. `QUANT`, `FAC`)
-  - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
-  - Ambiguitäts-Gate triggert Fallback bei `low_confidence`, `low_delta`, `low_coverage`
-- Crack-Kandidaten enthalten zusätzlich `rawText` für die UI-Ausgabe.
-- Default-Grenzen:
-  - `minConfidence = 11.2`
-  - `minDelta = 1.8`
-  - `minCoverage = 0.62`
-- `result.search` enthält u. a.:
-  - `phase`, `fallbackTriggered`, `fallbackReasons`, `gate`
+- `decrypt(...)` nutzt Entpadding plus Segmentierung; `decryptRaw(...)` liefert Rohtext inkl. Padding-`X`.
+- Segmentierung/Scoring laufen über `dictionaryScorer.analyzeTextQuality(...)`.
+- `crack(...)` ist hybrid (Phase A/Phase B) mit Ambiguitäts-Gate; Kandidaten enthalten `rawText`.
 
 ## Pflegehinweis
 

@@ -1,4 +1,4 @@
-﻿---
+---
 name: sprachscoring-und-kandidatenbewertung
 description: Lokales Sprachscoring in den Ciphers und optionales Wörterbuch-Reranking in js/core/dictionaryScorer.js.
 ---
@@ -18,7 +18,12 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - Vokal- und Leerzeichenverhältnis
 - `crack(...)` testet alle 26 Schlüssel und liefert Top-Kandidaten.
 
-2. Vigenère (`vigenereCipher.js`)
+2. Affine (`affineCipher.js`)
+- Alphabet ist editierbar (Standard `A-Z`), Modulo `m = alphabet.length`.
+- `crack(...)` testet alle `a` mit `gcd(a,m)=1` und alle `b` in `0..m-1`.
+- Sprach-Scoring und Kandidatenranking sind identisch zum Cäsar-Verfahren.
+
+3. Vigenère (`vigenereCipher.js`)
 - Nutzt:
   - Schlüssellängen-Kandidaten (IoC-basiert)
   - Spaltenweise Shift-Rangfolge (Chi-Quadrat)
@@ -27,40 +32,18 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - lokale Verfeinerung per Search
   - Sprach-Scoring auf Kandidatentext
 - Optionaler `keyLength`-Hint erhöht Präzision und reduziert Suchraum.
-- Der `keyLength`-Hint wird vor der Suche einmal auf die testbare Buchstabenlänge
-  (`extractLettersUpper(text).length`) begrenzt.
-- Diese effektive (geclampte) Länge wird konsistent für Schlüssellängen-Kandidaten,
-  Divisor-Erweiterung und Hint-basiertes Fallback-Gating verwendet.
-- Dadurch öffnen übergroße Hints keinen größeren Suchraum als tatsächlich testbar.
-- Bei kurzen und sinnarmen Kandidaten kann ein staged Bruteforce-Fallback laufen:
-  - Stage 1: Top-12 je Spalte
-  - Stage 2: Top-18 je Spalte
-  - Stage 3: Top-26 je Spalte
-- Fallback läuft ausschließlich über das AND-Gate:
-  - Text ist kurz
-  - Kandidat ist sinnarm (Sense-Gate)
-  - Schlüssellänge liegt innerhalb `maxKeyLength`
-- Wenn der Text nicht kurz ist, bleibt der Pfad bei Frequenz-/Chi-Analyse und
-  `bruteforceFallbackReason` wird als `text_not_short` ausgewiesen.
-- Mit `keyLength`-Hint gilt für den Fallback direkt:
-  - `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`
-- Ohne `keyLength`-Hint bleibt dieser Fallback auf adaptiv günstige Kurzfälle begrenzt
-  (`maxMsPerLength`), damit Laufzeitbudgets stabil bleiben.
-- Der Chi-Memo-Cache ist hart begrenzt (`MAX_CHI_MEMO_CACHE_SIZE`) und wird pro
-  Crack-Session explizit zurückgesetzt, damit kein Session-Leak entsteht.
-- Sense-Metriken (`evaluateSenseMetrics(text)`):
-  - `dictCoverageProxy`
-  - `meaningfulTokenRatio`
-  - `nonsenseRatio = 1 - meaningfulTokenRatio`
-  - `gibberishBigramRatio`
-  - `senseScore = 0.50*dictCoverageProxy + 0.35*meaningfulTokenRatio + 0.15*(1-gibberishBigramRatio)`
-- Fallback-Kandidatenscore:
-  - `scoreLanguage`
-  - `+ dictionaryBoostScore`
-  - `+ senseBonus` (aus `senseScore` + `meaningfulTokenRatio`)
-- Merge-Regel: Fallback ersetzt Basiskandidat nur bei klarer Qualitätsverbesserung.
+- `keyLength`-Hint wird auf die testbare Buchstabenlänge geclampet und konsistent in
+  Schlüssellängen-Kandidaten, Divisor-Erweiterung und Fallback-Gates genutzt.
+- Kurztext-Fallback nutzt staged Breiten `[12,18,26]` und läuft nur bei kurzen, sinnarmen Texten
+  innerhalb `maxKeyLength`.
+- Mit `keyLength`-Hint gilt `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`; ohne Hint bleibt
+  ein adaptives Budget aktiv.
+- Chi-Memo-Cache ist begrenzt (`MAX_CHI_MEMO_CACHE_SIZE`) und wird pro Session zurückgesetzt.
+- Sense-Metriken basieren u. a. auf `dictCoverageProxy`, `meaningfulTokenRatio` und `gibberishBigramRatio`.
+- Fallback-Score kombiniert Sprachscore, Dictionary-Boost und Sense-Bonus; ersetzt Basiskandidat nur
+  bei klarer Qualitätsverbesserung.
 
-3. Playfair (`playfairCipher.js`)
+4. Playfair (`playfairCipher.js`)
 - Didaktische Normalisierung:
   - `J -> I`
   - nur `A-Z`
@@ -74,27 +57,18 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Hybrid-Crack:
   - Phase A: deterministische Key-Shortlist (inkl. `QUANT`, `FAC`)
   - Phase B: erweitertes Key-Corpus aus Lexikonbegriffen + Präfix-/Stem-Varianten
-- Candidate-Scoring gewichtet primär robuste Segmentierungsmetriken:
-  - `qualityScore` aus der Shared-Analyse als primärer Kandidatenscore
-  - `confidence`, `coverage`, `meaningfulTokenRatio`, `strongSegmentRatio`
-  - Boundary-Risiken (`weakBoundaryCount`, `unsupportedBridgeCount`, `shortTokenCount`)
-- Ambiguitäts-Gate (Default):
-  - `minConfidence = 11.2`
-  - `minDelta = 1.8`
-  - `minCoverage = 0.62`
-- Fallback-Trigger, wenn mindestens eine Bedingung erfüllt ist:
-  - `top1.confidence < minConfidence`
-  - `(top1.confidence - top2.confidence) < minDelta`
-  - `coverage(top1) < minCoverage`
+- Candidate-Scoring gewichtet primär `qualityScore` plus Segmentierungs-Confidence/Coverage.
+- Ambiguitäts-Gate (Default): `minConfidence = 11.2`, `minDelta = 1.8`, `minCoverage = 0.62`.
+- Fallback-Trigger, wenn mindestens eine Gate-Bedingung erfüllt ist.
 - Für die UI wird zusätzlich der Rohtext inklusive Padding-`X` bereitgestellt.
 
-4. Leetspeak (`leetCipher.js`)
+5. Leetspeak (`leetCipher.js`)
 - Beam-Search für Rückübersetzungen.
 - Übergangs-Scoring während der Sequenzbildung.
 - Sprach-Scoring auf erzeugtem Klartext.
 - Liefert primär den besten Kandidaten.
 
-5. Rail Fence (`railFenceCipher.js`)
+6. Rail Fence (`railFenceCipher.js`)
 - Schlüsselbasiert (`supportsKey: true`), Schlüssel ist die Schienenanzahl als ganze Zahl `>= 2`.
 - Im UI nutzt Rail Fence dasselbe Feld als Entschlüsselungswert oder als Trigger für den Crack-Pfad.
 - Ver- und Entschlüsselung laufen über den kompletten Zeichenstrom, nicht nur über Buchstaben.
@@ -107,7 +81,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - `displayText` wird nur im Crack-Pfad als Ausgabe genutzt; `decrypt(...)` liefert Rohtext, auch wenn Segmentierung möglich wäre.
 - Im UI wird beim Entschlüsseln der Rohtext segmentiert angezeigt; der Rohtext bleibt separat sichtbar.
 
-6. Skytale (`scytaleCipher.js`)
+7. Skytale (`scytaleCipher.js`)
 - Normalisiert auf `A-Z`, padde mit `X` bis zum nächsten Vielfachen des Umfangs.
 - Crack-Range: ohne Hint `2..min(12, letters.length)`, mit Hint exakt diese Zahl.
 - Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)` und liefert:
@@ -116,7 +90,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - `rawText` als gepaddeten Rohtext
 - Scoring trimmt End-`X`, bewertet bei geringer Coverage `displayText` erneut und penalisiert interne `X`-Häufungen; Domain-Wörter erhalten einen Bonus.
 
-7. Columnar Transposition (`columnarTranspositionCipher.js`)
+8. Columnar Transposition (`columnarTranspositionCipher.js`)
 - Normalisiert auf `A-Z` und padde mit `X` bis zum nächsten Vielfachen der Spaltenanzahl.
 - Crack-Range: ohne Hint `2..min(6, letters.length)`, mit `keyLength` exakt diese Länge.
 - Fallback-Score nutzt Bigramme/Trigramme, Domain-Wort-Bonus und eine Penalty für interne `X`-Häufungen.

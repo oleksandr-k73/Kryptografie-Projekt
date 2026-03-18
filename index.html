@@ -49,6 +49,17 @@
               >Beim Entschlüsseln ohne Schlüssel wird geknackt.</small
             >
           </div>
+          <div id="alphabetWrap" hidden>
+            <label for="alphabetInput">Alphabet</label>
+            <input
+              id="alphabetInput"
+              type="text"
+              placeholder="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            />
+            <small id="alphabetHint" class="hint"
+              >Alphabet bestimmt Modulo m = Länge.</small
+            >
+          </div>
           <div id="crackLengthWrap" hidden>
             <label for="crackLengthInput">Schlüssellänge fürs Knacken (optional)</label>
             <input
@@ -109,6 +120,7 @@
     <script src="js/core/segmentLexiconData.js"></script>
     <script src="js/core/dictionaryScorer.js"></script>
     <script src="js/ciphers/caesarCipher.js"></script>
+    <script src="js/ciphers/affineCipher.js"></script>
     <script src="js/ciphers/leetCipher.js"></script>
     <script src="js/ciphers/playfairCipher.js"></script>
     <script src="js/ciphers/scytaleCipher.js"></script>
