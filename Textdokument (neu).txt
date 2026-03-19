@@ -639,6 +639,7 @@ Gib mir den Plan nur dann, wenn:
 
 17.03.26
 (Angeben, dass fürs selbstständige Lösen dCode und andere Webseiten benutzt wurden!!!)
+(Angeben, dass fürs selbstständige Lösen dCode und andere Webseiten benutzt wurden!!!)
 Plane einen Update, bei dem Affine Cipher implementiert wird.
 
 Anforderungen an den Plan: 
