@@ -39,8 +39,28 @@
             </select>
           </div>
           <div>
-            <label for="cipherSelect">Verschlüsselung</label>
-            <select id="cipherSelect"></select>
+            <label for="cipherSelect" id="cipherSelectLabelText">Verschlüsselung</label>
+            <div class="custom-select" id="cipherSelectWrap">
+              <select
+                id="cipherSelect"
+                class="native-select-hidden"
+                aria-hidden="true"
+                tabindex="-1"
+              ></select>
+              <button
+                id="cipherSelectButton"
+                type="button"
+                class="custom-select-trigger"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-labelledby="cipherSelectLabelText cipherSelectValue"
+              >
+                <span id="cipherSelectValue">Verschlüsselung wählen</span>
+                <span class="custom-select-arrow" aria-hidden="true">▾</span>
+              </button>
+              <ul id="cipherSelectList" class="custom-select-list" role="listbox"></ul>
+              <div id="cipherSelectTooltip" class="custom-select-tooltip" role="tooltip" hidden></div>
+            </div>
           </div>
           <div id="keyInputWrap">
             <label for="keyInput">Schlüssel (optional)</label>
@@ -89,6 +109,7 @@
           <p id="cipherInfoHow"></p>
           <p id="cipherInfoCrack"></p>
           <p id="cipherInfoUse"></p>
+          <p id="cipherInfoNote"></p>
         </section>
 
         <button id="runButton" type="button">Ausführen</button>

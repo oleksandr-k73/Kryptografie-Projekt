@@ -15,6 +15,12 @@
     inputText: document.getElementById("inputText"),
     modeSelect: document.getElementById("modeSelect"),
     cipherSelect: document.getElementById("cipherSelect"),
+    cipherSelectLabel: document.getElementById("cipherSelectLabelText"),
+    cipherSelectWrap: document.getElementById("cipherSelectWrap"),
+    cipherSelectButton: document.getElementById("cipherSelectButton"),
+    cipherSelectValue: document.getElementById("cipherSelectValue"),
+    cipherSelectList: document.getElementById("cipherSelectList"),
+    cipherSelectTooltip: document.getElementById("cipherSelectTooltip"),
     keyInputWrap: document.getElementById("keyInputWrap"),
     keyLabel: document.querySelector('label[for="keyInput"]'),
     keyInput: document.getElementById("keyInput"),
@@ -34,6 +40,7 @@
     cipherInfoHow: document.getElementById("cipherInfoHow"),
     cipherInfoCrack: document.getElementById("cipherInfoCrack"),
     cipherInfoUse: document.getElementById("cipherInfoUse"),
+    cipherInfoNote: document.getElementById("cipherInfoNote"),
     candidateSection: document.getElementById("candidateSection"),
     candidateStatus: document.getElementById("candidateStatus"),
     candidateList: document.getElementById("candidateList"),
@@ -74,13 +81,209 @@
     return registry.get(elements.cipherSelect.value);
   }
 
+  const customSelectState = {
+    // Status hält UI-Zustand für das Custom-Dropdown, ohne Logik im Cipher-Registry zu duplizieren.
+    open: false,
+    activeIndex: -1,
+    optionEls: [],
+    tooltipHold: false,
+    tooltipPinned: false,
+  };
+
+  function clearCipherSelect() {
+    // Reset stellt sicher, dass ein erneutes Populate keine Duplikate hinterlässt.
+    elements.cipherSelect.innerHTML = "";
+    if (elements.cipherSelectList) {
+      elements.cipherSelectList.innerHTML = "";
+    }
+    customSelectState.optionEls = [];
+  }
+
+  function setCustomSelectValueLabel(label) {
+    if (!elements.cipherSelectValue) {
+      return;
+    }
+    elements.cipherSelectValue.textContent = label;
+  }
+
+  function syncCustomSelectSelection(value) {
+    // Auswahl spiegelt den Native-Select-Wert, damit alle bestehenden Logikpfade intakt bleiben.
+    const targetValue = value || elements.cipherSelect.value;
+    const options = customSelectState.optionEls;
+    const selectedIndex = options.findIndex((optionEl) => optionEl.dataset.value === targetValue);
+    const safeIndex = selectedIndex >= 0 ? selectedIndex : 0;
+
+    options.forEach((optionEl, index) => {
+      optionEl.setAttribute("aria-selected", index === safeIndex ? "true" : "false");
+    });
+
+    const selectedOption = options[safeIndex];
+    if (selectedOption) {
+      setCustomSelectValueLabel(selectedOption.dataset.label || selectedOption.textContent);
+      customSelectState.activeIndex = safeIndex;
+    }
+  }
+
+  function positionCipherTooltip(optionEl) {
+    if (!elements.cipherSelectTooltip || !elements.cipherSelectWrap) {
+      return;
+    }
+    const wrapRect = elements.cipherSelectWrap.getBoundingClientRect();
+    const optionRect = optionEl.getBoundingClientRect();
+    const topOffset = Math.max(0, Math.round(optionRect.top - wrapRect.top));
+    elements.cipherSelectTooltip.style.top = `${topOffset}px`;
+  }
+
+  function showCipherTooltip(optionEl, pin) {
+    // Tooltip erscheint nur, wenn das Dropdown offen ist und die Option eine Notiz trägt.
+    if (!customSelectState.open || !elements.cipherSelectTooltip) {
+      return;
+    }
+    const note = optionEl.dataset.tooltip;
+    if (!note) {
+      return;
+    }
+    elements.cipherSelectTooltip.textContent = note;
+    elements.cipherSelectTooltip.hidden = false;
+    customSelectState.tooltipPinned = Boolean(pin);
+    positionCipherTooltip(optionEl);
+  }
+
+  function hideCipherTooltip(force) {
+    if (!elements.cipherSelectTooltip) {
+      return;
+    }
+    if (!force && (customSelectState.tooltipPinned || customSelectState.tooltipHold)) {
+      return;
+    }
+    elements.cipherSelectTooltip.hidden = true;
+    elements.cipherSelectTooltip.textContent = "";
+    elements.cipherSelectTooltip.style.top = "";
+    customSelectState.tooltipPinned = false;
+  }
+
+  function closeCipherSelect(restoreFocus) {
+    if (!elements.cipherSelectWrap || !elements.cipherSelectButton) {
+      return;
+    }
+    elements.cipherSelectWrap.dataset.open = "false";
+    elements.cipherSelectButton.setAttribute("aria-expanded", "false");
+    if (elements.cipherSelectList) {
+      // Screenreader sollen den geschlossenen Zustand klar erkennen.
+      elements.cipherSelectList.setAttribute("aria-hidden", "true");
+    }
+    customSelectState.open = false;
+    hideCipherTooltip(true);
+    if (restoreFocus) {
+      elements.cipherSelectButton.focus();
+    }
+  }
+
+  function focusCipherOption(index) {
+    const options = customSelectState.optionEls;
+    if (!options.length) {
+      return;
+    }
+    const safeIndex = Math.max(0, Math.min(index, options.length - 1));
+    const optionEl = options[safeIndex];
+    if (!optionEl) {
+      return;
+    }
+    optionEl.focus();
+    customSelectState.activeIndex = safeIndex;
+  }
+
+  function openCipherSelect() {
+    if (!elements.cipherSelectWrap || !elements.cipherSelectButton) {
+      return;
+    }
+    elements.cipherSelectWrap.dataset.open = "true";
+    elements.cipherSelectButton.setAttribute("aria-expanded", "true");
+    if (elements.cipherSelectList) {
+      // Liste wird zugänglich, sobald das Dropdown geöffnet ist.
+      elements.cipherSelectList.setAttribute("aria-hidden", "false");
+    }
+    customSelectState.open = true;
+    const selectedIndex = customSelectState.optionEls.findIndex(
+      (optionEl) => optionEl.dataset.value === elements.cipherSelect.value
+    );
+    focusCipherOption(selectedIndex >= 0 ? selectedIndex : 0);
+  }
+
+  function selectCipherValue(value) {
+    // Auswahl setzt den Native-Select-Wert und triggert die bestehende Change-Logik.
+    if (!value) {
+      return;
+    }
+    elements.cipherSelect.value = value;
+    syncCustomSelectSelection(value);
+    elements.cipherSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function buildCustomCipherOption(cipher, index) {
+    const optionEl = document.createElement("li");
+    optionEl.className = "custom-select-option";
+    optionEl.setAttribute("role", "option");
+    optionEl.setAttribute("tabindex", "-1");
+    optionEl.dataset.value = cipher.id;
+    optionEl.dataset.label = cipher.name;
+    optionEl.dataset.index = String(index);
+    optionEl.id = `cipher-option-${cipher.id}`;
+    optionEl.textContent = cipher.name;
+
+    if (cipher.info && cipher.info.note) {
+      // Der Info-Hinweis wird als „ⓘ“ markiert, damit Hover den Tooltip erklärt.
+      const icon = document.createElement("span");
+      icon.className = "custom-select-option-icon";
+      icon.textContent = "ⓘ";
+      optionEl.dataset.tooltip = cipher.info.note;
+      optionEl.appendChild(icon);
+    }
+
+    optionEl.addEventListener("click", () => {
+      selectCipherValue(cipher.id);
+      closeCipherSelect(true);
+    });
+
+    optionEl.addEventListener("mouseenter", () => {
+      showCipherTooltip(optionEl, false);
+    });
+
+    optionEl.addEventListener("mouseleave", () => {
+      hideCipherTooltip(false);
+    });
+
+    optionEl.addEventListener("focus", () => {
+      customSelectState.activeIndex = Number(optionEl.dataset.index) || 0;
+      showCipherTooltip(optionEl, true);
+    });
+
+    optionEl.addEventListener("blur", () => {
+      customSelectState.tooltipPinned = false;
+      hideCipherTooltip(false);
+    });
+
+    return optionEl;
+  }
+
   function populateCipherSelect() {
+    clearCipherSelect();
     for (const cipher of registry.list()) {
       const option = document.createElement("option");
       option.value = cipher.id;
       option.textContent = cipher.name;
       elements.cipherSelect.append(option);
+
+      if (elements.cipherSelectList) {
+        const customOption = buildCustomCipherOption(cipher, customSelectState.optionEls.length);
+        elements.cipherSelectList.append(customOption);
+        customSelectState.optionEls.push(customOption);
+      }
     }
+    if (!elements.cipherSelect.value && customSelectState.optionEls.length > 0) {
+      elements.cipherSelect.value = customSelectState.optionEls[0].dataset.value;
+    }
+    syncCustomSelectSelection(elements.cipherSelect.value);
   }
 
   function refreshKeyUI() {
@@ -88,10 +291,17 @@
     const cipher = getSelectedCipher();
 
     if (!cipher) {
+      if (elements.keyInputWrap) {
+        // Fallback-UI bleibt sichtbar, falls kein Cipher geladen wurde.
+        elements.keyInputWrap.hidden = false;
+      }
+      if (elements.matrixKeyWrap) {
+        elements.matrixKeyWrap.hidden = true;
+      }
       return;
     }
 
-    const supportsMatrixKey = Boolean(cipher.supportsMatrixKey);
+    const supportsMatrixKey = cipher.supportsMatrixKey === true;
     const supportsKey = Boolean(cipher.supportsKey);
     // UI-Texte werden als echte UTF-8-Zeichen gepflegt, damit Umlaute korrekt angezeigt werden.
     const label = cipher.keyLabel || "Schlüssel";
@@ -253,7 +463,7 @@
     const cipher = getSelectedCipher();
     const hasManualKey = elements.keyInput.value.trim() !== "";
 
-    if (cipher && cipher.supportsMatrixKey) {
+    if (cipher && cipher.supportsMatrixKey === true) {
       // Matrix-Verfahren nutzen ein eigenes Größenfeld, damit kein zweites Hint-Feld erscheint.
       elements.crackLengthWrap.hidden = true;
       elements.crackLengthInput.disabled = true;
@@ -328,6 +538,12 @@
     elements.cipherInfoHow.textContent = `Wie funktioniert es? ${info.process || "Keine Beschreibung vorhanden."}`;
     elements.cipherInfoCrack.textContent = `Wie wird geknackt? ${info.crack || "Keine Beschreibung vorhanden."}`;
     elements.cipherInfoUse.textContent = `Wann passt es? ${info.useCase || "Keine Beschreibung vorhanden."}`;
+    if (elements.cipherInfoNote) {
+      // Hinweis ist optional und soll die Box nicht aufblasen, wenn kein Zusatztext vorhanden ist.
+      const note = info.note || "";
+      elements.cipherInfoNote.textContent = note ? `Hinweis: ${note}` : "";
+      elements.cipherInfoNote.hidden = !note;
+    }
   }
 
   function setStatus(message) {
@@ -630,7 +846,7 @@
       return null;
     }
 
-    if (cipher.supportsMatrixKey) {
+    if (cipher.supportsMatrixKey === true) {
       const rawMatrix = readMatrixKey();
       if (rawMatrix == null) {
         return null;
@@ -657,7 +873,7 @@
       options.alphabet = alphabet;
     }
 
-    if (cipher.supportsMatrixKey) {
+    if (cipher.supportsMatrixKey === true) {
       options.matrixSize = readMatrixSize();
       return options;
     }
@@ -934,6 +1150,101 @@
       }
     });
 
+    if (elements.cipherSelectButton && elements.cipherSelectWrap) {
+      if (elements.cipherSelectLabel) {
+        elements.cipherSelectLabel.addEventListener("click", (event) => {
+          // Label-Klick soll das Custom-Dropdown öffnen, nicht das versteckte Select fokussieren.
+          event.preventDefault();
+          if (!customSelectState.open) {
+            openCipherSelect();
+          }
+        });
+      }
+
+      elements.cipherSelectButton.addEventListener("click", (event) => {
+        // Button toggelt Dropdown und verhindert ungewollte Formularfokusseffekte.
+        event.preventDefault();
+        if (customSelectState.open) {
+          closeCipherSelect(false);
+        } else {
+          openCipherSelect();
+        }
+      });
+
+      elements.cipherSelectButton.addEventListener("keydown", (event) => {
+        // Tastaturzugriff erlaubt Öffnen und erstes Navigieren ohne Maus.
+        if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === " " || event.key === "Enter") {
+          event.preventDefault();
+          if (!customSelectState.open) {
+            openCipherSelect();
+          } else {
+            focusCipherOption(customSelectState.activeIndex >= 0 ? customSelectState.activeIndex : 0);
+          }
+        }
+      });
+
+      elements.cipherSelectWrap.addEventListener("keydown", (event) => {
+        // Listbox-Navigation bleibt konsistent, egal ob Fokus auf Option oder Liste liegt.
+        if (!customSelectState.open) {
+          return;
+        }
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          focusCipherOption(customSelectState.activeIndex + 1);
+          return;
+        }
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          focusCipherOption(customSelectState.activeIndex - 1);
+          return;
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          focusCipherOption(0);
+          return;
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          focusCipherOption(customSelectState.optionEls.length - 1);
+          return;
+        }
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          const optionEl = customSelectState.optionEls[customSelectState.activeIndex];
+          if (optionEl) {
+            selectCipherValue(optionEl.dataset.value);
+          }
+          closeCipherSelect(true);
+          return;
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeCipherSelect(true);
+        }
+      });
+
+      document.addEventListener("click", (event) => {
+        // Klicks außerhalb des Wrappers schließen das Dropdown, damit es nicht hängen bleibt.
+        if (!customSelectState.open) {
+          return;
+        }
+        if (!elements.cipherSelectWrap.contains(event.target)) {
+          closeCipherSelect(false);
+        }
+      });
+    }
+
+    if (elements.cipherSelectTooltip) {
+      elements.cipherSelectTooltip.addEventListener("mouseenter", () => {
+        // Tooltip darf beim Lesen nicht sofort verschwinden.
+        customSelectState.tooltipHold = true;
+      });
+      elements.cipherSelectTooltip.addEventListener("mouseleave", () => {
+        customSelectState.tooltipHold = false;
+        hideCipherTooltip(false);
+      });
+    }
+
     elements.modeSelect.addEventListener("change", refreshKeyUI);
     elements.modeSelect.addEventListener("change", refreshCrackLengthUI);
     elements.keyInput.addEventListener("input", refreshCrackLengthUI);
@@ -942,6 +1253,8 @@
       elements.matrixSizeInput.addEventListener("change", safeRenderMatrixGrid);
     }
     elements.cipherSelect.addEventListener("change", () => {
+      // Native-Select bleibt Source of Truth; Custom-UI wird nur synchronisiert.
+      syncCustomSelectSelection(elements.cipherSelect.value);
       refreshKeyUI();
       refreshCrackLengthUI();
       refreshAlphabetUI();
@@ -965,6 +1278,14 @@
   function init() {
     registerCiphers();
     populateCipherSelect();
+    if (elements.cipherSelectWrap) {
+      // Default-Zustand bleibt geschlossen, damit keine Liste initial sichtbar ist.
+      elements.cipherSelectWrap.dataset.open = "false";
+    }
+    if (elements.cipherSelectList) {
+      // Geschlossene Liste soll für Screenreader verborgen bleiben.
+      elements.cipherSelectList.setAttribute("aria-hidden", "true");
+    }
     wireEvents();
     setupDragAndDrop();
     refreshKeyUI();

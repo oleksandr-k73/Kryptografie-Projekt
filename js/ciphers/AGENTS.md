@@ -18,7 +18,7 @@ Optionale Metadaten:
 - `parseKey(rawKey)`
 - `supportsCrackLengthHint`
 - `crackLengthLabel`, `crackLengthPlaceholder`
-- `info` (purpose/process/crack/useCase)
+- `info` (purpose/process/crack/useCase/note)
 
 ## Cäsar (`js/ciphers/caesarCipher.js`)
 
@@ -93,6 +93,7 @@ Optionale Metadaten:
 - Crack kombiniert IoC-Längenwahl, Chi-Rangfolge und budgetierte Suche; Kurztext-Fallback möglich.
 - `options.optimizations` und `options.bruteforceFallback` steuern Optimierungs-/Fallbackpfade (Details in `docs/SCORING.md`).
 - Liefert bestes Ergebnis plus Kandidatenliste; Telemetrie liegt in `result.search`.
+- `info.note` wird im Custom-Dropdown als Tooltip genutzt, damit Vigenère-Aliase klar benannt sind.
 
 ## Playfair (`js/ciphers/playfairCipher.js`)
 

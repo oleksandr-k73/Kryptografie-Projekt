@@ -191,6 +191,10 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - 0% Abdeckung: zusätzlicher Hinweis.
 - Bei aktivem Bruteforce-Fallback kann der Endstatus Dauer + Kombinationsanzahl anzeigen.
 
+3. Cipher-Hinweise im Dropdown
+- Die Verschlüsselungsauswahl nutzt ein Custom-Dropdown.
+- Für Vigenère wird `info.note` als Tooltip angezeigt, sobald die Option fokussiert oder mit der Maus anvisiert wird.
+
 ## 5) Grenzen und Nebenwirkungen
 
 - Wörterbuch-Reranking kann lokales Cipher-Ranking bewusst überstimmen.

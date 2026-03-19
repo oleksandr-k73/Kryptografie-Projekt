@@ -31,6 +31,7 @@ Der Fokus liegt auf:
 ### Einstieg und UI
 - `index.html`: UI-Struktur, Eingabefelder, Infobox, Script-Reihenfolge
 - `styles.css`: Layout, Farben, responsive Darstellung, Komponenten-Styling
+- Custom-Dropdown für Verschlüsselungen inkl. Tooltip-Hinweis bei Vigenère
 
 ### Core-Module
 - `js/core/cipherRegistry.js`: Registry und Cipher-Basisvalidierung

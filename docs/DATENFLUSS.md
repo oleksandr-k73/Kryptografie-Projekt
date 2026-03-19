@@ -13,7 +13,8 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 1. Initialisierung
 - `app.js` lädt `KryptoCore` und `KryptoCiphers`.
 - `CipherRegistry` registriert alle gültigen Cipher.
-- Dropdown und UI-Zustände werden initial gesetzt.
+- Custom-Dropdown und UI-Zustände werden initial gesetzt.
+- Das Custom-Dropdown spiegelt den versteckten Native-Select, damit bestehende Logikpfade unverändert bleiben.
  
 
 2. Eingabe
@@ -100,6 +101,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Bei geringer Wörterbuchabdeckung zeigt die UI Hinweise.
 - Bei Vigenère + kurzem Text wird ein Zuverlässigkeits-Hinweis ergänzt.
 - API-Verfügbarkeit beeinflusst den Kandidatenstatus-Text.
+- Hover/Fokus auf der Vigenère-Option im Custom-Dropdown zeigt einen Alias-Hinweis (Tooltip).
 - Nach dem Crack wird `runButton` wieder aktiviert.
 - Falls Fallback lief, kann der Endstatus Bruteforce-Info enthalten.
 - Fallback-Telemetrie wird defensiv formatiert, damit keine `NaN`/`undefined`-Werte im Status erscheinen.

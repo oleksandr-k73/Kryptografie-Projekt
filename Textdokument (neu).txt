@@ -694,6 +694,33 @@ Gib mir den Plan nur dann, wenn:
 Abgabeformat:
 - Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
     - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
-    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben#
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben
 
-OTP ist identisch mit Vigenere; sollte bitweises XOR/Stromchiffre sein
+OTP ist identisch mit Vigenere; sollte bitweises XOR/Stromchiffre sein --> derzeit (19.03.26) eine Anmerkung bei Vigenere, welche Chiffren identisch sind (auch in der Auswahl)
+
+19.03.26:
+Plane einen Update, bei dem XOR-Cipher (Hinweis aus der anderen App: Vorgehen: Interpretiere als UTF-8-Bytes, XOR-e positionsweise mit ASCII-Schlüssel KRYPTO und gib als HEX aus.) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: QUANTEN SPRUNG; Schlüssel: KRYPTO). Das Verfahren soll sowohl für jeden Schlüssel funktionieren als auch Knacken unterstützen (soweit es geht).
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben
