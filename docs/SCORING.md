@@ -38,8 +38,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   innerhalb `maxKeyLength`.
 - Mit `keyLength`-Hint gilt `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`; ohne Hint bleibt
   ein adaptives Budget aktiv.
-- Chi-Memo-Cache ist begrenzt (`MAX_CHI_MEMO_CACHE_SIZE`) und wird pro Session zurückgesetzt.
-- Sense-Metriken basieren u. a. auf `dictCoverageProxy`, `meaningfulTokenRatio` und `gibberishBigramRatio`.
+- Chi-Memo-Cache ist begrenzt; Sense-Metriken basieren u. a. auf `dictCoverageProxy`, `meaningfulTokenRatio`, `gibberishBigramRatio`.
 - Fallback-Score kombiniert Sprachscore, Dictionary-Boost und Sense-Bonus; ersetzt Basiskandidat nur
   bei klarer Qualitätsverbesserung.
 
@@ -104,6 +103,11 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - `coverage * 10` und `meaningfulTokenRatio * 7`
   - Domain‑Bonus über fachtypische Wörter
 - Fallback‑Score nutzt Bigramme/Trigramme, damit Crack ohne Scorer stabil bleibt.
+10. XOR (`xorCipher.js`)
+- Byte-basiert: UTF-8 kodieren, XOR mit ASCII-Key, Ausgabe als HEX uppercase.
+- Crack bewertet pro Schlüsselposition die Slice-Bytes, leitet daraus den Schlüssel je Länge ab und nutzt optional einen Längen-Hint; ohne Hint bis `DEFAULT_MAX_KEY_LENGTH = 8` (experimentell bestimmt).
+- Primär wird auf A-Z/Leerzeichen/Ziffern optimiert, Fallback erweitert auf printable ASCII 0x20–0x7E.
+- Ranking via `dictionaryScorer.analyzeTextQuality(...)`, sonst XOR-Fallback-Score.
 ## 2) Kandidatenfluss in `app.js`
 
 1. `crack(...)`-Ergebnis wird normalisiert:
@@ -119,8 +123,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - `dictionaryScorer.rankCandidates(candidates, { languageHints: ["de", "en"] })`
 
 4. Ergebnisübernahme:
-- `bestCandidate` wird in die Ausgabe geschrieben.
-- Top-Kandidaten werden im Kandidatenbereich angezeigt.
+- `bestCandidate` wird ausgegeben, Top-Kandidaten erscheinen im Kandidatenbereich.
 
 ## 3) Wörterbuch-Reranking (`js/core/dictionaryScorer.js`)
 

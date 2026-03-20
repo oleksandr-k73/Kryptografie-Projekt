@@ -86,6 +86,14 @@ Optionale Metadaten:
 - `decrypt(...)` liefert Rohtext inklusive Padding; Segmentierung erfolgt im UI‑Pfad.
 - Keyless‑Crack ist ausschließlich für 2×2‑Matrizen aktiv; Bruteforce prüft Werte `0..25` und nur invertierbare Matrizen.
 - Crack-Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)`, liefert `displayText` + `rawText` plus Key-String `[[a,b],[c,d]]`.
+
+## XOR (`js/ciphers/xorCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`), ASCII 0x00–0x7F, nicht leer.
+- Ausgabe ist HEX uppercase ohne Separatoren; Entschlüsselung akzeptiert HEX mit Whitespace.
+- Crack nutzt optionalen Längen-Hint (`supportsCrackLengthHint: true`) und printable ASCII 0x20–0x7E.
+- Crack liefert Klartext (`text`) plus HEX-Rohtext (`rawText`) für die UI-Ausgabe.
+
 ## Vigenère (`js/ciphers/vigenereCipher.js`)
 
 - Schlüsselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.

@@ -921,7 +921,12 @@
       }
 
       const encrypted = cipher.encrypt(text, key);
-      setOutputTexts(encrypted, null);
+      if (cipher.id === "xor") {
+        // XOR zeigt HEX als Hauptausgabe und den Klartext separat, damit Byte-Output lesbar bleibt.
+        setOutputTexts(encrypted, text);
+      } else {
+        setOutputTexts(encrypted, null);
+      }
       hideCandidates();
       setStatus(
         cipher.supportsKey
@@ -941,7 +946,13 @@
       let decrypted = cipher.decrypt(text, key);
       let rawText = null;
 
-      if (cipher.id === "playfair" && typeof cipher.decryptRaw === "function") {
+      if (cipher.id === "xor") {
+        // XOR braucht die normalisierte HEX-Rohdarstellung, ohne Segmentierung im UI.
+        rawText =
+          typeof cipher.normalizeHexInput === "function"
+            ? cipher.normalizeHexInput(text)
+            : String(text || "").replace(/\s+/g, "").toUpperCase();
+      } else if (cipher.id === "playfair" && typeof cipher.decryptRaw === "function") {
         // Playfair liefert die segmentierte Anzeige, aber die UI braucht zusätzlich den Rohtext.
         rawText = cipher.decryptRaw(text, key);
       } else if (rawOnlyCiphers.has(cipher.id)) {
@@ -1002,7 +1013,14 @@
       let displayText = bestCandidate.text;
       let rawText = null;
 
-      if (showRawForCipher.has(cipher.id)) {
+      if (cipher.id === "xor") {
+        // XOR zeigt immer Klartext + HEX, ohne Segmentierung des Byte-Outputs.
+        rawText =
+          bestCandidate.rawText ||
+          cracked.rawText ||
+          (cracked.candidates && cracked.candidates[0] && cracked.candidates[0].rawText) ||
+          null;
+      } else if (showRawForCipher.has(cipher.id)) {
         rawText =
           bestCandidate.rawText ||
           cracked.rawText ||

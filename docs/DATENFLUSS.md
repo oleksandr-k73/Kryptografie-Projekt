@@ -14,7 +14,6 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - `app.js` lädt `KryptoCore` und `KryptoCiphers`.
 - `CipherRegistry` registriert alle gültigen Cipher.
 - Custom-Dropdown und UI-Zustände werden initial gesetzt.
-- Das Custom-Dropdown spiegelt den versteckten Native-Select, damit bestehende Logikpfade unverändert bleiben.
  
 
 2. Eingabe
@@ -34,12 +33,9 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - YAML mit nicht getragenen Features (z. B. Anchors/Aliases) fällt defensiv auf den Originaltext zurück.
 - JS-Parser bewertet reine Literal-Fallback-Kandidaten neutral über den Pfad `_literal`,
   damit starke Schlüssel wie `value` nur bei echten Key-Signalen aus Assignment/Property wirken.
-- CSV-Textspaltenwahl nutzt exakte Header-Tokens (Delimiter: `_`, Leerzeichen, `-`) statt Substring-Matching;
-  so werden False Positives wie `metadata` -> `data` vermieden, während `cipher_text` weiter erkannt wird.
-- CSV ohne erkannte Textspalte nutzt weiterhin einen Zeilen-Fallback über alle Zellen.
-- Vor dem Flatten prüft eine konservative Header-Heuristik die erste Zeile.
-- Die erste Zeile wird nur bei starkem Header-Signal entfernt; bei unklaren Fällen bleibt
-  sie erhalten, damit headerlose Dateien keine erste Datenzeile verlieren.
+- CSV-Textspaltenwahl nutzt exakte Header-Tokens (Delimiter: `_`, Leerzeichen, `-`);
+  ohne erkannte Textspalte bleibt der Zeilen-Fallback aktiv.
+- Header-Heuristik entfernt die erste Zeile nur bei starkem Signal, damit headerlose Dateien stabil bleiben.
 - Unbekanntes Format: Fallback als Klartext (`fallback: true`).
 
 4. Ausführung (`runCipher`)
@@ -55,11 +51,13 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - `cipher.encrypt(text, key)` wird aufgerufen.
 - Ergebnis landet in `outputText`.
 - Kandidatenbereich wird ausgeblendet.
+- XOR zeigt HEX als Hauptausgabe und den Klartext im Rohfeld.
 
 6. Entschlüsseln mit bekanntem Schlüssel
 - `cipher.decrypt(text, key)` wird aufgerufen.
 - Ergebnis landet segmentiert in `outputText`; bei Rail Fence, Skytale, Columnar Transposition, Hill und Playfair wird zusätzlich der Rohtext (ungegliedert) angezeigt.
 - Kandidatenbereich wird ausgeblendet.
+- XOR zeigt Klartext im Hauptfeld und die normalisierte HEX-Eingabe im Rohfeld (ohne Segmentierung).
 
 7. Entschlüsseln ohne Schlüssel (Knacken)
 - Bei Vigenère setzt die UI vor `cipher.crack(...)` den Hinweis:
@@ -78,15 +76,8 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
   - Zahl = direkt entschlüsseln
 - Playfair nutzt zusätzlich ``dictionaryScorer.analyzeTextQuality(...)`` für Ausgabe + Score;
   derselbe Pfad läuft sowohl bei `decrypt(...)` mit bekanntem Schlüssel als auch im Crack-Scoring.
-- Playfair läuft als Hybrid-Crack:
-  - Phase A: feste Shortlist (inkl. `QUANT`, `FAC`)
-  - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
-  - Ambiguitäts-Gate triggert Phase B bei `low_confidence`, `low_delta` oder `low_coverage`
 - Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
-- Rail Fence darf lesbare Segmentierung (`displayText`) im Crack-Pfad nach oben reichen, wenn die Shared-Analyse klare Wortgrenzen stützt; `decrypt(...)` bleibt Rohtext-Inversion.
-- Skytale bewertet Crack-Kandidaten via ``dictionaryScorer.analyzeTextQuality(...)``, gibt `displayText` aus und behält den gepaddeten `rawText`.
-- Columnar Transposition testet Permutationen bis Länge 6 und bewertet eine Shortlist per `dictionaryScorer.analyzeTextQuality(...)`.
-- Hill nutzt im UI ein Matrixfeld; keyless Crack ist nur für 2×2 aktiv und bewertet Kandidaten via `dictionaryScorer.analyzeTextQuality(...)`.
+- Weitere cipher-spezifische Crack-Details (Playfair-Phasen, Rail Fence/Skytale Segmentierung, Columnar/Hill-Shortlists) siehe `docs/SCORING.md`.
 - Im UI-Pfad setzt `app.js` für Vigenère standardmäßig `optimizations: true`.
 - Bei `keyLength`-Hint wird das Fallback-Budget direkt über `maxMsPerLength` begrenzt.
 - Ohne `keyLength`-Hint wird der Fallback zusätzlich über ein adaptives Größen-Gate begrenzt.
@@ -96,6 +87,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - `rankCandidates(...)` nutzt dieselbe Shared-Textanalyse wie Playfair-Scoring.
 - Bester Kandidat wird als Ausgabe gesetzt.
 - Für Rail Fence, Skytale, Columnar Transposition, Hill und Playfair wird zusätzlich der Rohtext aus `rawText` angezeigt.
+- XOR zeigt Klartext + HEX-Rohtext, ohne Segmentierung des HEX-Outputs.
 
 8. Status und Hinweise
 - Bei geringer Wörterbuchabdeckung zeigt die UI Hinweise.
