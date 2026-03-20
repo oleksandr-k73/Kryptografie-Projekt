@@ -5,27 +5,16 @@
   const HEX_TABLE = Array.from({ length: 256 }, (_value, index) =>
     index.toString(16).padStart(2, "0").toUpperCase()
   );
-  const PRINTABLE_MIN = 0x20;
-  const PRINTABLE_MAX = 0x7e;
-  const KEY_BYTES_PRINTABLE = Array.from(
-    { length: PRINTABLE_MAX - PRINTABLE_MIN + 1 },
-    (_value, index) => PRINTABLE_MIN + index
-  );
   const KEY_BYTES_UPPER = Array.from({ length: 26 }, (_value, index) => 0x41 + index);
   const STRICT_ALLOWED = Array.from({ length: 256 }, () => false);
-  const PRINTABLE_ALLOWED = Array.from({ length: 256 }, () => false);
-  const COMMON_BONUS = new Set(["e", "n", "r", "s", "t", "a", "i", "d", "u", "h"]);
-  const ANALYSIS_SHORTLIST_SIZE = 80;
+  const ANALYSIS_SHORTLIST_SIZE = 120;
+  const PER_LENGTH_ANALYSIS = 12;
+  const STRICT_POSITION_CANDIDATE_CAP = 26;
   const LETTER_FREQUENCY = [
     0.0817, 0.0149, 0.0278, 0.0425, 0.127, 0.0223, 0.0202, 0.0609, 0.0697,
     0.0015, 0.0077, 0.0403, 0.0241, 0.0675, 0.0751, 0.0193, 0.001, 0.0599,
     0.0633, 0.0906, 0.0276, 0.0098, 0.0236, 0.0015, 0.0197, 0.0007,
   ];
-
-  // Vorab-Tabellen halten die Crack-Schleifen im O(1)-Pfad, damit 1k-Tests nicht ausbremsen.
-  for (let byte = PRINTABLE_MIN; byte <= PRINTABLE_MAX; byte += 1) {
-    PRINTABLE_ALLOWED[byte] = true;
-  }
 
   // Striktes Alphabet stabilisiert Hints, weil XOR-Demos meist A-Z, Ziffern und Leerzeichen nutzen.
   STRICT_ALLOWED[0x20] = true;
@@ -160,39 +149,6 @@
     return output;
   }
 
-  function scorePlainByte(byte) {
-    if (byte === 0x20) {
-      return 4.6;
-    }
-
-    if (byte >= 0x41 && byte <= 0x5a) {
-      const index = byte - 0x41;
-      const letter = String.fromCharCode(byte + 32);
-      return 3.1 + LETTER_FREQUENCY[index] * 7 + (COMMON_BONUS.has(letter) ? 0.4 : 0);
-    }
-
-    if (byte >= 0x61 && byte <= 0x7a) {
-      const index = byte - 0x61;
-      const letter = String.fromCharCode(byte);
-      return 2.2 + LETTER_FREQUENCY[index] * 5 + (COMMON_BONUS.has(letter) ? 0.3 : 0);
-    }
-
-    if (byte >= 0x30 && byte <= 0x39) {
-      return 1.2;
-    }
-
-    if (byte >= PRINTABLE_MIN && byte <= PRINTABLE_MAX) {
-      return 0.2;
-    }
-
-    if (byte >= 0x80) {
-      // UTF-8-Mehrbytezeichen sollen nicht sofort ausgeschlossen werden.
-      return -0.25;
-    }
-
-    return -4.2;
-  }
-
   function scorePlainByteStrict(byte) {
     if (byte === 0x20) {
       return 3.2;
@@ -224,9 +180,15 @@
   }
 
   const STRICT_SCORE_TABLE = buildScoreTable(scorePlainByteStrict);
-  const RELAXED_SCORE_TABLE = buildScoreTable(scorePlainByte);
 
-  function buildPositionCandidates(cipherBytes, keyLength, keyAlphabet, scoreTable, allowedTable) {
+  function buildPositionCandidates(
+    cipherBytes,
+    keyLength,
+    keyAlphabet,
+    scoreTable,
+    allowedTable,
+    candidateCap
+  ) {
     // Pro Position werden Schluesselbytes gesammelt, um die Suche auf plausible Kandidaten zu begrenzen.
     const positionCandidates = [];
     let baseScore = 0;
@@ -265,8 +227,13 @@
       }
 
       candidates.sort((a, b) => b.score - a.score);
-      baseScore += candidates[0]?.score || 0;
-      positionCandidates.push(candidates);
+      // Die Kandidatenzahl pro Position wird begrenzt, damit Beam-Search in 1k-Sets bezahlbar bleibt.
+      const capped =
+        Number.isFinite(candidateCap) && candidateCap > 0
+          ? candidates.slice(0, candidateCap)
+          : candidates;
+      baseScore += capped[0]?.score || 0;
+      positionCandidates.push(capped);
     }
 
     return { positionCandidates, baseScore };
@@ -520,20 +487,36 @@
         }
       }
 
-      const buildCandidatesForLengths = (keyAlphabet, scoreTable, allowedTable, beamWidth) => {
+      const buildCandidatesForLengths = (
+        keyAlphabet,
+        scoreTable,
+        allowedTable,
+        candidateCap,
+        beamWidth,
+        lengthCap
+      ) => {
         // Kandidaten werden laengenweise gebaut, weil XOR-Slices pro Schluessellaenge getrennt zu bewerten sind.
         const candidates = [];
-        const lengthInfos = keyLengths.map((keyLength) => ({
+      const lengthInfos = keyLengths.map((keyLength) => ({
+        keyLength,
+        ...buildPositionCandidates(
+          cipherBytes,
           keyLength,
-          ...buildPositionCandidates(cipherBytes, keyLength, keyAlphabet, scoreTable, allowedTable),
-        }));
+          keyAlphabet,
+          scoreTable,
+          allowedTable,
+          candidateCap
+        ),
+      }));
 
         let selectedLengths = lengthInfos;
         if (!Number.isFinite(hintedLength)) {
           // Ohne Hint halten wir die Anzahl tiefer Suchen klein, damit Crack schnell bleibt.
+          const cappedLengthLimit =
+            Number.isFinite(lengthCap) && lengthCap > 0 ? lengthCap : lengthInfos.length;
           selectedLengths = [...lengthInfos]
             .sort((a, b) => b.baseScore - a.baseScore)
-            .slice(0, Math.min(4, lengthInfos.length));
+            .slice(0, Math.min(cappedLengthLimit, lengthInfos.length));
         }
 
         for (const info of selectedLengths) {
@@ -572,63 +555,34 @@
         return candidates;
       };
 
-      const assessQuality = (text) => {
-        const rawText = String(text || "");
-        if (scorer && typeof scorer.analyzeTextQuality === "function") {
-          const analysis = scorer.analyzeTextQuality(rawText, {
-            languageHints: ["de", "en"],
-            maxWordLength: 40,
-          });
-          return {
-            coverage: Number(analysis && analysis.coverage) || 0,
-            meaningfulTokenRatio: Number(analysis && analysis.meaningfulTokenRatio) || 0,
-          };
-        }
-
-        const letters = (rawText.match(/[A-Za-z]/g) || []).length;
-        const ratio = letters / Math.max(rawText.length, 1);
-        return {
-          coverage: ratio,
-          meaningfulTokenRatio: ratio,
-        };
-      };
-
-      const isConfidentEnough = (quality) => {
-        return quality.coverage >= 0.62 && quality.meaningfulTokenRatio >= 0.6;
-      };
-
       let candidates = buildCandidatesForLengths(
         KEY_BYTES_UPPER,
         STRICT_SCORE_TABLE,
         STRICT_ALLOWED,
-        // Mit Hint koennen wir tiefer suchen; ohne Hint bleibt das Budget kleiner.
-        Number.isFinite(hintedLength) ? 4000 : 2000
+        STRICT_POSITION_CANDIDATE_CAP,
+        // Unhinted prueft alle Laengen mit kleinem Beam, um Genauigkeit + Laufzeit zu balancieren.
+        Number.isFinite(hintedLength) ? 300 : 70,
+        Number.isFinite(hintedLength) ? 1 : keyLengths.length
       );
 
       candidates.sort((a, b) => b.confidence - a.confidence);
-      const quickBest = candidates[0];
-      const quickQuality = quickBest ? assessQuality(quickBest.text) : null;
-      const quickAllowedRatio = quickBest ? quickBest._allowedRatio : 0;
-
-      if (
-        (!quickQuality || !isConfidentEnough(quickQuality) || quickAllowedRatio < 0.88) &&
-        !Number.isFinite(hintedLength)
-      ) {
-        // Fallback bleibt auf unhinted beschraenkt, damit korrekte Hints nicht ueberschrieben werden.
-        candidates = candidates.concat(
-          buildCandidatesForLengths(
-            KEY_BYTES_PRINTABLE,
-            RELAXED_SCORE_TABLE,
-            PRINTABLE_ALLOWED,
-            1200
-          )
-        );
-        candidates.sort((a, b) => b.confidence - a.confidence);
-      }
 
       if (scorer && typeof scorer.analyzeTextQuality === "function") {
         // Nur die Shortlist wird tief bewertet, damit der Crack-Pfad auch bei 1k Tests performant bleibt.
-        const shortlist = candidates.slice(0, ANALYSIS_SHORTLIST_SIZE);
+        const shortlist = [];
+        const perLengthCounts = new Map();
+        for (const candidate of candidates) {
+          if (shortlist.length >= ANALYSIS_SHORTLIST_SIZE) {
+            break;
+          }
+          const keyLength = candidate._keyLength;
+          const used = perLengthCounts.get(keyLength) || 0;
+          if (used >= PER_LENGTH_ANALYSIS) {
+            continue;
+          }
+          perLengthCounts.set(keyLength, used + 1);
+          shortlist.push(candidate);
+        }
         for (const candidate of shortlist) {
           const analyzed = analyzeCandidate(
             candidate.text,

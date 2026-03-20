@@ -108,6 +108,10 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Crack bewertet pro Schlüsselposition die Slice-Bytes, leitet daraus den Schlüssel je Länge ab und nutzt optional einen Längen-Hint; ohne Hint bis `DEFAULT_MAX_KEY_LENGTH = 8` (experimentell bestimmt).
 - Primär wird auf A-Z/Leerzeichen/Ziffern optimiert, Fallback erweitert auf printable ASCII 0x20–0x7E.
 - Ranking via `dictionaryScorer.analyzeTextQuality(...)`, sonst XOR-Fallback-Score.
+11. Base64 (`base64Cipher.js`)
+- Kein Schlüssel; Crack dekodiert deterministisch (kein echtes Key-Cracking).
+- Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)`; bei fehlendem Scorer greifen lokale Heuristiken.
+
 ## 2) Kandidatenfluss in `app.js`
 
 1. `crack(...)`-Ergebnis wird normalisiert:
