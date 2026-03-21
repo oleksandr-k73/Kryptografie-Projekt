@@ -29,41 +29,17 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Sprach-Scoring und Kandidatenranking sind identisch zum Cäsar-Verfahren.
 
 4. Vigenère (`vigenereCipher.js`)
-- Nutzt:
-  - Schlüssellängen-Kandidaten (IoC-basiert)
-  - Spaltenweise Shift-Rangfolge (Chi-Quadrat)
-  - budgetierte Kandidatensuche
-  - Kurztext-Rettungsmodus
-  - lokale Verfeinerung per Search
-  - Sprach-Scoring auf Kandidatentext
+- Nutzt IoC/Chi zur Längenwahl, budgetierte Kandidatensuche, Kurztext-Fallback, lokale Verfeinerung und Sprach-Scoring.
 - Optionaler `keyLength`-Hint erhöht Präzision und reduziert Suchraum.
-- `keyLength`-Hint wird auf die testbare Buchstabenlänge geclampet und konsistent in
-  Schlüssellängen-Kandidaten, Divisor-Erweiterung und Fallback-Gates genutzt.
-- Kurztext-Fallback nutzt staged Breiten `[12,18,26]` und läuft nur bei kurzen, sinnarmen Texten
-  innerhalb `maxKeyLength`.
-- Mit `keyLength`-Hint gilt `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`; ohne Hint bleibt
-  ein adaptives Budget aktiv.
-- Chi-Memo-Cache ist begrenzt; Sense-Metriken basieren u. a. auf `dictCoverageProxy`, `meaningfulTokenRatio`, `gibberishBigramRatio`.
-- Fallback-Score kombiniert Sprachscore, Dictionary-Boost und Sense-Bonus; ersetzt Basiskandidat nur
-  bei klarer Qualitätsverbesserung.
+- `keyLength`-Hint wird auf die testbare Buchstabenlänge geclampet und in Kandidaten/Gates konsistent genutzt.
+- Kurztext-Fallback nutzt staged Breiten `[12,18,26]` innerhalb `maxKeyLength`.
+- Mit `keyLength`-Hint gilt `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`; ohne Hint bleibt ein adaptives Budget aktiv.
 
 5. Playfair (`playfairCipher.js`)
-- Didaktische Normalisierung:
-  - `J -> I`
-  - nur `A-Z`
-  - Bigramme mit `X`-Filler bei Doppelzeichen
-  - `X`-Padding bei ungerader Länge
-- Entschlüsselung nutzt Postprocessing:
-  - `removeDidacticPadding` entfernt didaktische `X`-Einfügungen (`A X A`) und optionales End-`X`
-  - Segmentierung/Qualitätsanalyse läuft über `dictionaryScorer.analyzeTextQuality(...)`, damit Decrypt- und Crack-Ausgabe identisch getrennt werden
-  - Dafür wird vor `dictionaryScorer.js` das Offline-Sprachartifact `segmentLexiconData.js` geladen
-  - `PLAYFAIR_SEGMENT_WORDS` bleiben getrennt vom Phase-B-Keykorpus und dienen nur als zusätzliche Domain-Hints
-- Hybrid-Crack:
-  - Phase A: deterministische Key-Shortlist (inkl. `QUANT`, `FAC`)
-  - Phase B: erweitertes Key-Corpus aus Lexikonbegriffen + Präfix-/Stem-Varianten
-- Candidate-Scoring gewichtet primär `qualityScore` plus Segmentierungs-Confidence/Coverage.
-- Ambiguitäts-Gate (Default): `minConfidence = 11.2`, `minDelta = 1.8`, `minCoverage = 0.62`.
-- Fallback-Trigger, wenn mindestens eine Gate-Bedingung erfüllt ist.
+- Didaktische Normalisierung: `J -> I`, nur `A-Z`, Bigramme mit `X`-Filler, `X`-Padding.
+- Postprocessing entfernt didaktische `X`-Einfügungen; Segmentierung/Qualitätsanalyse läuft über `dictionaryScorer.analyzeTextQuality(...)` (Offline-Artifact `segmentLexiconData.js` davor laden).
+- Hybrid-Crack: Phase A (deterministische Key-Shortlist) + Phase B (Lexikon + Präfix-/Stem-Varianten).
+- Candidate-Scoring nutzt primär `qualityScore` plus Segmentierungs-Confidence/Coverage; Ambiguitäts-Gate triggert Fallback.
 - Für die UI wird zusätzlich der Rohtext inklusive Padding-`X` bereitgestellt.
 
 6. Leetspeak (`leetCipher.js`)
@@ -97,10 +73,17 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 9. Columnar Transposition (`columnarTranspositionCipher.js`)
 - Normalisiert auf `A-Z` und padde mit `X` bis zum nächsten Vielfachen der Spaltenanzahl.
 - Crack-Range: ohne Hint `2..min(6, letters.length)`, mit `keyLength` exakt diese Länge.
-- Fallback-Score nutzt Bigramme/Trigramme, Domain-Wort-Bonus und eine Penalty für interne `X`-Häufungen.
+- Fallback-Score nutzt Bigramme/Trigramme, Domain-Bonus, X-Penalty und kleinen Längen-Malus.
 - Shortlist-Rescoring über `dictionaryScorer.analyzeTextQuality(...)` liefert `displayText` und behält `rawText` (inkl. Padding).
 
-10. Hill (`hillCipher.js`)
+10. Positionscipher (`positionCipher.js`)
+- Normalisiert auf `A-Z` und padde mit `X` bis zum nächsten Vielfachen der Blocklänge.
+- Crack-Range: ohne Hint Blocklängen `2..min(6, letters.length)`, mit `keyLength` exakt diese Länge.
+- Fallback-Score nutzt Bigramme/Trigramme, Domain-Wort-Bonus und eine Penalty für interne `X`-Häufungen.
+- Shortlist-Rescoring über `dictionaryScorer.analyzeTextQuality(...)` liefert `displayText`, behält `rawText` (inkl. Padding) und nutzt:
+  - `confidence = qualityScore + coverage * 10 + meaningfulTokenRatio * 8 - internalXPenalty + domainBonus`
+
+11. Hill (`hillCipher.js`)
 - Normalisiert auf `A-Z` (inkl. Umlaut-Transliteration) und padde mit `X` bis zur Blockgröße.
 - Keyless‑Crack ist auf 2×2‑Matrizen begrenzt; Bruteforce prüft Werte `0..25` und nur invertierbare Matrizen.
 - Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)` auf dem Rohtext ohne End‑`X` und kombiniert:
@@ -108,13 +91,13 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - `coverage * 10` und `meaningfulTokenRatio * 7`
   - Domain‑Bonus über fachtypische Wörter
 - Fallback‑Score nutzt Bigramme/Trigramme, damit Crack ohne Scorer stabil bleibt.
-11. XOR (`xorCipher.js`)
+12. XOR (`xorCipher.js`)
 - Byte-basiert: UTF-8 kodieren, XOR mit ASCII-Key, Ausgabe als HEX uppercase.
 - Crack bewertet pro Schlüsselposition die Slice-Bytes und kombiniert Kandidaten per k‑best‑Enumeration (Score‑Summe), um die besten Schlüssel je Länge zu prüfen.
 - Ohne Hint werden die Top‑3 Längen per Base‑Score vorselektiert (bis `DEFAULT_MAX_KEY_LENGTH = 8`).
 - Primär wird auf A-Z/Leerzeichen/Ziffern optimiert, Fallback erweitert auf printable ASCII 0x20–0x7E.
 - Ranking via `dictionaryScorer.analyzeTextQuality(...)` mit kurzer Shortlist, sonst XOR-Fallback-Score.
-12. Base64 (`base64Cipher.js`)
+13. Base64 (`base64Cipher.js`)
 - Kein Schlüssel; Crack dekodiert deterministisch (kein echtes Key-Cracking).
 - Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)`; bei fehlendem Scorer greifen lokale Heuristiken.
 - `crack(...)` liefert `rawText` und nutzt segmentiertes `text` nur, wenn der Inhalt unverändert bleibt (z. B. keine Ziffern verloren gehen).
@@ -168,31 +151,14 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 
 5. Optionale Key-Kandidaten für Ciphers
 - `getKeyCandidates(options)` liefert deterministische Schlüsselvorschläge (z. B. für Playfair-Phase B).
-- Quellen:
-  - gemeinsame Seeds + sprachspezifische Seeds (`languageHints`)
-  - optionale `seedWords`
-  - Text-Token aus `options.text`
-  - lokales Lexikon je Sprache
-- Jede Quelle wird mit Präfix-/Stem-Varianten erweitert, damit Key-Korpora robust bleiben,
-  ohne eine teure Vollraumsuche starten zu müssen.
+- Quellen: Seeds (`languageHints`), optionale `seedWords`, Text-Token, lokales Lexikon.
+- Quellen werden mit Präfix-/Stem-Varianten erweitert, um robuste Key-Korpora ohne Vollraumsuche zu liefern.
 
 6. Shared-Textsegmentierung
-- Zentrale Funktion: `analyzeTextQuality(text, options?)` liefert:
-  - `rawText`, `displayText`, `displayTokens`, `scoreTokens`
-  - `coverage`, `meaningfulTokenRatio`, `unknownRatio`, `confidence`, `qualityScore`
-  - `averageTokenScore`, `plausibleOovRatio`, `supportedBridgeRatio`, `strongSegmentRatio`, `lexiconCoverage`
-  - `boundaryCount`, `weakBoundaryCount`, `unsupportedBridgeCount`, `shortTokenCount`
-- `segmentText(text, options?)` bleibt API-kompatibel und spiegelt intern `analyzeTextQuality(...)`:
-  - `segmentText(...).text === displayText`
-  - `segmentText(...).tokens === displayTokens`
-- Die Segmentierung nutzt DP auf zusammenhängenden `A-Z`-Runs mit:
-  - Exact-Matches aus `segmentLexiconData.js` (normalisierte Wörter aus `de_DE.dic` + `american-english`)
-  - harter Suffix-Whitelist statt generischem Trim-1..3-Stemming
-  - OOV-Wortmodell aus Trigramm-Likelihood, Vokalverhältnis, Bigrammratio, Konsonantenlauf und Wortlängen-Prior
-  - lokaler Re-Split-Phase für lange unbekannte Runs in bis zu 3 plausible Wörter
-  - Boundary-Qualität statt Split-Quantität (Boundary-Kosten, Short-Token-Skepsis, Bridge-Nachbarschaftsprüfung)
-- Generische Prefix-Matches sind bewusst kein primärer Segmentpfad mehr, weil sie Fehlgriffe wie `TEXTELH -> TEXT` oder `UNDENE -> UND` systematisch überbewerten.
-- `rankCandidates(...)` nutzt dieselbe Shared-Analyse wie Playfair, damit lokales Kandidatenranking und Playfair-Scoring konsistent bleiben.
+- `analyzeTextQuality(text, options?)` liefert `rawText`, `displayText`, Tokens, Coverage und `qualityScore` als zentrale Scoringbasis.
+- `segmentText(...)` bleibt API-kompatibel und spiegelt intern `analyzeTextQuality(...)`.
+- Segmentierung nutzt DP auf `A-Z`-Runs mit Lexikon (`segmentLexiconData.js`) und OOV-Modell; Boundary-Qualität zählt mehr als Split-Quantität.
+- `rankCandidates(...)` nutzt dieselbe Shared-Analyse wie Playfair, damit lokales Ranking und Playfair-Scoring konsistent bleiben.
 
 ## 4) UI-Darstellung
 
@@ -202,8 +168,6 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 2. Statusmeldungen
 - API verfügbar: Hinweis auf API-Nachbewertung.
 - API nicht verfügbar: Hinweis auf lokales Scoring.
-- 0% Abdeckung: zusätzlicher Hinweis.
-- Bei aktivem Bruteforce-Fallback kann der Endstatus Dauer + Kombinationsanzahl anzeigen.
 
 3. Cipher-Hinweise im Dropdown
 - Die Verschlüsselungsauswahl nutzt ein Custom-Dropdown.
@@ -217,7 +181,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 
 ## 6) Parser-Vorpriorisierung (Dateiimport)
 
-- Bei JS-Importen werden Kandidaten weiterhin über Key-Pfade gewichtet; reine Literal-Fallbacks bleiben neutral (`_literal`).
-- Bei CSV-Importen erfolgt die Erkennung der Textspalte über exakte Header-Tokens statt über Teilwort-Treffer.
-- Diese Vorpriorisierung betrifft nur die Textextraktion aus Dateien und ändert nicht das Cipher- oder Wörterbuch-Scoring.
+- Bei JS-Importen werden Kandidaten weiter über Key-Pfade gewichtet; reine Literal-Fallbacks bleiben neutral (`_literal`).
+- Bei CSV-Importen erfolgt die Textspaltenwahl über exakte Header-Tokens statt Teilwort-Treffern.
+- Die Vorpriorisierung betrifft nur die Textextraktion, nicht das Cipher- oder Wörterbuch-Scoring.
 

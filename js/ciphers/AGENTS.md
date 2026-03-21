@@ -77,6 +77,14 @@ Optionale Metadaten:
 - `crack(...)` testet ohne Hint Permutationen für Spaltenanzahlen `2..min(6, letters.length)`, mit `options.keyLength` genau diese Länge.
 - Shortlist-Rescoring läuft über `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt gepaddet.
 
+## Positionscipher (`js/ciphers/positionCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`), Schlüssel ist eine numerische Permutation `1..N`.
+- Normalisierung auf `A-Z`, Padding mit `X` bis Vielfaches der Blocklänge.
+- `decrypt(...)` liefert Rohtext inkl. Padding; Segmentierung erfolgt im UI‑Pfad.
+- `crack(...)` testet ohne Hint Permutationen für Blocklängen `2..min(6, letters.length)`, mit `options.keyLength` genau diese Länge.
+- Crack-Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)`; `rawText` bleibt gepaddet, `text` nutzt segmentierte Anzeige.
+
 ## Hill (`js/ciphers/hillCipher.js`)
 
 - Schlüsselbasiert (`supportsKey: true`), Schlüssel ist eine n×n‑Matrix (Ganzzahlen), modulo 26 normalisiert.

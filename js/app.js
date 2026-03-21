@@ -965,6 +965,8 @@
         "rail-fence",
         "scytale",
         "columnar-transposition",
+        // Positionscipher bleibt im UI segmentiert, damit Block-Padding nachvollziehbar bleibt.
+        "position-cipher",
         "hill",
         // Zahlen-Cäsar liefert Rohtext ohne Leerzeichen; Segmentierung bleibt im UI-Pfad.
         "number-caesar",
@@ -988,6 +990,7 @@
           trimTrailingX:
             cipher.id === "scytale" ||
             cipher.id === "columnar-transposition" ||
+            cipher.id === "position-cipher" ||
             cipher.id === "hill",
           forceUndSplit: cipher.id === "number-caesar",
         }).displayText;
@@ -1034,6 +1037,8 @@
         "rail-fence",
         "scytale",
         "columnar-transposition",
+        // Positionscipher zeigt Rohtext separat, damit Block-Padding sichtbar bleibt.
+        "position-cipher",
         "playfair",
         "hill",
         // Zahlen-Cäsar zeigt Rohtext separat, damit die Segmentierung nachvollziehbar bleibt.
@@ -1060,12 +1065,14 @@
             trimTrailingX:
               cipher.id === "scytale" ||
               cipher.id === "columnar-transposition" ||
+              cipher.id === "position-cipher" ||
               cipher.id === "hill",
             forceUndSplit: cipher.id === "number-caesar",
           }).displayText;
           if (
             cipher.id === "scytale" ||
             cipher.id === "columnar-transposition" ||
+            cipher.id === "position-cipher" ||
             cipher.id === "hill" ||
             !displayText ||
             displayText === rawText
