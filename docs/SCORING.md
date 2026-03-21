@@ -100,9 +100,13 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 13. Base64 (`base64Cipher.js`)
 - Kein Schlüssel; Crack dekodiert deterministisch (kein echtes Key-Cracking).
 - Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)`; bei fehlendem Scorer greifen lokale Heuristiken.
-- `crack(...)` liefert `rawText` und nutzt segmentiertes `text` nur, wenn der Inhalt unverändert bleibt (z. B. keine Ziffern verloren gehen).
+- `crack(...)` liefert `rawText`; segmentiertes `text` nur bei identischem Inhalt (z. B. keine Ziffern verloren gehen).
 
-14. ASCII (Dezimalcodes) (`asciiCipher.js`)
+14. HEX (UTF-8) (`hexCipher.js`)
+- Kein Schlüssel; Crack dekodiert deterministisch aus HEX.
+- Confidence via `dictionaryScorer.analyzeTextQuality(...)`; Segmentierung nur bei identischem Inhalt.
+
+15. ASCII (Dezimalcodes) (`asciiCipher.js`)
 - Kein Schlüssel; Crack dekodiert deterministisch aus whitespace-separierten Dezimalwerten `0..255`.
 - Confidence basiert auf `dictionaryScorer.analyzeTextQuality(...)` und kombiniert `qualityScore + coverage * 12 + meaningfulTokenRatio * 6`.
 - Ohne Dictionary-Scorer greift ein lokales Heuristik-Scoring.

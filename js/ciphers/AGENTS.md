@@ -101,6 +101,12 @@ Optionale Metadaten:
 - Ohne Hint werden die Top‑3 Längen per Base‑Score vorselektiert und Kandidaten k‑best nach Score‑Summe kombiniert (Top‑10 pro Position).
 - Crack liefert Klartext (`text`) plus HEX-Rohtext (`rawText`) für die UI-Ausgabe.
 
+## HEX (UTF-8) (`js/ciphers/hexCipher.js`)
+
+- Kein Schlüssel, Crack dekodiert.
+- Ausgabe ist uppercase-HEX; Decrypt toleriert Whitespace/Mixed-Case, Fehler bei ungerader Länge/invaliden Zeichen.
+- `crack(...)` liefert `rawText` und nutzt segmentiertes `text` nur bei unverändertem Inhalt.
+
 ## Base64 (`js/ciphers/base64Cipher.js`)
 
 - Kein Schlüssel (`supportsKey: false`), Crack dekodiert deterministisch.
