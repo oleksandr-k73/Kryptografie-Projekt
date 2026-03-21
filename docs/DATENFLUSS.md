@@ -60,32 +60,20 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - XOR zeigt Klartext im Hauptfeld und die normalisierte HEX-Eingabe im Rohfeld (ohne Segmentierung).
 
 7. Entschlüsseln ohne Schlüssel (Knacken)
-- Bei Vigenère setzt die UI vor `cipher.crack(...)` den Hinweis:
-  - `Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...`
-  - `runButton` wird deaktiviert
-  - `requestAnimationFrame` wird einmal abgewartet, damit der Hinweis sichtbar ist
+- Bei Vigenère: UI-Hinweis, `runButton` deaktiviert, `requestAnimationFrame` vor Crack.
  
 - `cipher.crack(text, options)` liefert besten Kandidaten und optional `candidates`.
 - Bei Playfair ergänzt `app.js` optional `dictionaryScorer.getKeyCandidates(...)` im
   `options`-Objekt, damit der Cipher eine deterministische Key-Shortlist für Phase B nutzen kann.
-- Rail Fence nutzt im UI dasselbe Schienen-Feld für beides:
-  - leer = knacken
-  - Zahl = direkt entschlüsseln
-- Skytale nutzt im UI dasselbe Umfang-Feld für beides:
-  - leer = knacken
-  - Zahl = direkt entschlüsseln
-- Playfair nutzt zusätzlich ``dictionaryScorer.analyzeTextQuality(...)`` für Ausgabe + Score;
-  derselbe Pfad läuft sowohl bei `decrypt(...)` mit bekanntem Schlüssel als auch im Crack-Scoring.
+- Rail Fence und Skytale nutzen im UI dasselbe Feld: leer = knacken, Zahl = direkt entschlüsseln.
+- Playfair nutzt `dictionaryScorer.analyzeTextQuality(...)` für Ausgabe + Score (Decrypt + Crack).
 - Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
 - XOR begrenzt die Keyless-Suche über eine Längen-Vorselektion (Top‑3 ohne Hint) und k‑best‑Enumeration, damit 1k‑Suiten performant bleiben.
+- Base64 und ASCII dekodieren deterministisch (kein echtes Key-Cracking) und liefern Confidence über `dictionaryScorer.analyzeTextQuality(...)`; segmentiert wird nur bei identischem sichtbarem Inhalt.
 - Weitere cipher-spezifische Crack-Details (Playfair-Phasen, Rail Fence/Skytale Segmentierung, Columnar/Hill-Shortlists) siehe `docs/SCORING.md`.
-- Im UI-Pfad setzt `app.js` für Vigenère standardmäßig `optimizations: true`.
-- Bei `keyLength`-Hint wird das Fallback-Budget direkt über `maxMsPerLength` begrenzt.
-- Ohne `keyLength`-Hint wird der Fallback zusätzlich über ein adaptives Größen-Gate begrenzt.
 - Die konkrete Gate-/Sense-Logik liegt in `docs/SCORING.md`; hier bleibt nur der Laufzeitpfad dokumentiert.
 - Kandidaten werden normalisiert und nach `confidence` sortiert.
 - Optionales Reranking via `dictionaryScorer.rankCandidates(...)`.
-- `rankCandidates(...)` nutzt dieselbe Shared-Textanalyse wie Playfair-Scoring.
 - Bester Kandidat wird als Ausgabe gesetzt.
 - Für Rail Fence, Skytale, Columnar Transposition, Positionscipher, Hill, Playfair und Zahlen‑Cäsar wird zusätzlich der Rohtext aus `rawText` angezeigt.
 - XOR zeigt Klartext + HEX-Rohtext, ohne Segmentierung des HEX-Outputs.
@@ -93,7 +81,6 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 8. Status und Hinweise
 - Bei geringer Wörterbuchabdeckung zeigt die UI Hinweise.
 - Bei Vigenère + kurzem Text wird ein Zuverlässigkeits-Hinweis ergänzt.
-- API-Verfügbarkeit beeinflusst den Kandidatenstatus-Text.
 - Hover/Fokus auf der Vigenère-Option im Custom-Dropdown zeigt einen Alias-Hinweis (Tooltip).
 - Nach dem Crack wird `runButton` wieder aktiviert.
 - Falls Fallback lief, kann der Endstatus Bruteforce-Info enthalten.

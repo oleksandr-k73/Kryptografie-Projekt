@@ -109,6 +109,14 @@ Optionale Metadaten:
 - `crack(...)` liefert `rawText` (vollständig decodiert) und nutzt `text` nur segmentiert, wenn der Inhalt erhalten bleibt.
 - Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)` plus Fallback.
 
+## ASCII (Dezimalcodes) (`js/ciphers/asciiCipher.js`)
+
+- Kein Schlüssel (`supportsKey: false`), Crack dekodiert deterministisch.
+- Encrypt kodiert jedes Zeichen als ASCII-Dezimalwert (0–255), getrennt durch Leerzeichen.
+- Decrypt akzeptiert nur whitespace-separierte Dezimalzahlen `0..255`, sonst klare Fehlermeldung.
+- `crack(...)` liefert `rawText` (vollständig decodiert) und nutzt segmentiertes `text` nur, wenn der sichtbare Inhalt erhalten bleibt.
+- Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)` plus Fallback.
+
 ## Vigenère (`js/ciphers/vigenereCipher.js`)
 
 - Schlüsselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.

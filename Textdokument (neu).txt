@@ -885,7 +885,8 @@ Abgabeformat:
     - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
     - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben implementiert wird.
 ---
-Plane einen Update, bei dem Binärcode (8-Bit) implementiert wird.
+(für eine volle Implementierung muss zuerst die andere App gefixt werden)
+Plane einen Update, bei dem RSA-Mini-Cipher (mit Parameter p, q, n, e, d) implementiert wird.
 
 Anforderungen an den Plan: 
 - Alle Implementierungen müssen fehlerfrei und optimiert sein.
@@ -897,7 +898,7 @@ Anforderungen an den Plan:
 
 Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
 
-Es wird auch eine Datei mit Beispieltext angehängt (Lösung: UNSCHAERFE IM ORT).
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung:).
 
 Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans).
 

@@ -33,7 +33,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Optionaler `keyLength`-Hint erhöht Präzision und reduziert Suchraum.
 - `keyLength`-Hint wird auf die testbare Buchstabenlänge geclampet und in Kandidaten/Gates konsistent genutzt.
 - Kurztext-Fallback nutzt staged Breiten `[12,18,26]` innerhalb `maxKeyLength`.
-- Mit `keyLength`-Hint gilt `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`; ohne Hint bleibt ein adaptives Budget aktiv.
+- Budget: mit `keyLength` gilt `maxElapsedMs = min(remainingTotalMs, maxMsPerLength)`, ohne Hint adaptiv.
 
 5. Playfair (`playfairCipher.js`)
 - Didaktische Normalisierung: `J -> I`, nur `A-Z`, Bigramme mit `X`-Filler, `X`-Padding.
@@ -102,6 +102,12 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)`; bei fehlendem Scorer greifen lokale Heuristiken.
 - `crack(...)` liefert `rawText` und nutzt segmentiertes `text` nur, wenn der Inhalt unverändert bleibt (z. B. keine Ziffern verloren gehen).
 
+14. ASCII (Dezimalcodes) (`asciiCipher.js`)
+- Kein Schlüssel; Crack dekodiert deterministisch aus whitespace-separierten Dezimalwerten `0..255`.
+- Confidence basiert auf `dictionaryScorer.analyzeTextQuality(...)` und kombiniert `qualityScore + coverage * 12 + meaningfulTokenRatio * 6`.
+- Ohne Dictionary-Scorer greift ein lokales Heuristik-Scoring.
+- Segmentierung wird nur übernommen, wenn der sichtbare Inhalt unverändert bleibt (Whitespace-neutraler Vergleich).
+
 ## 2) Kandidatenfluss in `app.js`
 
 1. `crack(...)`-Ergebnis wird normalisiert:
@@ -128,7 +134,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 
 2. Validierung
 - API-Prüfung über `dictionaryapi.dev` je Sprache (`de`, `en`) mit Timeout.
-- Reachability-Probe läuft über alle `languageHints` (Fallback `en`) statt nur über den ersten Eintrag.
+- Reachability-Probe läuft über alle `languageHints` (Fallback `en`).
 - Lokales Lexikon als Fallback und Ergänzung.
 - Cache auf Wort-/Sprachpaar-Ebene.
 
@@ -164,10 +170,9 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 
 1. Kandidatenliste
 - Zeigt Schlüssel (wenn vorhanden), Score und ggf. Wörterbuchabdeckung.
- 
+
 2. Statusmeldungen
-- API verfügbar: Hinweis auf API-Nachbewertung.
-- API nicht verfügbar: Hinweis auf lokales Scoring.
+- Hinweise auf API-Nachbewertung bzw. lokales Scoring.
 
 3. Cipher-Hinweise im Dropdown
 - Die Verschlüsselungsauswahl nutzt ein Custom-Dropdown.
