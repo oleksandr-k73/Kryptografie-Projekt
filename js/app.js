@@ -580,6 +580,21 @@
     setRawOutput(rawText);
   }
 
+  function applyUndBridgeFallback(rawText, displayText) {
+    const raw = String(rawText || "");
+    if (!raw.includes("UND")) {
+      return displayText;
+    }
+    if (displayText && displayText.includes(" UND ")) {
+      return displayText;
+    }
+
+    // Zahlen-Cäsar liefert reine Buchstabenketten; ein gezielter UND-Split erhöht die Lesbarkeit,
+    // ohne kurze Wörter wie HUND/GRUND unabsichtlich zu zerlegen.
+    const forced = raw.replace(/([A-Z]{3,})UND([A-Z]{3,})/g, "$1 UND $2");
+    return forced === raw ? displayText : forced;
+  }
+
   function segmentRawText(rawText, sourceText, options) {
     const opts = options && typeof options === "object" ? options : {};
     const trimmedRaw =
@@ -587,7 +602,10 @@
     const scorer = core.dictionaryScorer;
     if (!scorer || typeof scorer.analyzeTextQuality !== "function") {
       return {
-        displayText: trimmedRaw,
+        displayText:
+          opts.forceUndSplit === true
+            ? applyUndBridgeFallback(trimmedRaw, trimmedRaw)
+            : trimmedRaw,
         rawText: rawText,
       };
     }
@@ -602,13 +620,19 @@
           ? analysis.displayText.trim()
           : trimmedRaw;
       return {
-        displayText: displayText || trimmedRaw,
+        displayText:
+          opts.forceUndSplit === true
+            ? applyUndBridgeFallback(trimmedRaw, displayText || trimmedRaw)
+            : displayText || trimmedRaw,
         rawText: rawText,
       };
     } catch (_error) {
       // Segmentierungsfehler sollen die Roh-Ausgabe nie blockieren.
       return {
-        displayText: trimmedRaw,
+        displayText:
+          opts.forceUndSplit === true
+            ? applyUndBridgeFallback(trimmedRaw, trimmedRaw)
+            : trimmedRaw,
         rawText: rawText,
       };
     }
@@ -942,6 +966,8 @@
         "scytale",
         "columnar-transposition",
         "hill",
+        // Zahlen-Cäsar liefert Rohtext ohne Leerzeichen; Segmentierung bleibt im UI-Pfad.
+        "number-caesar",
       ]);
       let decrypted = cipher.decrypt(text, key);
       let rawText = null;
@@ -963,6 +989,7 @@
             cipher.id === "scytale" ||
             cipher.id === "columnar-transposition" ||
             cipher.id === "hill",
+          forceUndSplit: cipher.id === "number-caesar",
         }).displayText;
       }
 
@@ -1009,6 +1036,8 @@
         "columnar-transposition",
         "playfair",
         "hill",
+        // Zahlen-Cäsar zeigt Rohtext separat, damit die Segmentierung nachvollziehbar bleibt.
+        "number-caesar",
       ]);
       let displayText = bestCandidate.text;
       let rawText = null;
@@ -1032,6 +1061,7 @@
               cipher.id === "scytale" ||
               cipher.id === "columnar-transposition" ||
               cipher.id === "hill",
+            forceUndSplit: cipher.id === "number-caesar",
           }).displayText;
           if (
             cipher.id === "scytale" ||

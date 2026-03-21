@@ -27,6 +27,14 @@ Optionale Metadaten:
 - `crack(...)` testet alle 26 Schlüssel.
 - Liefert bestes Ergebnis plus `candidates` (Top-Auswahl).
 
+## Zahlen‑Cäsar (`js/ciphers/numberCaesarCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`), Schlüssel als ganze Zahl (mod 26).
+- Encrypt normalisiert auf `A-Z` (inkl. Umlaut-Transliteration), verschiebt per Cäsar und kodiert strikt als A1Z26 mit `-`-Separatoren.
+- Decrypt akzeptiert nur Zahlen `1..26` mit `-`/Whitespace-Separatoren; Rückgabe ist Rohtext ohne Leerzeichen.
+- `crack(...)` dekodiert A1Z26 zu Buchstaben, testet 26 Shifts mit der Cäsar-Heuristik und liefert `text`, `rawText`, `key`, `confidence` plus Top‑Kandidaten.
+- Segmentierung und Rohtextanzeige laufen im UI‑Pfad über `app.js`, damit Crack/Decrypt konsistent sind.
+
 ## Affine (`js/ciphers/affineCipher.js`)
 
 - Schlüsselbasiert (`supportsKey: true`) mit `(a,b)`-Paar.
@@ -82,6 +90,7 @@ Optionale Metadaten:
 - Schlüsselbasiert (`supportsKey: true`), ASCII 0x00–0x7F, nicht leer.
 - Ausgabe ist HEX uppercase ohne Separatoren; Entschlüsselung akzeptiert HEX mit Whitespace.
 - Crack nutzt optionalen Längen-Hint (`supportsCrackLengthHint: true`) und printable ASCII 0x20–0x7E.
+- Ohne Hint werden die Top‑3 Längen per Base‑Score vorselektiert und Kandidaten k‑best nach Score‑Summe kombiniert (Top‑10 pro Position).
 - Crack liefert Klartext (`text`) plus HEX-Rohtext (`rawText`) für die UI-Ausgabe.
 
 ## Base64 (`js/ciphers/base64Cipher.js`)
@@ -89,7 +98,8 @@ Optionale Metadaten:
 - Kein Schlüssel (`supportsKey: false`), Crack dekodiert deterministisch.
 - UTF-8-sicheres Encode/Decode mit eigener Base64-Logik (kein `btoa/atob`).
 - Eingaben sind tolerant: Whitespace wird entfernt, URL-safe (`-`, `_`) wird akzeptiert, fehlendes Padding ergänzt.
-- `crack(...)` liefert `{ key: null, text, confidence }`, Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)` plus Fallback.
+- `crack(...)` liefert `rawText` (vollständig decodiert) und nutzt `text` nur segmentiert, wenn der Inhalt erhalten bleibt.
+- Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)` plus Fallback.
 
 ## Vigenère (`js/ciphers/vigenereCipher.js`)
 

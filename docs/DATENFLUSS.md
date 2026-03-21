@@ -55,7 +55,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 
 6. Entschlüsseln mit bekanntem Schlüssel
 - `cipher.decrypt(text, key)` wird aufgerufen.
-- Ergebnis landet segmentiert in `outputText`; bei Rail Fence, Skytale, Columnar Transposition, Hill und Playfair wird zusätzlich der Rohtext (ungegliedert) angezeigt.
+- Ergebnis landet segmentiert in `outputText`; bei Rail Fence, Skytale, Columnar Transposition, Hill, Playfair und Zahlen‑Cäsar wird zusätzlich der Rohtext (ungegliedert) angezeigt.
 - Kandidatenbereich wird ausgeblendet.
 - XOR zeigt Klartext im Hauptfeld und die normalisierte HEX-Eingabe im Rohfeld (ohne Segmentierung).
 
@@ -77,6 +77,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Playfair nutzt zusätzlich ``dictionaryScorer.analyzeTextQuality(...)`` für Ausgabe + Score;
   derselbe Pfad läuft sowohl bei `decrypt(...)` mit bekanntem Schlüssel als auch im Crack-Scoring.
 - Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
+- XOR begrenzt die Keyless-Suche über eine Längen-Vorselektion (Top‑3 ohne Hint) und k‑best‑Enumeration, damit 1k‑Suiten performant bleiben.
 - Weitere cipher-spezifische Crack-Details (Playfair-Phasen, Rail Fence/Skytale Segmentierung, Columnar/Hill-Shortlists) siehe `docs/SCORING.md`.
 - Im UI-Pfad setzt `app.js` für Vigenère standardmäßig `optimizations: true`.
 - Bei `keyLength`-Hint wird das Fallback-Budget direkt über `maxMsPerLength` begrenzt.
@@ -86,7 +87,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Optionales Reranking via `dictionaryScorer.rankCandidates(...)`.
 - `rankCandidates(...)` nutzt dieselbe Shared-Textanalyse wie Playfair-Scoring.
 - Bester Kandidat wird als Ausgabe gesetzt.
-- Für Rail Fence, Skytale, Columnar Transposition, Hill und Playfair wird zusätzlich der Rohtext aus `rawText` angezeigt.
+- Für Rail Fence, Skytale, Columnar Transposition, Hill, Playfair und Zahlen‑Cäsar wird zusätzlich der Rohtext aus `rawText` angezeigt.
 - XOR zeigt Klartext + HEX-Rohtext, ohne Segmentierung des HEX-Outputs.
 
 8. Status und Hinweise

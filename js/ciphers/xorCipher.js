@@ -7,9 +7,11 @@
   );
   const KEY_BYTES_UPPER = Array.from({ length: 26 }, (_value, index) => 0x41 + index);
   const STRICT_ALLOWED = Array.from({ length: 256 }, () => false);
-  const ANALYSIS_SHORTLIST_SIZE = 120;
-  const PER_LENGTH_ANALYSIS = 12;
-  const STRICT_POSITION_CANDIDATE_CAP = 26;
+  const ANALYSIS_SHORTLIST_SIZE = 96;
+  const PER_LENGTH_ANALYSIS = 16;
+  const STRICT_POSITION_CANDIDATE_CAP = 10;
+  const MAX_COMBO_CANDIDATES = 4000;
+  const UNHINTED_LENGTHS = 3;
   const LETTER_FREQUENCY = [
     0.0817, 0.0149, 0.0278, 0.0425, 0.127, 0.0223, 0.0202, 0.0609, 0.0697,
     0.0015, 0.0077, 0.0403, 0.0241, 0.0675, 0.0751, 0.0193, 0.001, 0.0599,
@@ -170,6 +172,7 @@
     return -5.5;
   }
 
+
   function buildScoreTable(scoreFn) {
     // Vorberechnete Tabellen vermeiden Funktionsaufrufe in den inneren Crack-Loops.
     const table = new Array(256);
@@ -199,10 +202,13 @@
       for (const keyByte of keyAlphabet) {
         let score = 0;
         let allowed = true;
+        let allowedCount = 0;
 
         for (let index = position; index < cipherBytes.length; index += keyLength) {
           const plainByte = cipherBytes[index] ^ keyByte;
-          if (!allowedTable[plainByte]) {
+          if (allowedTable[plainByte]) {
+            allowedCount += 1;
+          } else {
             allowed = false;
             break;
           }
@@ -210,7 +216,7 @@
         }
 
         if (allowed) {
-          candidates.push({ keyByte, score });
+          candidates.push({ keyByte, score, allowedCount });
         }
       }
 
@@ -218,11 +224,15 @@
         // Falls der strikte Filter greift, erweitern wir pro Position, damit Crack nicht blockiert.
         for (const keyByte of keyAlphabet) {
           let score = 0;
+          let allowedCount = 0;
           for (let index = position; index < cipherBytes.length; index += keyLength) {
             const plainByte = cipherBytes[index] ^ keyByte;
+            if (allowedTable[plainByte]) {
+              allowedCount += 1;
+            }
             score += scoreTable[plainByte];
           }
-          candidates.push({ keyByte, score });
+          candidates.push({ keyByte, score, allowedCount });
         }
       }
 
@@ -232,6 +242,9 @@
         Number.isFinite(candidateCap) && candidateCap > 0
           ? candidates.slice(0, candidateCap)
           : candidates;
+      for (let index = 0; index < capped.length; index += 1) {
+        capped[index].rankScore = capped.length - index;
+      }
       baseScore += capped[0]?.score || 0;
       positionCandidates.push(capped);
     }
@@ -239,26 +252,111 @@
     return { positionCandidates, baseScore };
   }
 
-  function beamCombineCandidates(positionCandidates, beamWidth) {
-    let beam = [{ keyBytes: [], score: 0 }];
-
-    for (const candidates of positionCandidates) {
-      const next = [];
-      for (const state of beam) {
-        for (const candidate of candidates) {
-          next.push({
-            keyBytes: [...state.keyBytes, candidate.keyByte],
-            score: state.score + candidate.score,
-          });
-        }
-      }
-
-      next.sort((a, b) => b.score - a.score);
-      // Beam-Limit schuetzt vor kombinatorischer Explosion bei laengeren Schluesseln.
-      beam = next.slice(0, beamWidth);
+  class MaxHeap {
+    constructor() {
+      this.items = [];
     }
 
-    return beam;
+    size() {
+      return this.items.length;
+    }
+
+    push(item) {
+      this.items.push(item);
+      this.bubbleUp(this.items.length - 1);
+    }
+
+    pop() {
+      if (this.items.length === 0) {
+        return null;
+      }
+      if (this.items.length === 1) {
+        return this.items.pop();
+      }
+      const top = this.items[0];
+      this.items[0] = this.items.pop();
+      this.bubbleDown(0);
+      return top;
+    }
+
+    bubbleUp(index) {
+      let current = index;
+      while (current > 0) {
+        const parent = Math.floor((current - 1) / 2);
+        if (this.items[parent].score >= this.items[current].score) {
+          break;
+        }
+        [this.items[parent], this.items[current]] = [this.items[current], this.items[parent]];
+        current = parent;
+      }
+    }
+
+    bubbleDown(index) {
+      let current = index;
+      const last = this.items.length - 1;
+      while (true) {
+        const left = current * 2 + 1;
+        const right = left + 1;
+        let largest = current;
+        if (left <= last && this.items[left].score > this.items[largest].score) {
+          largest = left;
+        }
+        if (right <= last && this.items[right].score > this.items[largest].score) {
+          largest = right;
+        }
+        if (largest === current) {
+          break;
+        }
+        [this.items[current], this.items[largest]] = [this.items[largest], this.items[current]];
+        current = largest;
+      }
+    }
+  }
+
+  function enumerateByScoreSum(positionCandidates, maxCandidates, scoreField = "score") {
+    if (!positionCandidates.length) {
+      return [];
+    }
+    const limit = Number.isFinite(maxCandidates) && maxCandidates > 0 ? maxCandidates : Infinity;
+    const startIndices = new Array(positionCandidates.length).fill(0);
+    const startScore = positionCandidates.reduce(
+      (sum, candidates) => sum + (candidates[0] ? candidates[0][scoreField] : 0),
+      0
+    );
+    const heap = new MaxHeap();
+    // Priority-Queue liefert die besten Kombos zuerst und spart die komplette Kombinationsliste.
+    heap.push({ indices: startIndices, score: startScore });
+    const visited = new Set([startIndices.join("|")]);
+    const results = [];
+
+    while (heap.size() > 0 && results.length < limit) {
+      const current = heap.pop();
+      if (!current) {
+        break;
+      }
+      results.push(current);
+
+      for (let dim = 0; dim < positionCandidates.length; dim += 1) {
+        const nextIndex = current.indices[dim] + 1;
+        if (nextIndex >= positionCandidates[dim].length) {
+          continue;
+        }
+        const nextIndices = current.indices.slice();
+        nextIndices[dim] = nextIndex;
+        const key = nextIndices.join("|");
+        if (visited.has(key)) {
+          continue;
+        }
+        visited.add(key);
+        const nextScore =
+          current.score -
+          positionCandidates[dim][current.indices[dim]][scoreField] +
+          positionCandidates[dim][nextIndex][scoreField];
+        heap.push({ indices: nextIndices, score: nextScore });
+      }
+    }
+
+    return results;
   }
 
 
@@ -474,6 +572,8 @@
       }
 
       const scorer = getDictionaryScorer();
+      // Accuracy-first: der Dictionary-Scorer bleibt aktiv, ausser er wird explizit deaktiviert.
+      const useDictionaryScorer = !(options && options.useDictionaryScorer === false);
       const maxLength = Math.min(DEFAULT_MAX_KEY_LENGTH, cipherBytes.length);
       const hintedLength = Number(options && options.keyLength);
       const keyLengths = [];
@@ -492,22 +592,23 @@
         scoreTable,
         allowedTable,
         candidateCap,
-        beamWidth,
-        lengthCap
+        maxCandidates,
+        lengthCap,
+        scorerAvailable
       ) => {
         // Kandidaten werden laengenweise gebaut, weil XOR-Slices pro Schluessellaenge getrennt zu bewerten sind.
         const candidates = [];
-      const lengthInfos = keyLengths.map((keyLength) => ({
-        keyLength,
-        ...buildPositionCandidates(
-          cipherBytes,
+        const lengthInfos = keyLengths.map((keyLength) => ({
           keyLength,
-          keyAlphabet,
-          scoreTable,
-          allowedTable,
-          candidateCap
-        ),
-      }));
+          ...buildPositionCandidates(
+            cipherBytes,
+            keyLength,
+            keyAlphabet,
+            scoreTable,
+            allowedTable,
+            candidateCap
+          ),
+        }));
 
         let selectedLengths = lengthInfos;
         if (!Number.isFinite(hintedLength)) {
@@ -520,82 +621,137 @@
         }
 
         for (const info of selectedLengths) {
-          const beam = beamCombineCandidates(info.positionCandidates, beamWidth);
+          // k-best Enumeration liefert die besten Score-Summen ohne Beam-Bias pro Position.
+          const combos = enumerateByScoreSum(info.positionCandidates, maxCandidates);
 
-          for (const entry of beam) {
-            const keyBytes = Uint8Array.from(entry.keyBytes);
-            const plainBytes = xorBytes(cipherBytes, keyBytes);
-            const plainText = decodeUtf8(plainBytes);
-            const key = String.fromCharCode(...keyBytes);
+          for (const entry of combos) {
+            // Vorberechnete Allowed-Counts sparen pro Kandidat den Voll-Scan ueber alle Bytes.
             let allowedCount = 0;
-            for (const byte of plainBytes) {
-              if (STRICT_ALLOWED[byte]) {
-                allowedCount += 1;
-              }
+            let analysisScoreSum = 0;
+            for (let index = 0; index < entry.indices.length; index += 1) {
+              const candidate = info.positionCandidates[index][entry.indices[index]];
+              allowedCount += candidate.allowedCount;
+              analysisScoreSum += candidate.score;
             }
-            const allowedRatio = plainBytes.length > 0 ? allowedCount / plainBytes.length : 0;
-            const fallbackConfidence =
-              fallbackScore(plainText) +
-              entry.score * 0.01 +
-              allowedRatio * 6 -
-              info.keyLength * 0.2;
+            const allowedRatio = cipherBytes.length > 0 ? allowedCount / cipherBytes.length : 0;
 
-            candidates.push({
-              key,
-              text: plainText,
-              rawText: normalizedHex,
-              confidence: fallbackConfidence,
-              _analysisBase: entry.score,
-              _allowedRatio: allowedRatio,
-              _keyLength: info.keyLength,
-            });
+            if (scorerAvailable) {
+              // Ohne Decoder sparen wir massiv Zeit; echte Texte werden erst in der Shortlist gebaut.
+              candidates.push({
+                _indices: entry.indices,
+                _positionCandidates: info.positionCandidates,
+                confidence: analysisScoreSum * 0.01 + allowedRatio * 6,
+                _analysisBase: analysisScoreSum,
+                _allowedRatio: allowedRatio,
+                _keyLength: info.keyLength,
+              });
+            } else {
+              const keyBytes = new Uint8Array(info.positionCandidates.length);
+              for (let index = 0; index < entry.indices.length; index += 1) {
+                keyBytes[index] = info.positionCandidates[index][entry.indices[index]].keyByte;
+              }
+              const plainBytes = xorBytes(cipherBytes, keyBytes);
+              const plainText = decodeUtf8(plainBytes);
+              const key = String.fromCharCode(...keyBytes);
+              const fallbackConfidence =
+                fallbackScore(plainText) + analysisScoreSum * 0.01 + allowedRatio * 6;
+
+              candidates.push({
+                key,
+                text: plainText,
+                rawText: normalizedHex,
+                confidence: fallbackConfidence,
+                _analysisBase: analysisScoreSum,
+                _allowedRatio: allowedRatio,
+                _keyLength: info.keyLength,
+              });
+            }
           }
         }
 
         return candidates;
       };
 
+      const scorerAvailable =
+        useDictionaryScorer && !!(scorer && typeof scorer.analyzeTextQuality === "function");
       let candidates = buildCandidatesForLengths(
         KEY_BYTES_UPPER,
         STRICT_SCORE_TABLE,
         STRICT_ALLOWED,
         STRICT_POSITION_CANDIDATE_CAP,
-        // Unhinted prueft alle Laengen mit kleinem Beam, um Genauigkeit + Laufzeit zu balancieren.
-        Number.isFinite(hintedLength) ? 300 : 70,
-        Number.isFinite(hintedLength) ? 1 : keyLengths.length
+        MAX_COMBO_CANDIDATES,
+        Number.isFinite(hintedLength) ? 1 : UNHINTED_LENGTHS,
+        scorerAvailable
       );
 
       candidates.sort((a, b) => b.confidence - a.confidence);
 
-      if (scorer && typeof scorer.analyzeTextQuality === "function") {
+      if (scorerAvailable) {
+        const analysisShortlistLimit = ANALYSIS_SHORTLIST_SIZE;
+        const perLengthLimit = PER_LENGTH_ANALYSIS;
+
+        // Fallback-Score fuer alle Top-K liefert ein belastbares Ranking, bevor der Scorer greift.
+        for (const candidate of candidates) {
+          const keyBytes = new Uint8Array(candidate._indices.length);
+          for (let index = 0; index < candidate._indices.length; index += 1) {
+            keyBytes[index] =
+              candidate._positionCandidates[index][candidate._indices[index]].keyByte;
+          }
+          const plainBytes = xorBytes(cipherBytes, keyBytes);
+          const plainText = decodeUtf8(plainBytes);
+          candidate._plainText = plainText;
+          candidate.confidence =
+            fallbackScore(plainText) +
+            candidate._analysisBase * 0.01 +
+            candidate._allowedRatio * 6;
+        }
+        candidates.sort((a, b) => b.confidence - a.confidence);
+
         // Nur die Shortlist wird tief bewertet, damit der Crack-Pfad auch bei 1k Tests performant bleibt.
         const shortlist = [];
         const perLengthCounts = new Map();
         for (const candidate of candidates) {
-          if (shortlist.length >= ANALYSIS_SHORTLIST_SIZE) {
+          if (shortlist.length >= analysisShortlistLimit) {
             break;
           }
           const keyLength = candidate._keyLength;
           const used = perLengthCounts.get(keyLength) || 0;
-          if (used >= PER_LENGTH_ANALYSIS) {
+          if (used >= perLengthLimit) {
             continue;
           }
           perLengthCounts.set(keyLength, used + 1);
           shortlist.push(candidate);
         }
         for (const candidate of shortlist) {
+          const keyBytes = new Uint8Array(candidate._indices.length);
+          for (let index = 0; index < candidate._indices.length; index += 1) {
+            keyBytes[index] =
+              candidate._positionCandidates[index][candidate._indices[index]].keyByte;
+          }
+          const plainText =
+            typeof candidate._plainText === "string"
+              ? candidate._plainText
+              : decodeUtf8(xorBytes(cipherBytes, keyBytes));
           const analyzed = analyzeCandidate(
-            candidate.text,
+            plainText,
             candidate._analysisBase,
             candidate._allowedRatio
           );
           candidate.confidence = analyzed.confidence;
+          candidate.text = analyzed.text;
+          candidate.key = String.fromCharCode(...keyBytes);
+          candidate.rawText = normalizedHex;
         }
+        candidates = shortlist;
         candidates.sort((a, b) => b.confidence - a.confidence);
       }
 
       for (const candidate of candidates) {
         // Hilfsfeld darf nicht in der UI landen, damit Kandidaten sauber bleiben.
+        delete candidate.keyBytes;
+        delete candidate._indices;
+        delete candidate._positionCandidates;
+        delete candidate._plainText;
         delete candidate._analysisBase;
         delete candidate._allowedRatio;
         delete candidate._keyLength;

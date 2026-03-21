@@ -18,12 +18,17 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - Vokal- und Leerzeichenverhältnis
 - `crack(...)` testet alle 26 Schlüssel und liefert Top-Kandidaten.
 
-2. Affine (`affineCipher.js`)
+2. Zahlen‑Cäsar (`numberCaesarCipher.js`)
+- Dekodiert A1Z26 zu A‑Z und testet 26 Verschiebungen wie der klassische Cäsar.
+- Sprach-Scoring entspricht exakt dem Cäsar-Verfahren (Wörter, Bi-/Trigramme, Chi-Quadrat, Vokal-/Leerzeichenverhältnis).
+- `rawText` bleibt ohne Leerzeichen; die Segmentierung passiert im UI‑Pfad.
+
+3. Affine (`affineCipher.js`)
 - Alphabet ist editierbar (Standard `A-Z`), Modulo `m = alphabet.length`.
 - `crack(...)` testet alle `a` mit `gcd(a,m)=1` und alle `b` in `0..m-1`.
 - Sprach-Scoring und Kandidatenranking sind identisch zum Cäsar-Verfahren.
 
-3. Vigenère (`vigenereCipher.js`)
+4. Vigenère (`vigenereCipher.js`)
 - Nutzt:
   - Schlüssellängen-Kandidaten (IoC-basiert)
   - Spaltenweise Shift-Rangfolge (Chi-Quadrat)
@@ -42,7 +47,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Fallback-Score kombiniert Sprachscore, Dictionary-Boost und Sense-Bonus; ersetzt Basiskandidat nur
   bei klarer Qualitätsverbesserung.
 
-4. Playfair (`playfairCipher.js`)
+5. Playfair (`playfairCipher.js`)
 - Didaktische Normalisierung:
   - `J -> I`
   - nur `A-Z`
@@ -61,13 +66,13 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Fallback-Trigger, wenn mindestens eine Gate-Bedingung erfüllt ist.
 - Für die UI wird zusätzlich der Rohtext inklusive Padding-`X` bereitgestellt.
 
-5. Leetspeak (`leetCipher.js`)
+6. Leetspeak (`leetCipher.js`)
 - Beam-Search für Rückübersetzungen.
 - Übergangs-Scoring während der Sequenzbildung.
 - Sprach-Scoring auf erzeugtem Klartext.
 - Liefert primär den besten Kandidaten.
 
-6. Rail Fence (`railFenceCipher.js`)
+7. Rail Fence (`railFenceCipher.js`)
 - Schlüsselbasiert (`supportsKey: true`), Schlüssel ist die Schienenanzahl als ganze Zahl `>= 2`.
 - Im UI nutzt Rail Fence dasselbe Feld als Entschlüsselungswert oder als Trigger für den Crack-Pfad.
 - Ver- und Entschlüsselung laufen über den kompletten Zeichenstrom, nicht nur über Buchstaben.
@@ -80,7 +85,7 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - `displayText` wird nur im Crack-Pfad als Ausgabe genutzt; `decrypt(...)` liefert Rohtext, auch wenn Segmentierung möglich wäre.
 - Im UI wird beim Entschlüsseln der Rohtext segmentiert angezeigt; der Rohtext bleibt separat sichtbar.
 
-7. Skytale (`scytaleCipher.js`)
+8. Skytale (`scytaleCipher.js`)
 - Normalisiert auf `A-Z`, padde mit `X` bis zum nächsten Vielfachen des Umfangs.
 - Crack-Range: ohne Hint `2..min(12, letters.length)`, mit Hint exakt diese Zahl.
 - Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)` und liefert:
@@ -89,13 +94,13 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - `rawText` als gepaddeten Rohtext
 - Scoring trimmt End-`X`, bewertet bei geringer Coverage `displayText` erneut und penalisiert interne `X`-Häufungen; Domain-Wörter erhalten einen Bonus.
 
-8. Columnar Transposition (`columnarTranspositionCipher.js`)
+9. Columnar Transposition (`columnarTranspositionCipher.js`)
 - Normalisiert auf `A-Z` und padde mit `X` bis zum nächsten Vielfachen der Spaltenanzahl.
 - Crack-Range: ohne Hint `2..min(6, letters.length)`, mit `keyLength` exakt diese Länge.
 - Fallback-Score nutzt Bigramme/Trigramme, Domain-Wort-Bonus und eine Penalty für interne `X`-Häufungen.
 - Shortlist-Rescoring über `dictionaryScorer.analyzeTextQuality(...)` liefert `displayText` und behält `rawText` (inkl. Padding).
 
-9. Hill (`hillCipher.js`)
+10. Hill (`hillCipher.js`)
 - Normalisiert auf `A-Z` (inkl. Umlaut-Transliteration) und padde mit `X` bis zur Blockgröße.
 - Keyless‑Crack ist auf 2×2‑Matrizen begrenzt; Bruteforce prüft Werte `0..25` und nur invertierbare Matrizen.
 - Scoring nutzt `dictionaryScorer.analyzeTextQuality(...)` auf dem Rohtext ohne End‑`X` und kombiniert:
@@ -103,14 +108,16 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
   - `coverage * 10` und `meaningfulTokenRatio * 7`
   - Domain‑Bonus über fachtypische Wörter
 - Fallback‑Score nutzt Bigramme/Trigramme, damit Crack ohne Scorer stabil bleibt.
-10. XOR (`xorCipher.js`)
+11. XOR (`xorCipher.js`)
 - Byte-basiert: UTF-8 kodieren, XOR mit ASCII-Key, Ausgabe als HEX uppercase.
-- Crack bewertet pro Schlüsselposition die Slice-Bytes, leitet daraus den Schlüssel je Länge ab und nutzt optional einen Längen-Hint; ohne Hint bis `DEFAULT_MAX_KEY_LENGTH = 8` (experimentell bestimmt).
+- Crack bewertet pro Schlüsselposition die Slice-Bytes und kombiniert Kandidaten per k‑best‑Enumeration (Score‑Summe), um die besten Schlüssel je Länge zu prüfen.
+- Ohne Hint werden die Top‑3 Längen per Base‑Score vorselektiert (bis `DEFAULT_MAX_KEY_LENGTH = 8`).
 - Primär wird auf A-Z/Leerzeichen/Ziffern optimiert, Fallback erweitert auf printable ASCII 0x20–0x7E.
-- Ranking via `dictionaryScorer.analyzeTextQuality(...)`, sonst XOR-Fallback-Score.
-11. Base64 (`base64Cipher.js`)
+- Ranking via `dictionaryScorer.analyzeTextQuality(...)` mit kurzer Shortlist, sonst XOR-Fallback-Score.
+12. Base64 (`base64Cipher.js`)
 - Kein Schlüssel; Crack dekodiert deterministisch (kein echtes Key-Cracking).
 - Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)`; bei fehlendem Scorer greifen lokale Heuristiken.
+- `crack(...)` liefert `rawText` und nutzt segmentiertes `text` nur, wenn der Inhalt unverändert bleibt (z. B. keine Ziffern verloren gehen).
 
 ## 2) Kandidatenfluss in `app.js`
 

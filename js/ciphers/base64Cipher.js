@@ -239,9 +239,15 @@
     return score;
   }
 
+  function normalizeVisibleText(text) {
+    // Whitespace-neutraler Vergleich verhindert, dass Segmentierung Ziffern/Zeichen stillschweigend entfernt.
+    return String(text || "").replace(/\s+/g, "");
+  }
+
   function analyzeDecodedText(rawText) {
     const result = {
       text: rawText,
+      rawText,
       confidence: fallbackConfidence(rawText),
     };
 
@@ -267,8 +273,11 @@
       if (Number.isFinite(computedConfidence)) {
         result.confidence = computedConfidence;
       }
-      if (displayText) {
-        // Segmentierte Anzeige bleibt optional, damit reiner Base64-Text nicht unlesbar wirkt.
+      if (
+        displayText &&
+        normalizeVisibleText(displayText) === normalizeVisibleText(rawText)
+      ) {
+        // Segmentierung ist nur dann sicher, wenn der Inhalt vollstaendig erhalten bleibt.
         result.text = displayText;
       }
     } catch (_error) {
@@ -304,6 +313,7 @@
       return {
         key: null,
         text: analyzed.text,
+        rawText: analyzed.rawText,
         confidence: analyzed.confidence,
       };
     },
