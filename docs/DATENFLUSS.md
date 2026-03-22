@@ -59,6 +59,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Ergebnis landet segmentiert in `outputText`; bei Rail Fence, Skytale, Columnar Transposition, Positionscipher, Hill, Playfair und Zahlen‑Cäsar wird zusätzlich der Rohtext (ungegliedert) angezeigt.
 - Kandidatenbereich wird ausgeblendet.
 - XOR zeigt Klartext im Hauptfeld und die normalisierte HEX-Eingabe im Rohfeld (ohne Segmentierung).
+- RSA Mini erwartet Zahlentokens und gibt Zahlentokens zurück; es gibt keine Segmentierung.
 
 7. Entschlüsseln ohne Schlüssel (Knacken)
 - Bei Vigenère: UI-Hinweis, `runButton` deaktiviert, `requestAnimationFrame` vor Crack.
@@ -71,6 +72,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
 - XOR begrenzt die Keyless-Suche über eine Längen-Vorselektion (Top‑3 ohne Hint) und k‑best‑Enumeration, damit 1k‑Suiten performant bleiben.
 - Base64/HEX/Binärcode/ASCII dekodieren deterministisch und liefern Confidence über `dictionaryScorer.analyzeTextQuality(...)`; segmentiert nur bei identischem Inhalt.
+- RSA Mini nutzt den separaten Hint `d,n` und liefert deterministisch mit `confidence = 1`.
 - Weitere cipher-spezifische Crack-Details (Playfair-Phasen, Rail Fence/Skytale Segmentierung, Columnar/Hill-Shortlists) siehe `docs/SCORING.md`.
 - Die konkrete Gate-/Sense-Logik liegt in `docs/SCORING.md`; hier bleibt nur der Laufzeitpfad dokumentiert.
 - Kandidaten werden normalisiert und nach `confidence` sortiert.

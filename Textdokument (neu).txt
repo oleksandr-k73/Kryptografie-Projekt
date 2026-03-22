@@ -898,7 +898,7 @@ Anforderungen an den Plan:
 
 Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
 
-Es wird auch eine Datei mit Beispieltext angehängt (Lösung:).
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: 53; Parameter: p=11, q=17, n=187, e=7, d=23). Knacken soll mit mindestens c (Geheimtext), d und n erfolgen.
 
 Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans).
 

@@ -131,6 +131,14 @@ Optionale Metadaten:
 - `crack(...)` liefert `rawText` (vollständig decodiert) und nutzt segmentiertes `text` nur, wenn der sichtbare Inhalt erhalten bleibt.
 - Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)` plus Fallback.
 
+## RSA Mini (`js/ciphers/rsaMiniCipher.js`)
+
+- Schlüsselbasiert (`supportsKey: true`), Parameter als `p,q,n,e,d` (Labels bevorzugt).
+- Eingabe und Ausgabe sind Zahlentokens, getrennt durch Whitespace/Komma/Semikolon.
+- `encrypt(...)` benötigt `n` und `e`, `decrypt(...)` benötigt `n` und `d`.
+- `crack(...)` erwartet den Hint `d,n` im separaten Feld (`supportsCrackLengthHint: true`).
+- Crack ist deterministisch, liefert `confidence = 1` und kein Sprach-Scoring.
+
 ## Vigenère (`js/ciphers/vigenereCipher.js`)
 
 - Schlüsselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.

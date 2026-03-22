@@ -25,6 +25,14 @@
     keyLabel: document.querySelector('label[for="keyInput"]'),
     keyInput: document.getElementById("keyInput"),
     keyHint: document.getElementById("keyHint"),
+    rsaKeyWrap: document.getElementById("rsaKeyWrap"),
+    rsaKeyLabel: document.getElementById("rsaKeyLabel"),
+    rsaPInput: document.getElementById("rsaPInput"),
+    rsaQInput: document.getElementById("rsaQInput"),
+    rsaNInput: document.getElementById("rsaNInput"),
+    rsaEInput: document.getElementById("rsaEInput"),
+    rsaDInput: document.getElementById("rsaDInput"),
+    rsaKeyHint: document.getElementById("rsaKeyHint"),
     matrixKeyWrap: document.getElementById("matrixKeyWrap"),
     matrixSizeInput: document.getElementById("matrixSizeInput"),
     matrixGrid: document.getElementById("matrixGrid"),
@@ -35,6 +43,11 @@
     crackLengthWrap: document.getElementById("crackLengthWrap"),
     crackLengthInput: document.getElementById("crackLengthInput"),
     crackLengthHint: document.getElementById("crackLengthHint"),
+    rsaCrackWrap: document.getElementById("rsaCrackWrap"),
+    rsaCrackLabel: document.getElementById("rsaCrackLabel"),
+    rsaCrackDInput: document.getElementById("rsaCrackDInput"),
+    rsaCrackNInput: document.getElementById("rsaCrackNInput"),
+    rsaCrackHint: document.getElementById("rsaCrackHint"),
     cipherInfoTitle: document.getElementById("cipherInfoTitle"),
     cipherInfoPurpose: document.getElementById("cipherInfoPurpose"),
     cipherInfoHow: document.getElementById("cipherInfoHow"),
@@ -298,18 +311,28 @@
       if (elements.matrixKeyWrap) {
         elements.matrixKeyWrap.hidden = true;
       }
+      if (elements.rsaKeyWrap) {
+        // RSA-Felder sollen ohne Cipher-Auswahl nicht sichtbar sein.
+        elements.rsaKeyWrap.hidden = true;
+      }
       return;
     }
 
     const supportsMatrixKey = cipher.supportsMatrixKey === true;
+    const supportsRsaParams = cipher.supportsRsaParams === true;
     const supportsKey = Boolean(cipher.supportsKey);
     // UI-Texte werden als echte UTF-8-Zeichen gepflegt, damit Umlaute korrekt angezeigt werden.
     const label = cipher.keyLabel || "Schlüssel";
     const placeholder = cipher.keyPlaceholder || "z. B. 3";
 
     if (elements.keyInputWrap) {
-      // Hill nutzt ein eigenes Matrixfeld, damit das Standard-Key-Input nicht irrtümlich befüllt wird.
-      elements.keyInputWrap.hidden = supportsMatrixKey;
+      // Matrix- und RSA-Inputs haben eigene Felder, damit das Standard-Key-Input nicht irrtümlich befüllt wird.
+      elements.keyInputWrap.hidden = supportsMatrixKey || supportsRsaParams;
+    }
+
+    if (elements.rsaKeyWrap) {
+      // RSA-Felder bleiben nur für RSA sichtbar, damit die UI übersichtlich bleibt.
+      elements.rsaKeyWrap.hidden = !supportsRsaParams;
     }
 
     if (elements.matrixKeyWrap) {
@@ -321,6 +344,11 @@
     elements.keyLabel.textContent = supportsKey ? `${label}${suffix}` : "Schlüssel";
     elements.keyInput.placeholder = placeholder;
     elements.keyInput.disabled = !supportsKey;
+
+    if (supportsRsaParams && elements.rsaKeyLabel) {
+      // RSA-Nutzung folgt dem selben Required/Optional-Hinweis wie das Standardfeld.
+      elements.rsaKeyLabel.textContent = supportsKey ? `${label}${suffix}` : label;
+    }
 
     if (supportsMatrixKey && elements.matrixHint) {
       elements.matrixHint.textContent =
@@ -338,6 +366,10 @@
       elements.keyInput.value = "";
       elements.keyHint.textContent =
         "Dieses Verfahren nutzt keinen Schlüssel. Beim Entschlüsseln wird automatisch geknackt.";
+      if (supportsRsaParams && elements.rsaKeyHint) {
+        elements.rsaKeyHint.textContent =
+          "Dieses Verfahren nutzt keinen Schlüssel. Beim Entschlüsseln wird automatisch geknackt.";
+      }
       return;
     }
 
@@ -346,9 +378,61 @@
       elements.keyHint.textContent = cipher.reuseKeyForCrackHint
         ? `Leer lassen, um ${label.toLowerCase()} automatisch zu knacken. Mit Zahl wird direkt entschlüsselt.`
         : "Leer lassen, um den Schlüssel automatisch zu knacken.";
+      if (supportsRsaParams && elements.rsaKeyHint) {
+        elements.rsaKeyHint.textContent =
+          "Für Decrypt: n und d. p,q optional zur Ableitung. Leer lassen, um per d,n zu knacken.";
+      }
     } else {
       elements.keyHint.textContent = "Beim Verschlüsseln ist ein Schlüssel erforderlich.";
+      if (supportsRsaParams && elements.rsaKeyHint) {
+        elements.rsaKeyHint.textContent = "Für Encrypt: n und e. p,q optional zur Ableitung.";
+      }
     }
+
+    if (!supportsRsaParams) {
+      clearRsaKeyInputs();
+    } else if (elements.keyInput) {
+      // RSA nutzt eigene Felder, daher Standard-Key-Feld leeren.
+      elements.keyInput.value = "";
+    }
+  }
+
+  function readRsaFieldValue(inputEl) {
+    const raw = String((inputEl && inputEl.value) || "").trim();
+    // Leerwerte bleiben null, damit wir nicht irrtümlich Teil-Schlüssel erzeugen.
+    return raw === "" ? null : raw;
+  }
+
+  function collectRsaKeyFields() {
+    return {
+      p: readRsaFieldValue(elements.rsaPInput),
+      q: readRsaFieldValue(elements.rsaQInput),
+      n: readRsaFieldValue(elements.rsaNInput),
+      e: readRsaFieldValue(elements.rsaEInput),
+      d: readRsaFieldValue(elements.rsaDInput),
+    };
+  }
+
+  function hasRsaKeyInput() {
+    const fields = collectRsaKeyFields();
+    // Sichtbare Werte entscheiden, ob ein RSA-Schluessel vorliegt.
+    return Object.values(fields).some((value) => value != null);
+  }
+
+  function clearRsaKeyInputs() {
+    // Beim Cipher-Wechsel sollen keine RSA-Reste in andere Verfahren hineinragen.
+    [elements.rsaPInput, elements.rsaQInput, elements.rsaNInput, elements.rsaEInput, elements.rsaDInput]
+      .filter(Boolean)
+      .forEach((input) => {
+        input.value = "";
+      });
+  }
+
+  function clearRsaCrackInputs() {
+    // Crack-Hints bleiben nur fuer RSA sichtbar, daher hier defensiv loeschen.
+    [elements.rsaCrackDInput, elements.rsaCrackNInput].filter(Boolean).forEach((input) => {
+      input.value = "";
+    });
   }
 
   function readMatrixSize() {
@@ -461,7 +545,8 @@
   function refreshCrackLengthUI() {
     const mode = elements.modeSelect.value;
     const cipher = getSelectedCipher();
-    const hasManualKey = elements.keyInput.value.trim() !== "";
+    const supportsRsaParams = Boolean(cipher && cipher.supportsRsaParams);
+    const hasManualKey = supportsRsaParams ? hasRsaKeyInput() : elements.keyInput.value.trim() !== "";
 
     if (cipher && cipher.supportsMatrixKey === true) {
       // Matrix-Verfahren nutzen ein eigenes Größenfeld, damit kein zweites Hint-Feld erscheint.
@@ -476,8 +561,25 @@
       mode === "decrypt" &&
       !hasManualKey;
 
-    elements.crackLengthWrap.hidden = !show;
-    elements.crackLengthInput.disabled = !show;
+    if (
+      supportsRsaParams &&
+      elements.rsaCrackWrap &&
+      elements.rsaCrackDInput &&
+      elements.rsaCrackNInput
+    ) {
+      // RSA nutzt eigene d/n-Felder, damit keine Verwechslungsgefahr mit Laengen-Hints besteht.
+      elements.rsaCrackWrap.hidden = !show;
+      elements.rsaCrackDInput.disabled = !show;
+      elements.rsaCrackNInput.disabled = !show;
+      elements.crackLengthWrap.hidden = true;
+      elements.crackLengthInput.disabled = true;
+    } else {
+      elements.crackLengthWrap.hidden = !show;
+      elements.crackLengthInput.disabled = !show;
+      if (elements.rsaCrackWrap) {
+        elements.rsaCrackWrap.hidden = true;
+      }
+    }
 
     if (!show) {
       // Versteckte Altwerte dürfen keine unbeabsichtigten Hints in Verfahren einspeisen,
@@ -485,17 +587,28 @@
       if (cipher && cipher.reuseKeyForCrackHint) {
         elements.crackLengthInput.value = "";
       }
+      clearRsaCrackInputs();
       return;
     }
 
     const label = cipher.crackLengthLabel || "Schlüssellänge";
+    const hintRequired = Boolean(cipher.crackHintRequired);
     const placeholder = cipher.crackLengthPlaceholder || "z. B. 6";
+
+    if (supportsRsaParams && elements.rsaCrackLabel && elements.rsaCrackHint) {
+      elements.rsaCrackLabel.textContent = `${label} fürs Knacken (erforderlich)`;
+      elements.rsaCrackHint.textContent = "d und n sind erforderlich.";
+      return;
+    }
+
     elements.crackLengthWrap
       .querySelector('label[for="crackLengthInput"]')
-      .textContent = `${label} fürs Knacken (optional)`;
+      // RSA-Mini benoetigt d,n zwingend; der Hinweis soll das klar signalisieren.
+      .textContent = `${label} fürs Knacken${hintRequired ? " (erforderlich)" : " (optional)"}`;
     elements.crackLengthInput.placeholder = placeholder;
-    elements.crackLengthHint.textContent =
-      "Wenn bekannt, beschleunigt und verbessert das Knacken.";
+    elements.crackLengthHint.textContent = hintRequired
+      ? "Für RSA Mini ist der Hinweis zwingend erforderlich."
+      : "Wenn bekannt, beschleunigt und verbessert das Knacken.";
   }
 
   function refreshAlphabetUI() {
@@ -878,6 +991,15 @@
       return typeof cipher.parseKey === "function" ? cipher.parseKey(rawMatrix) : rawMatrix;
     }
 
+    if (cipher.supportsRsaParams === true) {
+      const rawFields = collectRsaKeyFields();
+      if (!hasRsaKeyInput()) {
+        return null;
+      }
+      // RSA-Parameter werden als Objekt weitergereicht, damit parseKey sauber validiert.
+      return typeof cipher.parseKey === "function" ? cipher.parseKey(rawFields) : rawFields;
+    }
+
     const raw = elements.keyInput.value.trim();
     if (raw === "") {
       return null;
@@ -902,12 +1024,44 @@
       return options;
     }
 
+    if (cipher.supportsRsaParams === true) {
+      const dRaw = readRsaFieldValue(elements.rsaCrackDInput);
+      const nRaw = readRsaFieldValue(elements.rsaCrackNInput);
+
+      if (dRaw == null && nRaw == null) {
+        return options;
+      }
+
+      if (dRaw == null || nRaw == null) {
+        // RSA-Crack benoetigt beide Parameter, sonst ist die Entschluesselung nicht definiert.
+        throw new Error("Für RSA Mini müssen d und n angegeben werden.");
+      }
+
+      if (typeof cipher.parseCrackHint === "function") {
+        Object.assign(options, cipher.parseCrackHint(`d=${dRaw}, n=${nRaw}`));
+        return options;
+      }
+
+      options.d = dRaw;
+      options.n = nRaw;
+      return options;
+    }
+
     if (!cipher.supportsCrackLengthHint || cipher.reuseKeyForCrackHint) {
       return options;
     }
 
     const rawLength = elements.crackLengthInput.value.trim();
     if (rawLength === "") {
+      return options;
+    }
+
+    if (typeof cipher.parseCrackHint === "function") {
+      // Cipher-spezifische Crack-Hints halten die UI-Logik schlank und verhindern Mehrdeutigkeiten.
+      const parsedHint = cipher.parseCrackHint(rawLength);
+      if (parsedHint && typeof parsedHint === "object") {
+        Object.assign(options, parsedHint);
+      }
       return options;
     }
 
@@ -1303,6 +1457,20 @@
     elements.modeSelect.addEventListener("change", refreshKeyUI);
     elements.modeSelect.addEventListener("change", refreshCrackLengthUI);
     elements.keyInput.addEventListener("input", refreshCrackLengthUI);
+    [
+      elements.rsaPInput,
+      elements.rsaQInput,
+      elements.rsaNInput,
+      elements.rsaEInput,
+      elements.rsaDInput,
+      elements.rsaCrackDInput,
+      elements.rsaCrackNInput,
+    ]
+      .filter(Boolean)
+      .forEach((input) => {
+        // RSA-Felder beeinflussen, ob Crack-Hints sichtbar bleiben.
+        input.addEventListener("input", refreshCrackLengthUI);
+      });
     if (elements.matrixSizeInput) {
       elements.matrixSizeInput.addEventListener("input", safeRenderMatrixGrid);
       elements.matrixSizeInput.addEventListener("change", safeRenderMatrixGrid);

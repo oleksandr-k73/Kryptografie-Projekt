@@ -115,6 +115,9 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Confidence basiert auf `dictionaryScorer.analyzeTextQuality(...)` und kombiniert `qualityScore + coverage * 12 + meaningfulTokenRatio * 6`.
 - Ohne Dictionary-Scorer greift ein lokales Heuristik-Scoring.
 - Segmentierung wird nur übernommen, wenn der sichtbare Inhalt unverändert bleibt (Whitespace-neutraler Vergleich).
+17. RSA Mini (`rsaMiniCipher.js`)
+- Kein Sprach-Scoring: Crack nutzt den Hinweis `d,n` und liefert deterministisch `confidence = 1`.
+- Eingabe/Ausgabe bleiben Zahlentokens; es gibt keine Segmentierung oder Wörterbuch-Reranks.
 
 ## 2) Kandidatenfluss in `app.js`
 

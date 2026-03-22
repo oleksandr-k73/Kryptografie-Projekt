@@ -224,6 +224,19 @@ textarea {
   gap: 0.4rem;
 }
 
+.rsa-params {
+  /* RSA-Parameter werden gruppiert, damit einzelne Felder klar zugeordnet bleiben. */
+  display: grid;
+  gap: 0.4rem;
+}
+
+.rsa-params-grid {
+  /* Grid verhindert, dass RSA-Felder auf kleinen Screens unuebersichtlich werden. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.4rem;
+}
+
 .matrix-grid {
   /* Grid-Layout hält die Matrix lesbar, egal ob 2x2 oder 4x4. */
   display: grid;

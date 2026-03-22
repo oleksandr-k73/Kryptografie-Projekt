@@ -69,6 +69,19 @@
               >Beim Entschlüsseln ohne Schlüssel wird geknackt.</small
             >
           </div>
+          <div id="rsaKeyWrap" class="rsa-params" hidden>
+            <label id="rsaKeyLabel" for="rsaPInput">RSA-Parameter</label>
+            <div class="rsa-params-grid">
+              <input id="rsaPInput" type="text" inputmode="numeric" placeholder="p" />
+              <input id="rsaQInput" type="text" inputmode="numeric" placeholder="q" />
+              <input id="rsaNInput" type="text" inputmode="numeric" placeholder="n" />
+              <input id="rsaEInput" type="text" inputmode="numeric" placeholder="e" />
+              <input id="rsaDInput" type="text" inputmode="numeric" placeholder="d" />
+            </div>
+            <small id="rsaKeyHint" class="hint"
+              >Für Encrypt: n und e. Für Decrypt: n und d. p,q optional zur Ableitung.</small
+            >
+          </div>
           <div id="matrixKeyWrap" class="matrix-key" hidden>
             <label for="matrixSizeInput">Matrixgröße n</label>
             <input id="matrixSizeInput" type="number" min="2" step="1" value="2" />
@@ -100,6 +113,14 @@
             <small id="crackLengthHint" class="hint"
               >Wenn bekannt, beschleunigt und verbessert das Knacken.</small
             >
+          </div>
+          <div id="rsaCrackWrap" class="rsa-params" hidden>
+            <label id="rsaCrackLabel" for="rsaCrackDInput">Privater Schlüssel fürs Knacken</label>
+            <div class="rsa-params-grid">
+              <input id="rsaCrackDInput" type="text" inputmode="numeric" placeholder="d" />
+              <input id="rsaCrackNInput" type="text" inputmode="numeric" placeholder="n" />
+            </div>
+            <small id="rsaCrackHint" class="hint">d und n sind erforderlich.</small>
           </div>
         </div>
 
@@ -164,6 +185,7 @@
     <script src="js/ciphers/hexCipher.js"></script>
     <script src="js/ciphers/base64Cipher.js"></script>
     <script src="js/ciphers/asciiCipher.js"></script>
+    <script src="js/ciphers/rsaMiniCipher.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>
