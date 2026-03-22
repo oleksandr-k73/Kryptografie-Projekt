@@ -139,6 +139,19 @@ Optionale Metadaten:
 - `crack(...)` erwartet den Hint `d,n` im separaten Feld (`supportsCrackLengthHint: true`).
 - Crack ist deterministisch, liefert `confidence = 1` und kein Sprach-Scoring.
 
+## SHA-256 (`js/ciphers/sha256Cipher.js`)
+
+- Kein Schlüssel (`supportsKey: false`); sichere, kryptografische Hashfunktion.
+- `encrypt(text)` hashed UTF-8-Input zu 64-stelliger uppercase HEX (deterministisch, keine Kandidaten).
+- `decrypt(text)` wirft einen klaren Fehler mit Hinweis auf die Einwegfunktion.
+- `crack(text, options)` ist eine Work-in-Progress-Stub:
+  - Validiert `text` als gültiger 64-stelliger HEX-Hash.
+  - Akzeptiert `options.candidates` als Array von Plaintext-Strings.
+  - Bei Match gegen einen Kandidaten: liefert den Plaintext mit `confidence = 100`.
+  - Ohne Match oder ohne Kandidaten: liefert `cracked.search.wip = true` + `wipMessage`.
+- `info.note` signalisiert WIP-Status dem UI.
+- `app.js` erkennt WIP-Status und überspringt Ranking/Kandidaten-Rendering.
+
 ## Vigenère (`js/ciphers/vigenereCipher.js`)
 
 - Schlüsselwort-basiert (`supportsKey: true`), Normalisierung auf Buchstaben.

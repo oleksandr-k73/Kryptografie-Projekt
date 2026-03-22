@@ -1178,6 +1178,19 @@
       await new Promise((resolve) => requestAnimationFrame(resolve));
 
       const cracked = cipher.crack(text, crackOptions);
+
+      // WIP-Status signalisiert, dass Knacken nicht vollständig implementiert ist:
+      // UI zeigt nur die Statusmeldung, ohne Kandidaten oder implizierte Erfolge zu rendern.
+      if (cracked && cracked.search && cracked.search.wip === true) {
+        hideCandidates();
+        setOutputTexts("", null);
+        setStatus(
+          cracked.search.wipMessage ||
+          `${cipher.name}: Entschlüsselung ist Work in Progress.${customAlphabetWarning}`
+        );
+        return;
+      }
+
       const localCandidates = normalizeCrackCandidates(cracked);
       const ranked = await rankCandidatesWithDictionary(localCandidates, text);
       const rankedCandidates =

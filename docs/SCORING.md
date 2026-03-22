@@ -119,6 +119,18 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Kein Sprach-Scoring: Crack nutzt den Hinweis `d,n` und liefert deterministisch `confidence = 1`.
 - Eingabe/Ausgabe bleiben Zahlentokens; es gibt keine Segmentierung oder Wörterbuch-Reranks.
 
+18. SHA-256 (`sha256Cipher.js`)
+- Kein Schlüssel (`supportsKey: false`); kryptografische Einwegfunktion.
+- `encrypt(...)` hashed den UTF-8-Input zu 64-stelliger uppercase HEX (deterministisch, keine Kandidaten).
+- `decrypt(...)` wirft einen klaren Fehler (SHA-256 ist nicht umkehrbar).
+- `crack(text, options)` validiert, ob `text` ein gültiger 64-stelliger HEX-Hash ist:
+  - Ungültige Input-Form → WIP mit Fehlermeldung.
+  - Gültige Hash-Form ohne `options.candidates` → WIP mit Hinweis auf Kandidaten-Requirement.
+  - Gültige Hash-Form mit `options.candidates`: testet jeden Kandidaten-Plaintext einzeln,
+    gibt bei Match den Plaintext mit `confidence = 100` zurück, sonst WIP.
+- WIP-Status signalisiert Work in Progress: `search.wip = true` und `search.wipMessage` sind gesetzt.
+  `app.js` überspringt Ranking/Kandidaten-Rendering und zeigt nur die Statusmeldung.
+
 ## 2) Kandidatenfluss in `app.js`
 
 1. `crack(...)`-Ergebnis wird normalisiert:

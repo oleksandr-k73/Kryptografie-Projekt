@@ -73,11 +73,17 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - XOR begrenzt die Keyless-Suche über eine Längen-Vorselektion (Top‑3 ohne Hint) und k‑best‑Enumeration, damit 1k‑Suiten performant bleiben.
 - Base64/HEX/Binärcode/ASCII dekodieren deterministisch und liefern Confidence über `dictionaryScorer.analyzeTextQuality(...)`; segmentiert nur bei identischem Inhalt.
 - RSA Mini nutzt den separaten Hint `d,n` und liefert deterministisch mit `confidence = 1`.
+- SHA-256 ist eine Einwegfunktion und liefert `crack(...)` mit WIP-Status (`cracked.search.wip = true` und `wipMessage`),
+  wenn keine Kandidaten bereitgestellt werden oder keine Übereinstimmung gefunden wird.
+  Bei Match gegen `options.candidates` liefert SHA-256 den Plaintext mit `confidence = 100`.
+- WIP-Status signalisiert, dass Knacken noch nicht vollständig implementiert ist:
+  `app.js` erkennt `cracked.search.wip === true` und überspringt Ranking/Kandidaten-Rendering,
+  zeigt stattdessen die `wipMessage` und hält die Ausgabe leer (keine implizite Erfolgsmeldung).
 - Weitere cipher-spezifische Crack-Details (Playfair-Phasen, Rail Fence/Skytale Segmentierung, Columnar/Hill-Shortlists) siehe `docs/SCORING.md`.
 - Die konkrete Gate-/Sense-Logik liegt in `docs/SCORING.md`; hier bleibt nur der Laufzeitpfad dokumentiert.
 - Kandidaten werden normalisiert und nach `confidence` sortiert.
 - Optionales Reranking via `dictionaryScorer.rankCandidates(...)`.
-- Bester Kandidat wird als Ausgabe gesetzt.
+- Bester Kandidat wird als Ausgabe gesetzt (außer bei WIP-Status).
 - Für Rail Fence, Skytale, Columnar Transposition, Positionscipher, Hill, Playfair und Zahlen‑Cäsar wird zusätzlich der Rohtext aus `rawText` angezeigt.
 - XOR zeigt Klartext + HEX-Rohtext, ohne Segmentierung des HEX-Outputs.
 
