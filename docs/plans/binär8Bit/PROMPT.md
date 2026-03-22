@@ -3,7 +3,7 @@ Dabei musst du dem Plan unter "docs/plans/binär8Bit/PLAN.md" folgen.
 
 Zusammenfassung des Plans:
 
-Constraints: Keine Git-Befehle. Keine großen Abhängigkeiten. Kommentare sind Pflicht und sollen das „Warum“ erklären. Script-Reihenfolge in index.html beibehalten. 
+Constraints: Keine Git-Befehle. Keine großen Abhängigkeiten. Kommentare sind Pflicht und sollen das „Warum“ erklären.
 Entscheidungen: 
 - UTF‑8‑Bytes kodieren/decodieren. 
 - Decoding erlaubt Whitespace oder durchgehenden 0/1‑String (Länge % 8 == 0). 

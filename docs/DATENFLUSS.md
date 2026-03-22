@@ -33,6 +33,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - YAML mit nicht getragenen Features (z. B. Anchors/Aliases) fällt defensiv auf den Originaltext zurück.
 - JS-Parser bewertet reine Literal-Fallback-Kandidaten neutral über den Pfad `_literal`,
   damit starke Schlüssel wie `value` nur bei echten Key-Signalen aus Assignment/Property wirken.
+- JSON-Hash-Heuristik lässt reine 0/1-Sequenzen (8-Bit-Vielfache) durch, damit Binärcode-Payloads nicht als Hash abgewertet werden.
 - CSV-Textspaltenwahl nutzt exakte Header-Tokens (Delimiter: `_`, Leerzeichen, `-`);
   ohne erkannte Textspalte bleibt der Zeilen-Fallback aktiv.
 - Header-Heuristik entfernt die erste Zeile nur bei starkem Signal, damit headerlose Dateien stabil bleiben.
@@ -69,7 +70,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Playfair nutzt `dictionaryScorer.analyzeTextQuality(...)` für Ausgabe + Score (Decrypt + Crack).
 - Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
 - XOR begrenzt die Keyless-Suche über eine Längen-Vorselektion (Top‑3 ohne Hint) und k‑best‑Enumeration, damit 1k‑Suiten performant bleiben.
-- Base64/HEX/ASCII dekodieren deterministisch und liefern Confidence über `dictionaryScorer.analyzeTextQuality(...)`; segmentiert nur bei identischem Inhalt.
+- Base64/HEX/Binärcode/ASCII dekodieren deterministisch und liefern Confidence über `dictionaryScorer.analyzeTextQuality(...)`; segmentiert nur bei identischem Inhalt.
 - Weitere cipher-spezifische Crack-Details (Playfair-Phasen, Rail Fence/Skytale Segmentierung, Columnar/Hill-Shortlists) siehe `docs/SCORING.md`.
 - Die konkrete Gate-/Sense-Logik liegt in `docs/SCORING.md`; hier bleibt nur der Laufzeitpfad dokumentiert.
 - Kandidaten werden normalisiert und nach `confidence` sortiert.

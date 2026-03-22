@@ -115,6 +115,14 @@ Optionale Metadaten:
 - `crack(...)` liefert `rawText` (vollständig decodiert) und nutzt `text` nur segmentiert, wenn der Inhalt erhalten bleibt.
 - Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)` plus Fallback.
 
+## Binärcode (8-Bit) (`js/ciphers/binaryCipher.js`)
+
+- Kein Schlüssel (`supportsKey: false`), Crack dekodiert deterministisch.
+- Encrypt kodiert UTF-8-Bytes als 8-Bit-Gruppen mit Leerzeichen.
+- Decrypt akzeptiert Whitespace-getrennte Gruppen oder einen durchgehenden 0/1-String (Länge % 8 == 0).
+- `crack(...)` liefert `rawText` und nutzt segmentiertes `text` nur bei identischem Inhalt.
+- Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)` plus Fallback.
+
 ## ASCII (Dezimalcodes) (`js/ciphers/asciiCipher.js`)
 
 - Kein Schlüssel (`supportsKey: false`), Crack dekodiert deterministisch.

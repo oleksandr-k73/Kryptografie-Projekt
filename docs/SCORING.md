@@ -102,11 +102,15 @@ Diese Datei beschreibt, wie Kandidaten für das Knacken bewertet, sortiert und i
 - Confidence kommt aus `dictionaryScorer.analyzeTextQuality(...)`; bei fehlendem Scorer greifen lokale Heuristiken.
 - `crack(...)` liefert `rawText`; segmentiertes `text` nur bei identischem Inhalt (z. B. keine Ziffern verloren gehen).
 
-14. HEX (UTF-8) (`hexCipher.js`)
+14. Binärcode (8-Bit) (`binaryCipher.js`)
+- Kein Schlüssel; Crack dekodiert deterministisch aus 8-Bit-Gruppen.
+- Confidence via `dictionaryScorer.analyzeTextQuality(...)`; Segmentierung nur bei identischem Inhalt.
+
+15. HEX (UTF-8) (`hexCipher.js`)
 - Kein Schlüssel; Crack dekodiert deterministisch aus HEX.
 - Confidence via `dictionaryScorer.analyzeTextQuality(...)`; Segmentierung nur bei identischem Inhalt.
 
-15. ASCII (Dezimalcodes) (`asciiCipher.js`)
+16. ASCII (Dezimalcodes) (`asciiCipher.js`)
 - Kein Schlüssel; Crack dekodiert deterministisch aus whitespace-separierten Dezimalwerten `0..255`.
 - Confidence basiert auf `dictionaryScorer.analyzeTextQuality(...)` und kombiniert `qualityScore + coverage * 12 + meaningfulTokenRatio * 6`.
 - Ohne Dictionary-Scorer greift ein lokales Heuristik-Scoring.
