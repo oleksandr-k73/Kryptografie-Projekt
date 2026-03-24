@@ -7,7 +7,7 @@ description: Leitfaden zur Implementierung und zum Debugging eines neuen Verschl
 
 ## Verbindliche Reihenfolge (Doku-Gate)
 
-Vor jeder Implementierung und vor jedem Debugging diese Quellen in exakt dieser Reihenfolge lesen:
+Vor Implementierung/Debugging diese Quellen in dieser Reihenfolge lesen:
 
 1. `AGENTS.md`
 2. `docs/DATENFLUSS.md`
@@ -15,7 +15,7 @@ Vor jeder Implementierung und vor jedem Debugging diese Quellen in exakt dieser 
 4. `js/ciphers/AGENTS.md`
 
 Abbruchregel:
-- Wenn eine Entscheidung aus diesen vier Dateien nicht eindeutig ableitbar ist, nicht raten, sondern nachfragen.
+- Wenn eine Entscheidung daraus nicht eindeutig ableitbar ist, nachfragen statt raten.
 
 ## Implementierungs-Workflow
 
@@ -39,20 +39,30 @@ Abbruchregel:
 - optional `candidates` als absteigend nach `confidence` sortierbare Liste
 6. In `index.html` neues Cipher-Script vor `js/app.js` einbinden.
 
+## Script-Reihenfolge (Integration)
+
+- Core-Module vor Cipher-Modulen laden.
+- `js/core/segmentLexiconData.js` vor `js/core/dictionaryScorer.js`, damit das Offline-Lexikon da ist.
+- Cipher-Script in `index.html` vor `js/app.js`, damit die Registrierung steht.
+
+## Optionale UI-/Integrations-Flags
+
+Diese Flags nur setzen, wenn sie fachlich nötig sind:
+- `supportsAlphabet`, `defaultAlphabet`, `alphabetLabel`, `alphabetPlaceholder`, `normalizeAlphabet`
+- `supportsMatrixKey`
+- `reuseKeyForCrackHint`
+- `info.note`
+
 ## Debugging-Workflow
 
-Vollständige Checkliste: `references/debug-checklist.md`
-
 Startkommandos für reproduzierbare Prüfung:
-- `pnpm run test:node` (bestehende Node-Tests)
-- `pnpm run test:vitest` (vitest-basierte Gates)
-- `pnpm run test:gates` (Doku-/Konsistenz-/Benchmark-Gates)
+- `pnpm run test:node`, `pnpm run test:vitest`, `pnpm run test:gates`
 
 Kurzablauf:
 1. Reproduktions-Check
-2. Input-/Output-Nachverfolgung (inkl. `parseInputFile(...)` bei Dateiimport)
+2. Input-/Output-Nachverfolgung (inkl. `parseInputFile(...)`)
 3. Cipher-Isolation (ohne UI)
-4. Kandidatenanalyse und Sortierbarkeit
+4. Kandidatenanalyse + Sortierbarkeit
 5. Dictionary-Reranking + Fallback-Pfad prüfen
 6. Regressions-Check mit festen Baselines
 7. Einbindungs-Check (Script-Reihenfolge)
@@ -61,7 +71,7 @@ Kurzablauf:
 
 1. Alle Checks aus `references/debug-checklist.md` müssen grün sein.
 2. Registrierung über `CipherRegistry.register(...)` muss ohne Fehler laufen.
-3. Bei `supportsKey: true` gilt: `decrypt(encrypt(text, key), key) === text` für definierte Referenzfälle.
+3. Bei `supportsKey: true` gilt: `decrypt(encrypt(text, key), key) === text`.
 4. Bei `supportsKey: false` müssen `encrypt`, `decrypt`, `crack` stabil laufen und String-Outputs liefern.
 5. Crack-Ergebnis muss verarbeitbar sein:
 - `text` ist String

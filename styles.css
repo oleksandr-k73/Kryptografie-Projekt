@@ -90,6 +90,118 @@ input {
   background: #fffdf9;
 }
 
+[hidden] {
+  /* Globaler Hidden-Guard, damit Grid-Layouts wie .matrix-key den UI-Status nicht überschreiben. */
+  display: none !important;
+}
+
+.native-select-hidden {
+  /* Native-Select bleibt im DOM für Logik/Kompatibilität, soll aber im UI nicht sichtbar sein. */
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+}
+
+.custom-select {
+  /* Custom-Wrapper hält Trigger, Liste und Tooltip zusammen. */
+  position: relative;
+}
+
+.custom-select-trigger {
+  /* Button soll sich wie ein Eingabefeld anfühlen, bleibt aber klickbar. */
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem;
+  font: inherit;
+  color: var(--ink);
+  background: #fffdf9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.custom-select-trigger:focus {
+  outline: 2px solid rgba(216, 117, 55, 0.35);
+  outline-offset: 2px;
+}
+
+.custom-select-arrow {
+  /* Kleiner Pfeil signalisiert das Dropdown. */
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.custom-select-list {
+  /* Die Liste bleibt absolut positioniert, damit sie das Layout nicht verschiebt. */
+  position: absolute;
+  z-index: 20;
+  width: 100%;
+  margin: 0.35rem 0 0 0;
+  padding: 0.35rem 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffdf9;
+  box-shadow: 0 10px 28px rgba(15, 16, 20, 0.12);
+  max-height: 260px;
+  overflow-y: auto;
+  display: none;
+}
+
+.custom-select[data-open="true"] .custom-select-list {
+  /* Nur bei geöffnetem Dropdown sichtbar. */
+  display: block;
+}
+
+.custom-select-option {
+  /* Optionen sollen gut klickbar sein und klare Hover-Zustände haben. */
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.custom-select-option[aria-selected="true"] {
+  /* Aktive Auswahl leicht betonen, ohne zu dominant zu wirken. */
+  background: rgba(216, 117, 55, 0.12);
+}
+
+.custom-select-option:hover,
+.custom-select-option:focus {
+  background: rgba(216, 117, 55, 0.18);
+  outline: none;
+}
+
+.custom-select-option-icon {
+  /* „ⓘ“ bleibt visuell klein, aber erkennbar. */
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.custom-select-tooltip {
+  /* Tooltip liegt rechts neben der Liste, damit Hover-Kontext klar bleibt. */
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  min-width: 200px;
+  max-width: 260px;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 12px 28px rgba(15, 16, 20, 0.14);
+  font-size: 0.9rem;
+}
+
 textarea {
   resize: vertical;
   min-height: 140px;
@@ -104,6 +216,38 @@ textarea {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 0.8rem;
+}
+
+.matrix-key {
+  /* Matrix-Feld soll eigenständig wirken, damit Hill nicht mit dem Standard-Key verwechselt wird. */
+  display: grid;
+  gap: 0.4rem;
+}
+
+.rsa-params {
+  /* RSA-Parameter werden gruppiert, damit einzelne Felder klar zugeordnet bleiben. */
+  display: grid;
+  gap: 0.4rem;
+}
+
+.rsa-params-grid {
+  /* Grid verhindert, dass RSA-Felder auf kleinen Screens unuebersichtlich werden. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.4rem;
+}
+
+.matrix-grid {
+  /* Grid-Layout hält die Matrix lesbar, egal ob 2x2 oder 4x4. */
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(var(--matrix-size, 2), minmax(42px, 1fr));
+}
+
+.matrix-cell {
+  /* Zentrale Ausrichtung reduziert Tippfehler beim Vergleichen der Matrix. */
+  text-align: center;
+  padding: 0.45rem;
 }
 
 button {
@@ -188,5 +332,13 @@ small {
 
   .card {
     padding: 0.95rem;
+  }
+
+  .custom-select-tooltip {
+    /* Auf kleinen Screens Tooltip unter die Liste legen, damit nichts abgeschnitten wird. */
+    left: 0;
+    right: 0;
+    top: calc(100% + 0.5rem) !important;
+    max-width: none;
   }
 }

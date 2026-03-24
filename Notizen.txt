@@ -581,3 +581,363 @@ VIGENERE FIXEN!!! -- GWQWVSLR GFNPCSUXG RHR RVRXQSIJGYW HWFFL FWH IKBIYGVUYPU YS
     gewünschte Ausgabe: "MESSREIHE MIT FEHLER"
     tatschächliche Ausgabe: "MESSREIHEMITFEHLER"
 2. Sichtbar inwiefern? Natürlich müssen die Texte richtig segmentiert sein und dies wird visuell wiedergegeben, aber der (richtige) Wortlaut soll sich nicht verändern (klar, wenn du merkst, dass es Probleme mit der Entschlüsselung selbst gibt, sollst du sie dokumentieren und im Plan miteinbeziehen). Überprüfe dann evtl. noch, ob die Texte für 1k-Gates und andere Tests richtige Segmentierung aufweisen.
+
+
+Plane einen Update, bei dem Columnar-Transposition-Cipher implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Der Plan muss am Ende ein Hand-Off (im Format eines Markdowns!) mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen.
+
+Es wird auch eine Datei mit Beispieltext angehängt (als Hint wird die Spaltenreihenfolge 3-1-4-2 gegeben; Lösung ist (selbst extern gefunden: POTENTIALTOPFMODELLX; gewünscht und gebraucht: POTENTIALTOPF MODELL))
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün (Bezogen auf den Plan; bitte noch keine repo-weite Tests wie /*test)
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+16.03.26:
+Plane einen Update, bei dem allgemeine Transpositionschiffre (Hint aus der App: Arbeite blockweise mit Permutation 2-4-1-3 und invertiere pro Block) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen.
+
+Es wird auch eine Datei mit Beispieltext angehängt (als Hint wird die Permutation 2-4-1-3 gegeben; Lösung ist (selbst extern gefunden: EINHEITENPRUEFEN (normale Transposition: HNIEETIEURPNNEFE); gewünscht und gebraucht: EINHEITEN PRUEFEN))
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün (jetzt keine Tests)
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Codex hat einen neuen Cipher implementiert (alle Infos findest du in Markdowns; unter docs/plans lese nur docs\plans\columnTanspose\PLAN.md, nichts anderes). Umlaute sind jetzt kaputt und das Verfahren funktoniert nicht. Plane einen Fix.
+Benutze immer Sandbox, um deine Implementierungen und den Plan virtuell zu testen.
+
+Der Plan muss am Ende ein Hand-Off-Markdown  mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan und Fixes implementiert 
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben 
+
+Gib mir den Plan nur dann, wenn:
+1. Alle Tests sind grün (nur gezielte, keine lange Vigenere-Tests o. Ä.).
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+17.03.26
+(Angeben, dass fürs selbstständige Lösen dCode und andere Webseiten benutzt wurden!!!)
+(Angeben, dass fürs selbstständige Lösen dCode und andere Webseiten benutzt wurden!!!)
+Plane einen Update, bei dem Affine Cipher implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+(- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben )
+- Es gibt Abgabekriterien; folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: WAHRSCHEINLICHKEITSDICHTE). Bitte auch die Möglichkeit einfügen, den Modulo-Wert einzustellen (als Default, also leer, immernoch 26 --> im Feld ausgegraut "26", darunter ein Hinweis, dass ohne weiterer Eingabe der Wert 26 benutzt wird)
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle relevante Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben
+
+18.03.26
+(NULXIRVLRRAINVZ, [[6,24,1],[13,16,10],[20,17,15]], CODEUND CHIFFRE -- beheben)
+Plane einen Update, bei dem Hill-Cipher implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung (roh): LICHTIMPULSX; (gewünscht): LICHT IMPULS; Lösungsmatrix: [[3,3],[2,5]]). Für Fälle mit einem verfügbaren Schlüssel sollten n*n Matrizen entschlüsselbar sein, zusätzlich ist bis einer mathematisch/logsich gefundenen Zahl ist Bruteforce möglich 
+    - der Bereich/das Feld sieht folgendermaßen: standartmäßig gibt es Subfelder für Werte einer 2*2 Matrix. Daneben ist ein Feld, in dem man die Dimensionen der Matrix eingeben kann (sie soll ja quadratisch sein (soweit ich weiß), deshalb reicht ein Feld für "n"). Wenn man die Zahl ändert (n != 0), soll sich das Matrixfeld auch entsprechend verändern
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben
+
+OTP ist identisch mit Vigenere; sollte bitweises XOR/Stromchiffre sein --> derzeit (19.03.26) eine Anmerkung bei Vigenere, welche Chiffren identisch sind (auch in der Auswahl)
+
+19.03.26:
+Plane einen Update, bei dem XOR-Cipher (Hinweis aus der anderen App: Vorgehen: Interpretiere als UTF-8-Bytes, XOR-e positionsweise mit ASCII-Schlüssel KRYPTO und gib als HEX aus.) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: QUANTEN SPRUNG; Schlüssel: KRYPTO). Das Verfahren soll sowohl für jeden Schlüssel funktionieren als auch Knacken unterstützen (soweit es geht).
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben
+
+20.03.26:
+
+Plane einen Update, bei dem BASE64-Cipher implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: UNSCHAERFE IM IMPULS).
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans und REPORT-FINAL.md).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben
+---
+Plane einen Update, bei dem Zahlen-Cipher (Zahlen, getrennt mit Strichen, werden in Buchstaben übersetzt und dann wird Cäsar-Verschlüsselung verwendet) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung (gewünscht): MODELL UND GRENZEN; Lösung (roh): MODELLUNDGRENZEN; Schlüssel: 3).
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben
+---
+Plane einen Update, bei dem Positionscipher (Hinweis aus der anderen App: Vorgehen: Blöcke der Länge 5, Permutation 2-5-3-1-4 → Rückpermutation pro Block) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung (gewünscht): QUANTEN SPRUNG; Lösung (roh): QUANTENSPRUNGXX; Schlüsselpermutation: 2-5-3-1-4). Es soll sowohl Entschlüsselung mit jeder Permutation/Blocklänge als auch das Knacken unterstützt sein.
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Tests sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben implementiert wird.
+---
+Plane einen Update, bei dem ASCII-Codierung (Hinweis aus der anderen App: Vorgehen: Leerzeichen-getrennte Dezimalcodes → ASCII-Zeichen, dann in Klartext zusammensetzen) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: LASER TRIFFT GITTER).
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Checks/Überprüfungen (Tests im Sandbox, Checks vom Plan etc.) sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben implementiert wird.
+
+---
+Plane einen Update, bei dem HEX-Codierung (00-FF <-> ASCII) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: INTERFERENZ AM SPALT).
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Checks/Überprüfungen (Tests im Sandbox, Checks vom Plan etc.) sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben implementiert wird.
+
+---
+Plane einen Update, bei dem Binärcode (8-Bit) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: UNSCHAERFE IM ORT).
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Checks/Überprüfungen (Tests im Sandbox, Checks vom Plan etc.) sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben implementiert wird.
+---
+(für eine volle Implementierung muss zuerst die andere App gefixt werden)
+Plane einen Update, bei dem RSA-Mini-Cipher (mit Parameter p, q, n, e, d) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: 53; Parameter: p=11, q=17, n=187, e=7, d=23). Knacken soll mit mindestens c (Geheimtext), d und n erfolgen.
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Checks/Überprüfungen (Tests im Sandbox, Checks vom Plan etc.) sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben implementiert wird.
+
+---
+(22.03.26)
+(Ist Level 24 kaputt)
+
+Plane einen Update, bei dem SHA-256-Verschlüsselung (erst nur Verschlüsselung, aber schon ein Gerüst fürs Knacken) implementiert wird.
+
+Anforderungen an den Plan: 
+- Alle Implementierungen müssen fehlerfrei und optimiert sein.
+- Alle Implementierungen passen in die bestehende Architektur und erzeugen keine Konkflikte (sowohl jetzt (überprüft mit Tests) als auch potenziell in der Zukunft (auf Zukunftssicherheit prüfen))
+- Es gibt Tests, mit denen die Funktionalität und Fehlerfreiheit überprüft werden kann
+    - Einschließlich ein 1000-Fälle-Lauf mit eigenen, unterschiedlichen Geheimtexte als auch die korrekte und sinnvolle Entschlüsselung vom Beispieltext (s. angehängte Datei)
+- Es gibt Abgabekriterien
+- Folge den Best-Practices bei der Erstellung des GESAMTEN Plans
+
+Für die ersten drei Punkte kannst du Sandbox verwenden, um den Plan virtuell auszuführen und so ihn zu testen. Ansonsten benutze andere Möglichkeiten/Tools, um Implementierungen spezifisch zu testen. Die einzigen repo-weiten Tests, die du ohne Absprache durchführen kannst, sind Regressionstests; lange Suites, wie Vigenere 1k-Lauf, nur beim expliziten Anfordern.
+
+Es wird auch eine Datei mit Beispieltext angehängt (Lösung: 5C2A90BAB1696F563A0D047F1B4324036EC069AED966F1DAB3BDC4F0BC4DCD53). Implementiere noch kein vollständiges Knacken, aber entwerfe schon ein Grundgerüst dafür. Die UI soll den  Nutzer auch informieren, dass Entschlüsselung für SHA WIP ist.
+
+Lese außerdem, wenn du es noch nicht automatisch machst, am Anfang Markdown-Dokumentationen (außer unter docs/plans).
+
+Gib mir den Plan nur dann, wenn:
+1. Alle **relevante** Checks/Überprüfungen (Tests im Sandbox, Checks vom Plan etc.) sind grün.
+2. Alle Anforderungen wurden getroffen.
+3. Der Plan ist fehlerfrei und kann ohne Einwände von einem anderen Agent ausgeführt werden.
+
+Abgabeformat:
+- Der Plan muss am Ende ein Hand-Off-Markdown mit dem nötigen Kontext für einen anderen Agent sein, der in einer separaten Session den Plan implementiert; er hat Zugriff zu allen Tools und Markdowns.
+    - "Hand-Off" ist der Plan selbst, kein separater Teil davon!
+    - Dafür muss es noch einen fertigen, sofort einsetzbaren Prompt (im Einklang mit Context Engineering) geben implementiert wird.

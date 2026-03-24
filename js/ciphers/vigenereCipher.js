@@ -1635,6 +1635,9 @@
         "Das Knacken nutzt Häufigkeitsanalyse je Schlüssel-Position. Wenn die Schlüssellänge bekannt ist, wird es deutlich präziser.",
       useCase:
         "Sinnvoll für klassische Kryptografie-Aufgaben mit Schlüsselwörtern statt Zahlen-Schlüssel.",
+      // UI-Hinweis macht Alias-Begriffe explizit, damit Nutzer Vigenère-Varianten sicher einordnen können.
+      note:
+        "Diese Auswahl ist identisch zu OTP, Vernam und Autokey je mit Schlüsselwiederholung.",
     },
 
     parseKey(rawKey) {

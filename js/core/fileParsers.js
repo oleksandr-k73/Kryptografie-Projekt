@@ -32,8 +32,21 @@
     return cells;
   }
 
+  function looksLikeBinaryPayload(text) {
+    const compact = text.replace(/\s+/g, "");
+    // Binärpayloads sollen explizit erkannt werden, damit die Hash-Heuristik hier bewusst aussetzt.
+    if (compact.length < 8 || compact.length % 8 !== 0) {
+      return false;
+    }
+    return /^[01]+$/.test(compact);
+  }
+
   function looksLikeHash(text) {
     const compact = text.replace(/\s+/g, "");
+    if (looksLikeBinaryPayload(text)) {
+      // Binärpayloads dürfen nicht als Hash abgewertet werden, sonst verliert `coded` seinen Vorrang im JSON-Parser.
+      return false;
+    }
     return /^[a-f0-9]{24,}$/i.test(compact);
   }
 

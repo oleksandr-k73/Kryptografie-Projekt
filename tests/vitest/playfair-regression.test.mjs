@@ -178,6 +178,8 @@ describe("playfair regression", () => {
     expect(scorer.segmentText("FOTONENFELD").text).toBe("FOTONENFELD");
     expect(scorer.segmentText("FOTONENSIGNAL").text).toBe("FOTONEN SIGNAL");
     expect(scorer.segmentText("KOHARENZFELD").text).toBe("KOHARENZ FELD");
+    // Eigenzustand bleibt als Kompositum sichtbar, damit die UI keine falsche Trennung zeigt.
+    expect(scorer.segmentText("EIGENZUSTAND").text).toBe("EIGENZUSTAND");
   });
 
   it("segments new skytale-related compounds correctly", () => {

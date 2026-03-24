@@ -1,0 +1,10 @@
+{
+  "level": 8,
+  "title": "Level 8 – Columnar Transposition",
+  "coded": "TIOOLPNLFEEAPDXOTTML",
+  "task_type": "decode",
+  "answer_format": "text",
+  "method": "Columnar Transposition (Schlüssel 3-1-4-2)",
+  "model_status": "authentisch / nah am Original",
+  "explain": "Bei Kettenchiffren muss beim Dekodieren die Reihenfolge der Verfahren umgekehrt werden."
+}

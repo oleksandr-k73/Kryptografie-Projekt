@@ -31,6 +31,7 @@ Der Fokus liegt auf:
 ### Einstieg und UI
 - `index.html`: UI-Struktur, Eingabefelder, Infobox, Script-Reihenfolge
 - `styles.css`: Layout, Farben, responsive Darstellung, Komponenten-Styling
+- Custom-Dropdown für Verschlüsselungen inkl. Tooltip-Hinweis bei Vigenère
 
 ### Core-Module
 - `js/core/cipherRegistry.js`: Registry und Cipher-Basisvalidierung
@@ -39,7 +40,10 @@ Der Fokus liegt auf:
 - `js/core/dictionaryScorer.js`: Kandidaten-Reranking mit API-/Offline-Fallback, optionalen Key-Kandidaten und Shared-Textsegmentierung für Crack-Pfade
   
 ### Cipher-Module
-- alle Cipher-Dateien liegen in `js/ciphers/` (z. B. `caesarCipher.js`, `playfairCipher.js`, `railFenceCipher.js`, `scytaleCipher.js`)
+- alle Cipher-Dateien liegen in `js/ciphers/` (z. B. `caesarCipher.js`, `playfairCipher.js`, `hexCipher.js`, `sha256Cipher.js`)
+- klassische Verschlüsselungen: Caesar, Affine, Playfair, Vigenère, Hill, Rail Fence, Skytale, Columnar Transposition, Positionscipher
+- Kodierungen: HEX, Base64, Binärcode, ASCII, Leetspeak, XOR
+- Hash/asymmetrisch: SHA-256 (WIP: nur Kandidaten-Knacken), RSA Mini
 - Cipher-spezifische Details: `js/ciphers/AGENTS.md`
 
 ### Orchestrierung

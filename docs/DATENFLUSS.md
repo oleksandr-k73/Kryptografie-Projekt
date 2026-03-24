@@ -13,7 +13,7 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 1. Initialisierung
 - `app.js` lädt `KryptoCore` und `KryptoCiphers`.
 - `CipherRegistry` registriert alle gültigen Cipher.
-- Dropdown und UI-Zustände werden initial gesetzt.
+- Custom-Dropdown und UI-Zustände werden initial gesetzt.
  
 
 2. Eingabe
@@ -33,68 +33,64 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - YAML mit nicht getragenen Features (z. B. Anchors/Aliases) fällt defensiv auf den Originaltext zurück.
 - JS-Parser bewertet reine Literal-Fallback-Kandidaten neutral über den Pfad `_literal`,
   damit starke Schlüssel wie `value` nur bei echten Key-Signalen aus Assignment/Property wirken.
-- CSV-Textspaltenwahl nutzt exakte Header-Tokens (Delimiter: `_`, Leerzeichen, `-`) statt Substring-Matching;
-  so werden False Positives wie `metadata` -> `data` vermieden, während `cipher_text` weiter erkannt wird.
-- CSV ohne erkannte Textspalte nutzt weiterhin einen Zeilen-Fallback über alle Zellen.
-- Vor dem Flatten prüft eine konservative Header-Heuristik die erste Zeile.
-- Die erste Zeile wird nur bei starkem Header-Signal entfernt; bei unklaren Fällen bleibt
-  sie erhalten, damit headerlose Dateien keine erste Datenzeile verlieren.
+- JSON-Hash-Heuristik lässt reine 0/1-Sequenzen (8-Bit-Vielfache) durch, damit Binärcode-Payloads nicht als Hash abgewertet werden.
+- CSV-Textspaltenwahl nutzt exakte Header-Tokens (Delimiter: `_`, Leerzeichen, `-`);
+  ohne erkannte Textspalte bleibt der Zeilen-Fallback aktiv.
+- Header-Heuristik entfernt die erste Zeile nur bei starkem Signal, damit headerlose Dateien stabil bleiben.
 - Unbekanntes Format: Fallback als Klartext (`fallback: true`).
 
 4. Ausführung (`runCipher`)
 - Validiert, ob Text vorhanden ist.
 - Liest Modus (`encrypt`/`decrypt`) und gewählten Cipher.
 - Optional: Schlüssel-Parsing und Crack-Optionen.
+- Für Ciphers mit `supportsAlphabet` wird ein editierbares Alphabet gelesen,
+  an `parseKey(...)` sowie `crackOptions.alphabet` übergeben und bei Abweichung vom Standard
+  ein Warnhinweis im Status angezeigt.
  
 
 5. Verschlüsseln
 - `cipher.encrypt(text, key)` wird aufgerufen.
 - Ergebnis landet in `outputText`.
 - Kandidatenbereich wird ausgeblendet.
+- XOR zeigt HEX als Hauptausgabe und den Klartext im Rohfeld.
 
 6. Entschlüsseln mit bekanntem Schlüssel
 - `cipher.decrypt(text, key)` wird aufgerufen.
-- Ergebnis landet segmentiert in `outputText`; bei Rail Fence, Skytale und Playfair wird zusätzlich der Rohtext (ungegliedert) angezeigt.
+- Ergebnis landet segmentiert in `outputText`; bei Rail Fence, Skytale, Columnar Transposition, Positionscipher, Hill, Playfair und Zahlen‑Cäsar wird zusätzlich der Rohtext (ungegliedert) angezeigt.
 - Kandidatenbereich wird ausgeblendet.
+- XOR zeigt Klartext im Hauptfeld und die normalisierte HEX-Eingabe im Rohfeld (ohne Segmentierung).
+- RSA Mini erwartet Zahlentokens und gibt Zahlentokens zurück; es gibt keine Segmentierung.
 
 7. Entschlüsseln ohne Schlüssel (Knacken)
-- Bei Vigenère setzt die UI vor `cipher.crack(...)` den Hinweis:
-  - `Vigenère: Bruteforce-Prüfung läuft gegebenenfalls, bitte warten ...`
-  - `runButton` wird deaktiviert
-  - `requestAnimationFrame` wird einmal abgewartet, damit der Hinweis sichtbar ist
+- Bei Vigenère: UI-Hinweis, `runButton` deaktiviert, `requestAnimationFrame` vor Crack.
  
 - `cipher.crack(text, options)` liefert besten Kandidaten und optional `candidates`.
 - Bei Playfair ergänzt `app.js` optional `dictionaryScorer.getKeyCandidates(...)` im
   `options`-Objekt, damit der Cipher eine deterministische Key-Shortlist für Phase B nutzen kann.
-- Rail Fence nutzt im UI dasselbe Schienen-Feld für beides:
-  - leer = knacken
-  - Zahl = direkt entschlüsseln
-- Skytale nutzt im UI dasselbe Umfang-Feld für beides:
-  - leer = knacken
-  - Zahl = direkt entschlüsseln
-- Playfair nutzt zusätzlich `dictionaryScorer.analyzeTextQuality(...)` für Ausgabe + Score;
-  derselbe Pfad läuft sowohl bei `decrypt(...)` mit bekanntem Schlüssel als auch im Crack-Scoring.
-- Playfair läuft als Hybrid-Crack:
-  - Phase A: feste Shortlist (inkl. `QUANT`, `FAC`)
-  - Phase B: erweitertes Key-Corpus (Lexikon + Präfix-/Stem-Varianten)
-  - Ambiguitäts-Gate triggert Phase B bei `low_confidence`, `low_delta` oder `low_coverage`
+- Rail Fence und Skytale nutzen im UI dasselbe Feld: leer = knacken, Zahl = direkt entschlüsseln.
+- Playfair nutzt `dictionaryScorer.analyzeTextQuality(...)` für Ausgabe + Score (Decrypt + Crack).
 - Vigenère kann nach dem regulären Chi/Frequenzpfad in einen staged Bruteforce-Fallback (`[12,18,26]`) wechseln.
-- Rail Fence darf lesbare Segmentierung (`displayText`) im Crack-Pfad nach oben reichen, wenn die Shared-Analyse klare Wortgrenzen stützt; `decrypt(...)` bleibt Rohtext-Inversion.
-- Skytale bewertet Crack-Kandidaten via `dictionaryScorer.analyzeTextQuality(...)`, gibt `displayText` aus und behält den gepaddeten `rawText`.
-- Im UI-Pfad setzt `app.js` für Vigenère standardmäßig `optimizations: true`.
-- Bei `keyLength`-Hint wird das Fallback-Budget direkt über `maxMsPerLength` begrenzt.
-- Ohne `keyLength`-Hint wird der Fallback zusätzlich über ein adaptives Größen-Gate begrenzt.
+- XOR begrenzt die Keyless-Suche über eine Längen-Vorselektion (Top‑3 ohne Hint) und k‑best‑Enumeration, damit 1k‑Suiten performant bleiben.
+- Base64/HEX/Binärcode/ASCII dekodieren deterministisch und liefern Confidence über `dictionaryScorer.analyzeTextQuality(...)`; segmentiert nur bei identischem Inhalt.
+- RSA Mini nutzt den separaten Hint `d,n` und liefert deterministisch mit `confidence = 1`.
+- SHA-256 ist eine Einwegfunktion und liefert `crack(...)` mit WIP-Status (`cracked.search.wip = true` und `wipMessage`),
+  wenn keine Kandidaten bereitgestellt werden oder keine Übereinstimmung gefunden wird.
+  Bei Match gegen `options.candidates` liefert SHA-256 den Plaintext mit `confidence = 100`.
+- WIP-Status signalisiert, dass Knacken noch nicht vollständig implementiert ist:
+  `app.js` erkennt `cracked.search.wip === true` und überspringt Ranking/Kandidaten-Rendering,
+  zeigt stattdessen die `wipMessage` und hält die Ausgabe leer (keine implizite Erfolgsmeldung).
+- Weitere cipher-spezifische Crack-Details (Playfair-Phasen, Rail Fence/Skytale Segmentierung, Columnar/Hill-Shortlists) siehe `docs/SCORING.md`.
 - Die konkrete Gate-/Sense-Logik liegt in `docs/SCORING.md`; hier bleibt nur der Laufzeitpfad dokumentiert.
 - Kandidaten werden normalisiert und nach `confidence` sortiert.
 - Optionales Reranking via `dictionaryScorer.rankCandidates(...)`.
-- `rankCandidates(...)` nutzt dieselbe Shared-Textanalyse wie Playfair-Scoring.
-- Bester Kandidat wird als Ausgabe gesetzt.
-- Für Rail Fence, Skytale und Playfair wird zusätzlich der Rohtext aus `rawText` angezeigt.
+- Bester Kandidat wird als Ausgabe gesetzt (außer bei WIP-Status).
+- Für Rail Fence, Skytale, Columnar Transposition, Positionscipher, Hill, Playfair und Zahlen‑Cäsar wird zusätzlich der Rohtext aus `rawText` angezeigt.
+- XOR zeigt Klartext + HEX-Rohtext, ohne Segmentierung des HEX-Outputs.
 
 8. Status und Hinweise
 - Bei geringer Wörterbuchabdeckung zeigt die UI Hinweise.
 - Bei Vigenère + kurzem Text wird ein Zuverlässigkeits-Hinweis ergänzt.
-- API-Verfügbarkeit beeinflusst den Kandidatenstatus-Text.
+- Hover/Fokus auf der Vigenère-Option im Custom-Dropdown zeigt einen Alias-Hinweis (Tooltip).
 - Nach dem Crack wird `runButton` wieder aktiviert.
 - Falls Fallback lief, kann der Endstatus Bruteforce-Info enthalten.
 - Fallback-Telemetrie wird defensiv formatiert, damit keine `NaN`/`undefined`-Werte im Status erscheinen.
@@ -138,3 +134,5 @@ Diese Datei beschreibt den tatsächlichen Laufzeitpfad in `js/app.js` und den be
 - Jeder erfolgreiche Lauf setzt eine Ausgabe in `outputText`.
 - Kandidatenliste erscheint nur bei mehreren Kandidaten.
 - Statuszeile erläutert den tatsächlich gewählten Pfad.
+
+

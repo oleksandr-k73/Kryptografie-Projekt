@@ -1,0 +1,10 @@
+{
+  "level": 20,
+  "title": "Level 20 – Binärcode 8-Bit",
+  "coded": "01010101 01001110 01010011 01000011 01001000 01000001 01000101 01010010 01000110 01000101 00100000 01001001 01001101 00100000 01001111 01010010 01010100",
+  "task_type": "decode",
+  "answer_format": "text",
+  "method": "8-Bit Binär (Trennzeichen: Leerzeichen)",
+  "model_status": "authentisch / nah am Original",
+  "explain": ""
+}

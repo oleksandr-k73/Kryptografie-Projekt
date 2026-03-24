@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+// beforeEach wird explizit importiert, damit der Test auch ohne globale Vitest-Helpers stabil bleibt.
+import { beforeEach, describe, expect, it } from "vitest";
 import { loadBrowserContext } from "./_browserHarness.mjs";
 
 function loadRuntime() {

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
@@ -10,9 +10,8 @@
     <main class="app-shell">
       <section class="card">
         <h1>Krypto Werkbank</h1>
-        <p class="subtitle">
-          Datei laden, Verschlüsselung auswählen, Text verarbeiten.
-        </p>
+        <!-- Umlaute werden bewusst als echte UTF-8-Zeichen gepflegt, damit die UI korrekt und konsistent bleibt. -->
+        <p class="subtitle">Datei laden, Verschlüsselung auswählen, Text verarbeiten.</p>
 
         <label id="dropzone" class="dropzone" for="fileInput">
           <input
@@ -40,14 +39,66 @@
             </select>
           </div>
           <div>
-            <label for="cipherSelect">Verschlüsselung</label>
-            <select id="cipherSelect"></select>
+            <label for="cipherSelect" id="cipherSelectLabelText">Verschlüsselung</label>
+            <div class="custom-select" id="cipherSelectWrap">
+              <select
+                id="cipherSelect"
+                class="native-select-hidden"
+                aria-hidden="true"
+                tabindex="-1"
+              ></select>
+              <button
+                id="cipherSelectButton"
+                type="button"
+                class="custom-select-trigger"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-labelledby="cipherSelectLabelText cipherSelectValue"
+              >
+                <span id="cipherSelectValue">Verschlüsselung wählen</span>
+                <span class="custom-select-arrow" aria-hidden="true">▾</span>
+              </button>
+              <ul id="cipherSelectList" class="custom-select-list" role="listbox"></ul>
+              <div id="cipherSelectTooltip" class="custom-select-tooltip" role="tooltip" hidden></div>
+            </div>
           </div>
-          <div>
+          <div id="keyInputWrap">
             <label for="keyInput">Schlüssel (optional)</label>
             <input id="keyInput" type="text" placeholder="z. B. 3" />
             <small id="keyHint" class="hint"
               >Beim Entschlüsseln ohne Schlüssel wird geknackt.</small
+            >
+          </div>
+          <div id="rsaKeyWrap" class="rsa-params" hidden>
+            <label id="rsaKeyLabel" for="rsaPInput">RSA-Parameter</label>
+            <div class="rsa-params-grid">
+              <input id="rsaPInput" type="text" inputmode="numeric" placeholder="p" />
+              <input id="rsaQInput" type="text" inputmode="numeric" placeholder="q" />
+              <input id="rsaNInput" type="text" inputmode="numeric" placeholder="n" />
+              <input id="rsaEInput" type="text" inputmode="numeric" placeholder="e" />
+              <input id="rsaDInput" type="text" inputmode="numeric" placeholder="d" />
+            </div>
+            <small id="rsaKeyHint" class="hint"
+              >Für Encrypt: n und e. Für Decrypt: n und d. p,q optional zur Ableitung.</small
+            >
+          </div>
+          <div id="matrixKeyWrap" class="matrix-key" hidden>
+            <label for="matrixSizeInput">Matrixgröße n</label>
+            <input id="matrixSizeInput" type="number" min="2" step="1" value="2" />
+            <div id="matrixGrid" class="matrix-grid" aria-label="Schlüsselmatrix"></div>
+            <small id="matrixHint" class="hint"
+              >Matrix vollständig ausfüllen; Werte werden modulo 26 ausgewertet.</small
+            >
+          </div>
+          <div id="alphabetWrap" hidden>
+            <label for="alphabetInput">Alphabet</label>
+            <input
+              id="alphabetInput"
+              type="text"
+              placeholder="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            />
+            <small id="alphabetHint" class="hint"
+              >Alphabet bestimmt Modulo m = Länge.</small
             >
           </div>
           <div id="crackLengthWrap" hidden>
@@ -63,6 +114,14 @@
               >Wenn bekannt, beschleunigt und verbessert das Knacken.</small
             >
           </div>
+          <div id="rsaCrackWrap" class="rsa-params" hidden>
+            <label id="rsaCrackLabel" for="rsaCrackDInput">Privater Schlüssel fürs Knacken</label>
+            <div class="rsa-params-grid">
+              <input id="rsaCrackDInput" type="text" inputmode="numeric" placeholder="d" />
+              <input id="rsaCrackNInput" type="text" inputmode="numeric" placeholder="n" />
+            </div>
+            <small id="rsaCrackHint" class="hint">d und n sind erforderlich.</small>
+          </div>
         </div>
 
         <section id="cipherInfoBox" class="cipher-info" aria-live="polite">
@@ -71,6 +130,7 @@
           <p id="cipherInfoHow"></p>
           <p id="cipherInfoCrack"></p>
           <p id="cipherInfoUse"></p>
+          <p id="cipherInfoNote"></p>
         </section>
 
         <button id="runButton" type="button">Ausführen</button>
@@ -110,11 +170,24 @@
     <script src="js/core/segmentLexiconData.js"></script>
     <script src="js/core/dictionaryScorer.js"></script>
     <script src="js/ciphers/caesarCipher.js"></script>
+    <script src="js/ciphers/numberCaesarCipher.js"></script>
+    <script src="js/ciphers/affineCipher.js"></script>
     <script src="js/ciphers/leetCipher.js"></script>
     <script src="js/ciphers/playfairCipher.js"></script>
     <script src="js/ciphers/scytaleCipher.js"></script>
+    <script src="js/ciphers/columnarTranspositionCipher.js"></script>
+    <script src="js/ciphers/positionCipher.js"></script>
     <script src="js/ciphers/railFenceCipher.js"></script>
     <script src="js/ciphers/vigenereCipher.js"></script>
+    <script src="js/ciphers/hillCipher.js"></script>
+    <script src="js/ciphers/xorCipher.js"></script>
+    <script src="js/ciphers/binaryCipher.js"></script>
+    <script src="js/ciphers/hexCipher.js"></script>
+    <script src="js/ciphers/base64Cipher.js"></script>
+    <script src="js/ciphers/asciiCipher.js"></script>
+    <script src="js/ciphers/rsaMiniCipher.js"></script>
+    <script src="js/ciphers/sha256Cipher.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>
+

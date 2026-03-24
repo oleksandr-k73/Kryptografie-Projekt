@@ -54094,6 +54094,7 @@ eigenvalues
 eigenverantwortlich
 eigenwillig
 eigenwirtschaftlich
+eigenzustand
 eiger
 eigergletscher
 eigernordwand
